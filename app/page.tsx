@@ -105,8 +105,6 @@ export default function Page(){
     const { data: usersData } = await supabase.from('users').select('*').order('created_at',{ascending:false});
     if(usersData) setRegisteredUsers(usersData as any);
 
-    }
-
     const { data: eventsData } = await supabase.from('events').select('*').order('created_at',{ascending:false});
     if(eventsData){
      setEvents(eventsData as any);
@@ -179,12 +177,12 @@ export default function Page(){
   const n = (document.getElementById('login-eo-n') as HTMLInputElement)?.value?.trim();
   const p = (document.getElementById('login-eo-p') as HTMLInputElement)?.value;
   const pin = (document.getElementById('login-eo-pin') as HTMLInputElement)?.value?.trim();
-  const { data } = await supabase.from('organizers').select('*').eq('name',n).maybeSingle();
+  const { data } = await supabase.from('users').select('*').eq('name',n).maybeSingle();
   if(!data){ setToast("EO tidak ditemukan"); setTimeout(()=>setToast(""),2000); return; }
   const storedPass = (data as any).pin_hash?.split('|')[0]||''; const storedPin = (data as any).pin_hash?.split('|')[1]||'';
   if(storedPass!==p||storedPin!==pin){ setToast("Password/PIN salah"); setTimeout(()=>setToast(""),2000); return; }
   localStorage.setItem('ngipen_role','eo'); localStorage.setItem('ngipen_user',data.name); localStorage.setItem('ngipen_eo_id',data.id);
-  setCurrentRole('eo'); setCurrentUser(data.name); setCurrentEOId(data.id); setEoBio(data.bio||""); const s=data.social_links||{}; setEoInstagram(s.instagram||""); setEoTiktok(s.tiktok||""); setEoYoutube(s.youtube||""); setEoWebsite(s.website||"");
+  setCurrentRole('eo'); setCurrentUser(data.name); setCurrentUserId(data.id); setEoBio(data.bio||""); const s=data.social_links||{}; setEoInstagram(s.instagram||""); setEoTiktok(s.tiktok||""); setEoYoutube(s.youtube||""); setEoWebsite(s.website||"");
   setShowLoginEO(false); setToast(`Halo EO ${data.name}`); setTimeout(()=>setToast(""),2000);
  };
  const handleRegEO = async()=>{
@@ -198,8 +196,8 @@ export default function Page(){
   if(!wa||wa.length<10){ setToast("WA min 10"); setTimeout(()=>setToast(""),2000); return; }
   if(!pass||pass.length<8){ setToast("Password min 8"); setTimeout(()=>setToast(""),2000); return; }
   if(!pin||pin.length!==6||!/^\d+$/.test(pin)){ setToast("PIN 6 digit angka"); setTimeout(()=>setToast(""),2000); return; }
-  const { data: exist } = await supabase.from('organizers').select('id').eq('name',name).maybeSingle(); if(exist){ setToast("Nama EO dipakai"); setTimeout(()=>setToast(""),2000); return; }
-  const { data, error } = await supabase.from('organizers').insert({ name, normalized_name:name.toLowerCase(), email, whatsapp:wa, pin_hash:`${pass}|${pin}`, bio:'', avatar_url:'', social_links:{}, verification_status:'verified' }).select().single();
+  const { data: exist } = await supabase.from('users').select('id').eq('username',name.toLowerCase()).maybeSingle(); if(exist){ setToast("Nama dipakai"); setTimeout(()=>setToast(""),2000); return; }
+  const { data, error } = await supabase.from('users').insert({ name, normalized_name:name.toLowerCase(), email, whatsapp:wa, pin_hash:`${pass}|${pin}`, bio:'', avatar_url:'', social_links:{}, verification_status:'verified' }).select().single();
   if(error){ setToast("Gagal: "+error.message); setTimeout(()=>setToast(""),2000); return; }
  };
  const handleLoginAdmin = async()=>{
@@ -215,7 +213,7 @@ export default function Page(){
   }
   setToast("Admin salah"); setTimeout(()=>setToast(""),2000);
  };
- const logout=()=>{ localStorage.removeItem('ngipen_role'); localStorage.removeItem('ngipen_user'); localStorage.removeItem('ngipen_user_id'); localStorage.removeItem('ngipen_eo_id'); setCurrentRole('guest'); setCurrentUser(""); setCurrentUserId(""); setCurrentEOId(""); setSavedIds([]); setMyRatings({}); };
+ const logout=()=>{ localStorage.removeItem('ngipen_role'); localStorage.removeItem('ngipen_user'); localStorage.removeItem('ngipen_user_id'); localStorage.removeItem('ngipen_eo_id'); setCurrentRole('guest'); setCurrentUser(""); setCurrentUserId(""); setSavedIds([]); setMyRatings({}); };
 
  // Events CRUD - Pending for user view
  const handleCreateEvent = async()=>{
@@ -238,7 +236,7 @@ export default function Page(){
    let posterUrl = editingEvent?.poster_url||"";
    if(posterFile) posterUrl = await uploadToBucket(posterFile,'posters');
    const payload:any = {
-    organizer_id: currentEOId,
+    organizer_id: currentUserId,
     title, slug: slugify(title), description:desc, poster_url:posterUrl,
     categories:newCategories, province:prov, city, venue_address:venue,
     start_date:start, end_date:end, start_time:'09:00', end_time:'18:00',
@@ -377,7 +375,7 @@ export default function Page(){
   const web = (document.getElementById('edit-eo-web') as HTMLInputElement)?.value?.trim()||"";
   if(!name||name.length<3){ setToast("Nama min 3"); setTimeout(()=>setToast(""),2000); return; }
   if(eoAvatarFile){ try{ avatarUrl = await uploadToBucket(eoAvatarFile,'avatars'); }catch(e:any){ setToast("Gagal avatar: "+e.message); setTimeout(()=>setToast(""),2000); return; } }
-  const { error } = await supabase.from('organizers').update({ name, email, whatsapp:wa, bio, avatar_url:avatarUrl, social_links:{instagram:ig, tiktok:tt, youtube:yt, website:web} }).eq('id',currentEOId);
+  const { error } = await supabase.from('users').update({ name, email, whatsapp:wa, bio, avatar_url:avatarUrl, social_links:{instagram:ig, tiktok:tt, youtube:yt, website:web} }).eq('id',currentUserId);
   if(error){ setToast("Gagal: "+error.message); setTimeout(()=>setToast(""),2000); return; }
   setCurrentUser(name); localStorage.setItem('ngipen_user',name); setEoBio(bio); setEoInstagram(ig); setEoTiktok(tt); setEoYoutube(yt); setEoWebsite(web);
   setShowEOProfileEdit(false); setToast("Profil EO diperbarui"); setTimeout(()=>setToast(""),2000);
@@ -385,11 +383,11 @@ export default function Page(){
  const handleChangeEOPassword = async()=>{
   const oldPass = (document.getElementById('edit-eo-oldpass') as HTMLInputElement)?.value;
   const newPass = (document.getElementById('edit-eo-newpass') as HTMLInputElement)?.value;
-  const { data } = await supabase.from('organizers').select('pin_hash').eq('id',currentEOId).maybeSingle();
+  const { data } = await supabase.from('users').select('pin_hash').eq('id',currentUserId).maybeSingle();
   const storedPass = data?.pin_hash?.split('|')[0]||''; const storedPin = data?.pin_hash?.split('|')[1]||'';
   if(storedPass!==oldPass){ setToast("Password lama salah"); setTimeout(()=>setToast(""),2000); return; }
   if(!newPass||newPass.length<8){ setToast("Min 8"); setTimeout(()=>setToast(""),2000); return; }
-  await supabase.from('organizers').update({ pin_hash:`${newPass}|${storedPin}` }).eq('id',currentEOId);
+  await supabase.from('users').update({ pin_hash:`${newPass}|${storedPin}` }).eq('id',currentUserId);
   setToast("Password EO diganti"); setTimeout(()=>setToast(""),2000);
  };
 
@@ -407,7 +405,7 @@ export default function Page(){
   if(sortMode==='Terbaru') list = [...list].sort((a,b)=>new Date(b.created_at).getTime()-new Date(a.created_at).getTime());
   if(sortMode==='Terpopuler') list = [...list].sort((a,b)=>b.views-a.views);
   return list;
- },[events,approvedEvents,search,selectedProv,selectedCity,selectedCat,selectedTicket,sortMode,currentRole,currentEOId,savedIds,userTab]);
+ },[events,approvedEvents,search,selectedProv,selectedCity,selectedCat,selectedTicket,sortMode,currentRole,currentUserId,savedIds,userTab]);
  const cityOptions = useMemo(()=>{ if(selectedProv==='Semua') return ["Semua"]; const cities = Array.from(new Set(events.filter(e=>e.province===selectedProv).map(e=>e.city))).filter(Boolean); return ["Semua",...cities]; },[selectedProv,events]);
 
  const openDetail = async(ev:Event)=>{
@@ -428,7 +426,7 @@ export default function Page(){
    <header className="sticky top-0 z-40 backdrop-blur-xl bg-white/80 dark:bg-[#1A1A1A]/80 border-b">
     <div className="max-w-[1280px] mx-auto px-4 h-[64px] flex items-center justify-between">
      <div className="flex items-center gap-3 cursor-pointer" onClick={()=>{ const now=Date.now(); const last=Number(localStorage.getItem('logo_last')||0); if(now-last<4000){ const c=logoClicks+1; setLogoClicks(c); if(c>=5){ setShowAdmin(true); setLogoClicks(0); } } else setLogoClicks(1); localStorage.setItem('logo_last',String(now)); }}>
-      <div className="w-9 h-9 rounded-xl bg-[#E53935] flex items-center justify-center text-white font-black">N</div>
+      <img src="/ngipen_logo_cutout.png" alt="NGIPEN" className="w-9 h-9 object-contain rounded-xl" />
       <div><div className="font-black leading-none">NGIPEN</div><div className="text-[10px] tracking-widest opacity-60">SATU HOBBY SATU KESERUAN</div></div>
      </div>
      <div className="hidden md:flex items-center gap-2">
@@ -591,7 +589,7 @@ export default function Page(){
        <div className="flex items-center gap-2 mt-3">
         <button onClick={async()=>{
          if(eo){ setShowEOPublic(eo); }
-         else { const { data } = await supabase.from('organizers').select('*').eq('id',selectedEvent.organizer_id).maybeSingle(); if(data) setShowEOPublic(data as any); }
+         else { const { data } = await supabase.from('users').select('*').eq('id',selectedEvent.organizer_id).maybeSingle(); if(data) setShowEOPublic(data as any); }
         }} className="h-9 px-4 rounded-full bg-[#F3F3F3] dark:bg-[#2A2A2A] border font-bold text-xs">👤 {selectedEvent.organizer_name} • Lihat Profil EO</button>
         <div className="text-xs opacity-60">👁 {selectedEvent.views} • {selectedEvent.city}, {selectedEvent.province}</div>
        </div>
@@ -670,4 +668,3 @@ export default function Page(){
   </div>
  );
 }
-
