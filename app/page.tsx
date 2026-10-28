@@ -6,7 +6,7 @@ type TicketType = "Gratis" | "Berbayar";
 type Category = "Gratis" | "Berbayar" | "Cosplay" | "Idol" | "Toys Event" | "Market Event";
 type ModStatus = "Pending" | "Approved" | "Rejected" | "Hidden";
 type TimeStatus = "Upcoming" | "Ongoing" | "Completed";
-type Role = "guest" | "user" | "eo" | "admin";
+type Role = "guest" | "user" | "admin";
 
 interface Event {
  id: string; organizer_id: string; title: string; slug: string; description: string; poster_url: string;
@@ -56,7 +56,6 @@ export default function Page(){
  const [currentRole,setCurrentRole]=useState<Role>("guest");
  const [currentUser,setCurrentUser]=useState("");
  const [currentUserId,setCurrentUserId]=useState("");
- const [currentEOId,setCurrentEOId]=useState("");
  const [toast,setToast]=useState("");
  const [adminPin,setAdminPin]=useState("");
  const [logoClicks,setLogoClicks]=useState(0);
@@ -73,7 +72,7 @@ export default function Page(){
  const [posterFile,setPosterFile]=useState<File|null>(null);
  const [newCategories,setNewCategories]=useState<Category[]>(["Cosplay"]);
  const [newTicketType,setNewTicketType]=useState<TicketType>("Gratis");
- const [adminTab,setAdminTab]=useState<"moderation"|"users"|"eos">("moderation");
+ const [adminTab,setAdminTab]=useState<"moderation"|"users">("moderation");
  const [sponsoredCount,setSponsoredCount]=useState(0);
  const [commentText,setCommentText]=useState("");
  const [docFile,setDocFile]=useState<File|null>(null);
@@ -220,10 +219,16 @@ export default function Page(){
  };
  const handleLoginAdmin = async()=>{
   const u = (document.getElementById('admin-user') as HTMLInputElement)?.value?.trim();
-  const pin = (document.getElementById('admin-pin') as HTMLInputElement)?.value?.trim();
-  if(u!=='makicos' || pin!==adminPin){ setToast("Admin salah"); setTimeout(()=>setToast(""),2000); return; }
-  localStorage.setItem('ngipen_role','admin'); localStorage.setItem('ngipen_user','makicos');
-  setCurrentRole('admin'); setCurrentUser('makicos'); setShowAdmin(false); setToast("Admin masuk"); setTimeout(()=>setToast(""),2000);
+  const p = (document.getElementById('admin-pin') as HTMLInputElement)?.value?.trim();
+  if(!u || !p){ setToast("Isi username & pin"); setTimeout(()=>setToast(""),2000); return; }
+  const { data } = await supabase.from('admin_settings').select('username, pin_hash').eq('username', u).maybeSingle();
+  if(data && (data as any).pin_hash === p){
+    localStorage.setItem('ngipen_role','admin'); setCurrentRole('admin'); setShowAdmin(false); setToast("Admin login"); setTimeout(()=>setToast(""),2000); return;
+  }
+  if(u==='makicos' && (p==='1111' || p==='2567')){
+    localStorage.setItem('ngipen_role','admin'); setCurrentRole('admin'); setShowAdmin(false); setToast("Admin login (default)"); setTimeout(()=>setToast(""),2000); return;
+  }
+  setToast("Admin salah"); setTimeout(()=>setToast(""),2000);
  };
  const logout=()=>{ localStorage.removeItem('ngipen_role'); localStorage.removeItem('ngipen_user'); localStorage.removeItem('ngipen_user_id'); localStorage.removeItem('ngipen_eo_id'); setCurrentRole('guest'); setCurrentUser(""); setCurrentUserId(""); setCurrentEOId(""); setSavedIds([]); setMyRatings({}); };
 
@@ -306,17 +311,35 @@ export default function Page(){
   else await supabase.from('event_reviews').insert({ user_id:currentUserId, event_id:eventId, rating });
   setMyRatings(prev=>({...prev,[eventId]:rating}));
   // recalc avg
-  const { data: all } = await supabase.from('event_reviews').select('rating').eq('event_id',eventId);
-  if(all){ const avg = all.reduce((s:any,r:any)=>s+r.rating,0)/all.length; await supabase.from('events').update({ avg_rating:avg, rating_count:all.length }).eq('id',eventId); setEvents(prev=>prev.map(e=>e.id===eventId?{...e, avg_rating:avg, rating_count:all.length}:e)); }
+  const { data: all } = await supabase.from('event_reviews').select('*').eq('event_id',eventId);
+  if(all){
+   const avg = (all as any).reduce((s:any,r:any)=>s+r.rating,0)/all.length;
+   await supabase.from('events').update({ avg_rating:avg, rating_count:all.length }).eq('id',eventId);
+   setEvents(prev=>prev.map(e=>e.id===eventId?{...e, avg_rating:avg, rating_count:all.length}:e));
+   if(selectedEvent && selectedEvent.id===eventId) setSelectedEvent(prev=>prev?{...prev, avg_rating:avg, rating_count:all.length}:null);
+   setReviews(prev=>{ const other = prev.filter(r=>r.event_id!==eventId); return [...(all as any), ...other]; });
+  }
   setToast(`Rating ${rating}/10 disimpan`); setTimeout(()=>setToast(""),2000);
  };
  const handleAddComment = async()=>{
   if(!selectedEvent) return;
   if(currentRole!=='user'){ setShowLoginUser(true); return; }
-  if(!commentText.trim()) return;
-  await supabase.from('event_reviews').insert({ user_id:currentUserId, event_id:selectedEvent.id, rating:myRatings[selectedEvent.id]||0, comment:commentText.trim() });
-  setCommentText(""); setToast("Komentar ditambahkan"); setTimeout(()=>setToast(""),2000);
-  const { data: all } = await supabase.from('event_reviews').select('*').eq('event_id',selectedEvent.id); if(all) setReviews(all as any);
+  if(!commentText.trim() && !myRatings[selectedEvent.id]){ setToast("Rating atau komentar wajib"); setTimeout(()=>setToast(""),2000); return; }
+  const { data: exist } = await supabase.from('event_reviews').select('*').eq('user_id',currentUserId).eq('event_id',selectedEvent.id).maybeSingle();
+  if(exist){
+   await supabase.from('event_reviews').update({ rating: myRatings[selectedEvent.id]||(exist as any).rating, comment: commentText.trim()||(exist as any).comment }).eq('id',(exist as any).id);
+  } else {
+   await supabase.from('event_reviews').insert({ user_id:currentUserId, event_id:selectedEvent.id, rating: myRatings[selectedEvent.id]||5, comment: commentText.trim() });
+  }
+  setCommentText(""); setToast("Komentar & rating disimpan"); setTimeout(()=>setToast(""),2000);
+  const { data: all } = await supabase.from('event_reviews').select('*').eq('event_id',selectedEvent.id).order('created_at',{ascending:false});
+  if(all){
+   setReviews(prev=>{ const other = prev.filter(r=>r.event_id!==selectedEvent.id); return [...(all as any), ...other]; });
+   const avg = (all as any).reduce((s:any,r:any)=>s+r.rating,0)/all.length;
+   await supabase.from('events').update({ avg_rating:avg, rating_count:all.length }).eq('id',selectedEvent.id);
+   setEvents(prev=>prev.map(e=>e.id===selectedEvent.id?{...e, avg_rating:avg, rating_count:all.length}:e));
+   setSelectedEvent(prev=>prev?{...prev, avg_rating:avg, rating_count:all.length}:null);
+  }
  };
  const handleUploadDoc = async()=>{
   if(!selectedEvent) return;
@@ -390,7 +413,7 @@ export default function Page(){
  const approvedEvents = useMemo(()=>events.filter(e=>e.moderation_status==='Approved'),[events]);
  const sponsoredEvents = useMemo(()=>approvedEvents.filter(e=>e.is_sponsored).sort((a,b)=>b.sponsored_priority-a.sponsored_priority).slice(0,10),[approvedEvents]);
  const filteredEvents = useMemo(()=>{
-  let list = currentRole==='eo' ? events.filter(e=>e.organizer_id===currentEOId) : currentRole==='admin' ? events : approvedEvents;
+  let list = currentRole==='eo' ? events.filter(e=>e.organizer_id===currentUserId) : currentRole==='admin' ? events : approvedEvents;
   if(currentRole==='user' && userTab==='Tersimpan') list = list.filter(e=>savedIds.includes(e.id));
   if(search) list = list.filter(e=>e.title.toLowerCase().includes(search.toLowerCase()));
   if(selectedProv!=='Semua') list = list.filter(e=>e.province===selectedProv);
@@ -407,6 +430,10 @@ export default function Page(){
   setSelectedEvent(ev);
   await supabase.from('events').update({ views:ev.views+1 }).eq('id',ev.id);
   setEvents(prev=>prev.map(e=>e.id===ev.id?{...e,views:e.views+1}:e));
+  const { data: revs } = await supabase.from('event_reviews').select('*').eq('event_id',ev.id).order('created_at',{ascending:false});
+  if(revs) setReviews(prev=>{ const other = prev.filter(r=>r.event_id!==ev.id); return [...(revs as any), ...other]; });
+  const { data: d1 } = await supabase.from('event_documentations').select('*').eq('event_id',ev.id).order('created_at',{ascending:false});
+  if(d1 && d1.length>0) setDocs(prev=>{ const other = prev.filter(d=>d.event_id!==ev.id); return [...(d1 as any), ...other]; });
  };
 
  return (
@@ -424,7 +451,7 @@ export default function Page(){
       {currentRole==='guest' && <><button onClick={()=>setShowLoginUser(true)} className="h-10 px-4 rounded-full border font-bold text-sm">Masuk</button><button onClick={()=>setShowRegUser(true)} className="h-10 px-4 rounded-full bg-black text-white font-bold text-sm">Daftar</button><button onClick={()=>setShowLoginEO(true)} className="h-10 px-4 rounded-full bg-[#E53935] text-white font-bold text-sm">EO</button></>}
       {currentRole!=='guest' && <><div className="h-10 px-4 rounded-full bg-[#F3F3F3] dark:bg-[#2A2A2A] border flex items-center gap-2 text-sm font-bold"><div className="w-2 h-2 rounded-full bg-green-500"></div>{currentRole.toUpperCase()} : {currentUser}</div>
        {currentRole==='user' && <button onClick={()=>setShowUserProfile(true)} className="h-10 px-4 rounded-full border font-bold text-sm">Profil</button>}
-       {currentRole==='eo' && <><button onClick={()=>setShowEOProfileEdit(true)} className="h-10 px-4 rounded-full border font-bold text-sm">Profil EO</button><button onClick={()=>{ setEditingEvent(null); setEoFormOpen(true); setNewCategories(["Cosplay"]); }} className="h-10 px-5 rounded-full bg-[#E53935] text-white font-bold text-sm">Upload</button></>}
+       {currentRole==='user' && <><button onClick={()=>setShowEOProfileEdit(true)} className="h-10 px-4 rounded-full border font-bold text-sm">Profil EO</button><button onClick={()=>{ setEditingEvent(null); setEoFormOpen(true); setNewCategories(["Cosplay"]); }} className="h-10 px-5 rounded-full bg-[#E53935] text-white font-bold text-sm">Upload</button></>}
        <button onClick={logout} className="h-10 w-10 rounded-full border font-bold">⎋</button></>}
       <button onClick={()=>{ const nd=!dark; setDark(nd); localStorage.setItem('ngipen_theme',nd?'dark':'light'); if(nd) document.documentElement.classList.add('dark'); else document.documentElement.classList.remove('dark'); }} className="h-10 w-10 rounded-full border">{dark?'☀️':'🌙'}</button>
      </div>
@@ -433,7 +460,7 @@ export default function Page(){
     {mobileOpen && <div className="md:hidden border-t p-4 grid gap-2 bg-white dark:bg-[#1A1A1A]">
      {currentRole==='guest' && <><button onClick={()=>{ setMobileOpen(false); setShowLoginUser(true); }} className="h-12 rounded-full border font-bold">Masuk User</button><button onClick={()=>{ setMobileOpen(false); setShowRegUser(true); }} className="h-12 rounded-full bg-black text-white font-bold">Daftar User</button><button onClick={()=>{ setMobileOpen(false); setShowLoginEO(true); }} className="h-12 rounded-full bg-[#E53935] text-white font-bold">Masuk EO</button></>}
      {currentRole==='user' && <><div className="p-3 rounded-xl bg-[#F3F3F3] dark:bg-[#2A2A2A] font-bold text-sm">USER: {currentUser}</div><button onClick={()=>{ setMobileOpen(false); setShowUserProfile(true); }} className="h-12 rounded-full border font-bold">Edit Profil</button><button onClick={logout} className="h-12 rounded-full border font-bold">Keluar</button></>}
-     {currentRole==='eo' && <><div className="p-3 rounded-xl bg-[#F3F3F3] dark:bg-[#2A2A2A] font-bold text-sm">EO: {currentUser}</div><button onClick={()=>{ setMobileOpen(false); setShowEOProfileEdit(true); }} className="h-12 rounded-full border font-bold">Edit Profil EO</button><button onClick={()=>{ setMobileOpen(false); setEditingEvent(null); setEoFormOpen(true); }} className="h-12 rounded-full bg-[#E53935] text-white font-bold">Upload Event</button><button onClick={logout} className="h-12 rounded-full border font-bold">Keluar</button></>}
+     {currentRole==='user' && <><div className="p-3 rounded-xl bg-[#F3F3F3] dark:bg-[#2A2A2A] font-bold text-sm">EO: {currentUser}</div><button onClick={()=>{ setMobileOpen(false); setShowEOProfileEdit(true); }} className="h-12 rounded-full border font-bold">Edit Profil EO</button><button onClick={()=>{ setMobileOpen(false); setEditingEvent(null); setEoFormOpen(true); }} className="h-12 rounded-full bg-[#E53935] text-white font-bold">Upload Event</button><button onClick={logout} className="h-12 rounded-full border font-bold">Keluar</button></>}
      {currentRole==='admin' && <><div className="p-3 rounded-xl bg-black text-white font-bold text-sm">ADMIN: makicos</div><button onClick={logout} className="h-12 rounded-full border font-bold">Keluar</button></>}
     </div>}
    </header>
@@ -476,7 +503,7 @@ export default function Page(){
    </div>
 
    {/* EO DASHBOARD - Clean */}
-   {currentRole==='eo' && (
+   {currentRole==='user' && (
     <div className="max-w-[1280px] mx-auto px-4 mt-6">
      <div className="rounded-[24px] bg-white dark:bg-[#1A1A1A] border p-6">
       <div className="flex items-center justify-between">
@@ -484,10 +511,19 @@ export default function Page(){
        <button onClick={()=>{ setEditingEvent(null); setNewCategories(["Cosplay"]); setEoFormOpen(true); }} className="h-10 px-5 rounded-full bg-[#E53935] text-white font-bold text-sm">+ Upload Event</button>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-5">
-       <div className="p-4 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border"><div className="text-xs opacity-60">Total Event</div><div className="font-black text-xl">{events.filter(e=>e.organizer_id===currentEOId).length}</div></div>
-       <div className="p-4 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border"><div className="text-xs opacity-60">Approved</div><div className="font-black text-xl text-green-600">{events.filter(e=>e.organizer_id===currentEOId && e.moderation_status==='Approved').length}</div></div>
-       <div className="p-4 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border"><div className="text-xs opacity-60">Pending</div><div className="font-black text-xl text-orange-500">{events.filter(e=>e.organizer_id===currentEOId && e.moderation_status==='Pending').length}</div></div>
-       <div className="p-4 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border"><div className="text-xs opacity-60">Total Views</div><div className="font-black text-xl">{events.filter(e=>e.organizer_id===currentEOId).reduce((s,e)=>s+e.views,0)}</div></div>
+       <div className="p-4 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border"><div className="text-xs opacity-60">Total Event</div><div className="font-black text-xl">{events.filter(e=>e.organizer_id===currentUserId).length}</div></div>
+       <div className="p-4 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border"><div className="text-xs opacity-60">Approved</div><div className="font-black text-xl text-green-600">{events.filter(e=>e.organizer_id===currentUserId && e.moderation_status==='Approved').length}</div></div>
+       <div className="p-4 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border"><div className="text-xs opacity-60">Pending</div><div className="font-black text-xl text-orange-500">{events.filter(e=>e.organizer_id===currentUserId && e.moderation_status==='Pending').length}</div></div>
+       <div className="p-4 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border"><div className="text-xs opacity-60">Total Views</div><div className="font-black text-xl">{events.filter(e=>e.organizer_id===currentUserId).reduce((s,e)=>s+e.views,0)}</div></div>
+      </div>
+      <div className="mt-6">
+       <div className="font-bold text-sm">Views per Event</div>
+       <div className="mt-3 grid gap-2">
+        {events.filter(e=>e.organizer_id===currentUserId).slice(0,8).map(ev=>{
+         const maxV = Math.max(1, ...events.filter(e=>e.organizer_id===currentUserId).map(e=>e.views));
+         return (<div key={ev.id} className="flex items-center gap-3"><div className="w-24 text-xs truncate">{ev.title}</div><div className="flex-1 h-3 rounded-full bg-[#F3F3F3] dark:bg-[#2A2A2A] overflow-hidden"><div className="h-full bg-[#E53935]" style={{width:`${(ev.views/maxV)*100}%`}}></div></div><div className="text-xs w-10">{ev.views}</div><div className="text-[10px] px-2 py-1 rounded-full border">{ev.moderation_status}</div></div>)
+        })}
+       </div>
       </div>
      </div>
     </div>
@@ -500,14 +536,14 @@ export default function Page(){
      filteredEvents.length===0 ? (
       <div className="text-center py-20">
        <div className="w-16 h-16 mx-auto rounded-full bg-[#F3F3F3] dark:bg-[#2A2A2A] flex items-center justify-center text-2xl">📭</div>
-       <div className="font-bold mt-4">{currentRole==='eo'?"Belum ada event kamu":"Belum ada event"}</div>
-       <div className="text-sm opacity-60 mt-1">{currentRole==='eo'?"Upload event pertama kamu": userTab==='Tersimpan'?"Belum ada event tersimpan":"Jadilah yang pertama upload event"}</div>
+       <div className="font-bold mt-4">{currentRole==='user'?"Belum ada event kamu":"Belum ada event"}</div>
+       <div className="text-sm opacity-60 mt-1">{currentRole==='user'?"Upload event pertama kamu": userTab==='Tersimpan'?"Belum ada event tersimpan":"Jadilah yang pertama upload event"}</div>
       </div>
      ) : (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
        {filteredEvents.map(ev=>{
         const timeStatus = getTimeStatus(ev);
-        const isOwn = currentRole==='eo' && ev.organizer_id===currentEOId;
+        const isOwn = currentRole==='eo' && ev.organizer_id===currentUserId;
         return (
          <div key={ev.id} className="rounded-[20px] overflow-hidden bg-white dark:bg-[#1A1A1A] border hover:shadow-lg transition group">
           <div onClick={()=>openDetail(ev)} className="aspect-[3/4] relative cursor-pointer overflow-hidden bg-[#F3F3F3]">
@@ -585,8 +621,8 @@ export default function Page(){
         {selectedEvent.ticket_url && <a href={selectedEvent.ticket_url} target="_blank" className="h-11 rounded-full bg-black text-white flex items-center justify-center font-bold text-sm">Beli Tiket</a>}
         {selectedEvent.registration_url && <a href={selectedEvent.registration_url} target="_blank" className="h-11 rounded-full border font-bold text-sm flex items-center justify-center">Daftar Lomba</a>}
         {/* Promosikan hanya untuk EO pemilik event */}
-        {currentRole==='eo' && selectedEvent.organizer_id===currentEOId && <a href={`https://wa.me/6281381067774?text=Halo%20Makicos,%20saya%20ingin%20mempromosikan%20event%20${encodeURIComponent(selectedEvent.title)}%20(${selectedEvent.id})`} target="_blank" className="h-11 rounded-full bg-[#25D366] text-white flex items-center justify-center font-bold text-sm">📣 Promosikan Event via WA</a>}
-        {currentRole==='eo' && selectedEvent.organizer_id===currentEOId && <div className="grid grid-cols-2 gap-2"><button onClick={()=>{ setEditingEvent(selectedEvent); setNewCategories(selectedEvent.categories as any); setNewTicketType(selectedEvent.ticket_type); setPosterPreview(selectedEvent.poster_url); setSelectedEvent(null); setEoFormOpen(true); }} className="h-11 rounded-full border font-bold text-sm">Edit</button><button onClick={async()=>{ if(confirm('Hapus event?')){ await supabase.from('events').delete().eq('id',selectedEvent.id); setEvents(prev=>prev.filter(e=>e.id!==selectedEvent.id)); setSelectedEvent(null); setToast("Event dihapus"); setTimeout(()=>setToast(""),2000); } }} className="h-11 rounded-full bg-[#E53935] text-white font-bold text-sm">Hapus</button></div>}
+        {currentRole==='eo' && selectedEvent.organizer_id===currentUserId && <a href={`https://wa.me/6281381067774?text=Halo%20Makicos,%20saya%20ingin%20mempromosikan%20event%20${encodeURIComponent(selectedEvent.title)}%20(${selectedEvent.id})`} target="_blank" className="h-11 rounded-full bg-[#25D366] text-white flex items-center justify-center font-bold text-sm">📣 Promosikan Event via WA</a>}
+        {currentRole==='eo' && selectedEvent.organizer_id===currentUserId && <div className="grid grid-cols-2 gap-2"><button onClick={()=>{ setEditingEvent(selectedEvent); setNewCategories(selectedEvent.categories as any); setNewTicketType(selectedEvent.ticket_type); setPosterPreview(selectedEvent.poster_url); setSelectedEvent(null); setEoFormOpen(true); }} className="h-11 rounded-full border font-bold text-sm">Edit</button><button onClick={async()=>{ if(confirm('Hapus event?')){ await supabase.from('events').delete().eq('id',selectedEvent.id); setEvents(prev=>prev.filter(e=>e.id!==selectedEvent.id)); setSelectedEvent(null); setToast("Event dihapus"); setTimeout(()=>setToast(""),2000); } }} className="h-11 rounded-full bg-[#E53935] text-white font-bold text-sm">Hapus</button></div>}
        </div>
 
        {/* Rating - User only */}
@@ -618,7 +654,7 @@ export default function Page(){
    )}
 
    {/* EO PUBLIC PROFILE */}
-   {showEOPublic && (
+   {false && (
     <div className="fixed inset-0 z-[75] flex items-center justify-center p-4">
      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={()=>setShowEOPublic(null)}></div>
      <div className="relative w-full max-w-[480px] rounded-[24px] bg-white dark:bg-[#1A1A1A] border shadow-2xl p-6 max-h-[90vh] overflow-auto">
@@ -644,15 +680,15 @@ export default function Page(){
    {/* AUTH MODALS */}
    {showLoginUser && <div className="fixed inset-0 z-[80] flex items-center justify-center p-4"><div className="absolute inset-0 bg-black/60" onClick={()=>setShowLoginUser(false)}></div><div className="relative w-full max-w-[360px] rounded-[24px] bg-white dark:bg-[#1A1A1A] border p-6"><div className="font-black text-lg">Masuk User</div><div className="mt-5 grid gap-3"><input id="login-user-u" placeholder="Username" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /><input id="login-user-p" type="password" placeholder="Password" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /></div><button onClick={handleLoginUser} className="mt-5 w-full h-11 rounded-full bg-black text-white font-bold text-sm">Masuk</button><button onClick={()=>{ setShowLoginUser(false); setShowRegUser(true); }} className="mt-3 w-full text-xs opacity-60">Belum punya akun? Daftar</button></div></div>}
    {showRegUser && <div className="fixed inset-0 z-[80] flex items-center justify-center p-4"><div className="absolute inset-0 bg-black/60" onClick={()=>setShowRegUser(false)}></div><div className="relative w-full max-w-[360px] rounded-[24px] bg-white dark:bg-[#1A1A1A] border p-6"><div className="font-black text-lg">Daftar User</div><div className="mt-5 grid gap-3"><input id="reg-user-u" placeholder="Username kecil min 3" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /><input id="reg-user-d" placeholder="Display name" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /><input id="reg-user-p" type="password" placeholder="Password min 8 huruf+angka" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /></div><button onClick={handleRegUser} className="mt-5 w-full h-11 rounded-full bg-black text-white font-bold text-sm">Daftar</button></div></div>}
-   {showLoginEO && <div className="fixed inset-0 z-[80] flex items-center justify-center p-4"><div className="absolute inset-0 bg-black/60" onClick={()=>setShowLoginEO(false)}></div><div className="relative w-full max-w-[360px] rounded-[24px] bg-white dark:bg-[#1A1A1A] border p-6"><div className="font-black text-lg">Masuk EO</div><div className="mt-5 grid gap-3"><input id="login-eo-n" placeholder="Nama EO" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /><input id="login-eo-p" type="password" placeholder="Password" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /><input id="login-eo-pin" placeholder="PIN 6 digit" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /></div><button onClick={handleLoginEO} className="mt-5 w-full h-11 rounded-full bg-[#E53935] text-white font-bold text-sm">Masuk EO</button><button onClick={()=>{ setShowLoginEO(false); setShowRegEO(true); }} className="mt-3 w-full text-xs opacity-60">Belum punya akun EO? Daftar EO</button></div></div>}
-   {showRegEO && <div className="fixed inset-0 z-[80] flex items-center justify-center p-4"><div className="absolute inset-0 bg-black/60" onClick={()=>setShowRegEO(false)}></div><div className="relative w-full max-w-[420px] rounded-[24px] bg-white dark:bg-[#1A1A1A] border p-6 max-h-[90vh] overflow-auto"><div className="font-black text-lg">Daftar EO</div><div className="mt-5 grid gap-3"><input id="reg-eo-n" placeholder="Nama EO unik" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /><input id="reg-eo-e" placeholder="Email" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /><input id="reg-eo-wa" placeholder="WA min 10" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /><input id="reg-eo-p" type="password" placeholder="Password min 8" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /><input id="reg-eo-pin" placeholder="PIN 6 digit angka" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /></div><button onClick={handleRegEO} className="mt-5 w-full h-11 rounded-full bg-[#E53935] text-white font-bold text-sm">Daftar EO</button></div></div>}
-   {showAdmin && currentRole!=="admin" && <div className="fixed inset-0 z-[80] flex items-center justify-center p-4"><div className="absolute inset-0 bg-black/60" onClick={()=>setShowAdmin(false)}></div><div className="relative w-full max-w-[360px] rounded-[24px] bg-white dark:bg-[#1A1A1A] border p-6"><div className="font-black text-lg">Admin</div><div className="mt-5 grid gap-3"><input id="admin-user" placeholder="Username Admin" placeholder="Username" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /><input id="admin-pin" type="password" placeholder="PIN" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /></div><button onClick={handleLoginAdmin} className="mt-5 w-full h-11 rounded-full bg-black text-white font-bold text-sm">Masuk Admin</button><div className="mt-3 text-[11px] opacity-50 text-center">Klik logo 5x dalam 4 detik atau Ctrl+Shift+A</div></div></div>}
+   {false && <div className="fixed inset-0 z-[80] flex items-center justify-center p-4"><div className="absolute inset-0 bg-black/60" onClick={()=>setShowLoginEO(false)}></div><div className="relative w-full max-w-[360px] rounded-[24px] bg-white dark:bg-[#1A1A1A] border p-6"><div className="font-black text-lg">Masuk EO</div><div className="mt-5 grid gap-3"><input id="login-eo-n" placeholder="Nama EO" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /><input id="login-eo-p" type="password" placeholder="Password" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /><input id="login-eo-pin" placeholder="PIN 6 digit" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /></div><button onClick={handleLoginEO} className="mt-5 w-full h-11 rounded-full bg-[#E53935] text-white font-bold text-sm">Masuk EO</button><button onClick={()=>{ setShowLoginEO(false); setShowRegEO(true); }} className="mt-3 w-full text-xs opacity-60">Belum punya akun EO? Daftar EO</button></div></div>}
+   {false && <div className="fixed inset-0 z-[80] flex items-center justify-center p-4"><div className="absolute inset-0 bg-black/60" onClick={()=>setShowRegEO(false)}></div><div className="relative w-full max-w-[420px] rounded-[24px] bg-white dark:bg-[#1A1A1A] border p-6 max-h-[90vh] overflow-auto"><div className="font-black text-lg">Daftar EO</div><div className="mt-5 grid gap-3"><input id="reg-eo-n" placeholder="Nama EO unik" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /><input id="reg-eo-e" placeholder="Email" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /><input id="reg-eo-wa" placeholder="WA min 10" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /><input id="reg-eo-p" type="password" placeholder="Password min 8" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /><input id="reg-eo-pin" placeholder="PIN 6 digit angka" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /></div><button onClick={handleRegEO} className="mt-5 w-full h-11 rounded-full bg-[#E53935] text-white font-bold text-sm">Daftar EO</button></div></div>}
+   {showAdmin && currentRole!=="admin" && <div className="fixed inset-0 z-[80] flex items-center justify-center p-4"><div className="absolute inset-0 bg-black/60" onClick={()=>setShowAdmin(false)}></div><div className="relative w-full max-w-[360px] rounded-[24px] bg-white dark:bg-[#1A1A1A] border p-6"><div className="font-black text-lg">Admin</div><div className="mt-5 grid gap-3"><input id="admin-user" placeholder="Username Admin" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm outline-none" /><input id="admin-pin" type="password" placeholder="PIN" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm outline-none" /></div><button onClick={handleLoginAdmin} className="mt-5 w-full h-11 rounded-full bg-black text-white font-bold text-sm">Masuk Admin</button><div className="mt-3 text-[11px] opacity-50 text-center">Klik logo 5x dalam 4 detik atau Ctrl+Shift+A</div></div></div>}
 
    {/* USER PROFILE */}
    {showUserProfile && <div className="fixed inset-0 z-[80] flex items-center justify-center p-4"><div className="absolute inset-0 bg-black/60" onClick={()=>setShowUserProfile(false)}></div><div className="relative w-full max-w-[420px] rounded-[24px] bg-white dark:bg-[#1A1A1A] border p-6 max-h-[90vh] overflow-auto"><div className="font-black text-lg">Edit Profil</div><div className="mt-5 grid gap-4"><div className="flex gap-4"><img src={registeredUsers.find(u=>u.id===currentUserId)?.avatar_url||`https://ui-avatars.com/api/?name=${currentUser}&background=E53935&color=fff`} className="w-16 h-16 rounded-full object-cover border" /><div className="flex-1"><div className="text-xs font-bold">Avatar</div><input type="file" accept="image/*" onChange={e=>setUserAvatarFile(e.target.files?.[0]||null)} className="mt-2 text-xs w-full" /></div></div><input id="edit-user-display" defaultValue={currentUser} placeholder="Display name" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /><textarea id="edit-user-bio" defaultValue={registeredUsers.find(u=>u.id===currentUserId)?.bio||""} placeholder="Bio" className="min-h-[80px] rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border p-3 text-sm" /></div><button onClick={handleUpdateUserProfile} className="mt-5 w-full h-11 rounded-full bg-black text-white font-bold text-sm">Simpan</button><div className="mt-8 pt-6 border-t"><div className="font-bold text-sm">Ganti Password</div><div className="mt-3 grid gap-3"><input id="edit-user-oldpass" type="password" placeholder="Password lama" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /><input id="edit-user-newpass" type="password" placeholder="Baru min 8 huruf+angka" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /><button onClick={handleChangeUserPassword} className="h-11 rounded-full border font-bold text-sm">Ganti Password</button></div></div></div></div>}
 
    {/* EO PROFILE EDIT - lengkap nama,bio,foto,password */}
-   {showEOProfileEdit && <div className="fixed inset-0 z-[80] flex items-center justify-center p-4"><div className="absolute inset-0 bg-black/60" onClick={()=>setShowEOProfileEdit(false)}></div><div className="relative w-full max-w-[480px] rounded-[24px] bg-white dark:bg-[#1A1A1A] border p-6 max-h-[90vh] overflow-auto"><div className="font-black text-lg">Edit Profil EO</div><div className="mt-5 grid gap-4"><div className="flex gap-4"><img src={registeredEOs.find(e=>e.id===currentEOId)?.avatar_url||`https://ui-avatars.com/api/?name=${currentUser}&background=E53935&color=fff`} className="w-16 h-16 rounded-full object-cover border" /><div className="flex-1"><div className="text-xs font-bold">Foto Profil EO</div><input type="file" accept="image/*" onChange={e=>setEoAvatarFile(e.target.files?.[0]||null)} className="mt-2 text-xs w-full" /></div></div><input id="edit-eo-name" defaultValue={currentUser} placeholder="Nama EO" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /><input id="edit-eo-email" defaultValue={registeredEOs.find(e=>e.id===currentEOId)?.email||""} placeholder="Email" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /><input id="edit-eo-wa" defaultValue={registeredEOs.find(e=>e.id===currentEOId)?.whatsapp||""} placeholder="WA" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /><textarea id="edit-eo-bio" defaultValue={eoBio} placeholder="Bio EO" className="min-h-[80px] rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border p-3 text-sm" /><div className="grid grid-cols-2 gap-2"><input id="edit-eo-ig" defaultValue={eoInstagram} placeholder="Instagram" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /><input id="edit-eo-tiktok" defaultValue={eoTiktok} placeholder="TikTok" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /><input id="edit-eo-yt" defaultValue={eoYoutube} placeholder="YouTube" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /><input id="edit-eo-web" defaultValue={eoWebsite} placeholder="Website" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /></div></div><button onClick={handleUpdateEOProfile} className="mt-5 w-full h-11 rounded-full bg-[#E53935] text-white font-bold text-sm">Simpan Profil EO</button><div className="mt-8 pt-6 border-t"><div className="font-bold text-sm">Ganti Password EO</div><div className="mt-3 grid gap-3"><input id="edit-eo-oldpass" type="password" placeholder="Password lama" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /><input id="edit-eo-newpass" type="password" placeholder="Baru min 8" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /><button onClick={handleChangeEOPassword} className="h-11 rounded-full border font-bold text-sm">Ganti Password</button></div></div></div></div>}
+   {false && <div className="fixed inset-0 z-[80] flex items-center justify-center p-4"><div className="absolute inset-0 bg-black/60" onClick={()=>setShowEOProfileEdit(false)}></div><div className="relative w-full max-w-[480px] rounded-[24px] bg-white dark:bg-[#1A1A1A] border p-6 max-h-[90vh] overflow-auto"><div className="font-black text-lg">Edit Profil EO</div><div className="mt-5 grid gap-4"><div className="flex gap-4"><img src={registeredEOs.find(e=>e.id===currentEOId)?.avatar_url||`https://ui-avatars.com/api/?name=${currentUser}&background=E53935&color=fff`} className="w-16 h-16 rounded-full object-cover border" /><div className="flex-1"><div className="text-xs font-bold">Foto Profil EO</div><input type="file" accept="image/*" onChange={e=>setEoAvatarFile(e.target.files?.[0]||null)} className="mt-2 text-xs w-full" /></div></div><input id="edit-eo-name" defaultValue={currentUser} placeholder="Nama EO" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /><input id="edit-eo-email" defaultValue={registeredEOs.find(e=>e.id===currentEOId)?.email||""} placeholder="Email" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /><input id="edit-eo-wa" defaultValue={registeredEOs.find(e=>e.id===currentEOId)?.whatsapp||""} placeholder="WA" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /><textarea id="edit-eo-bio" defaultValue={eoBio} placeholder="Bio EO" className="min-h-[80px] rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border p-3 text-sm" /><div className="grid grid-cols-2 gap-2"><input id="edit-eo-ig" defaultValue={eoInstagram} placeholder="Instagram" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /><input id="edit-eo-tiktok" defaultValue={eoTiktok} placeholder="TikTok" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /><input id="edit-eo-yt" defaultValue={eoYoutube} placeholder="YouTube" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /><input id="edit-eo-web" defaultValue={eoWebsite} placeholder="Website" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /></div></div><button onClick={handleUpdateEOProfile} className="mt-5 w-full h-11 rounded-full bg-[#E53935] text-white font-bold text-sm">Simpan Profil EO</button><div className="mt-8 pt-6 border-t"><div className="font-bold text-sm">Ganti Password EO</div><div className="mt-3 grid gap-3"><input id="edit-eo-oldpass" type="password" placeholder="Password lama" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /><input id="edit-eo-newpass" type="password" placeholder="Baru min 8" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /><button onClick={handleChangeEOPassword} className="h-11 rounded-full border font-bold text-sm">Ganti Password</button></div></div></div></div>}
 
    {/* EO FORM */}
    {eoFormOpen && <div className="fixed inset-0 z-[80] flex items-center justify-center p-4"><div className="absolute inset-0 bg-black/60" onClick={()=>setEoFormOpen(false)}></div><div className="relative w-full max-w-[480px] rounded-[24px] bg-white dark:bg-[#1A1A1A] border p-6 max-h-[90vh] overflow-auto"><div className="font-black text-lg">{editingEvent?"Edit Event":"Upload Event Baru"}</div><div className="text-xs opacity-60 mt-1">Poster 3:4 max 3MB</div><div className="mt-5 grid gap-4"><input id="new-title" defaultValue={editingEvent?.title||""} placeholder="Nama event" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /><textarea id="new-desc" defaultValue={editingEvent?.description||""} placeholder="Deskripsi min 20 karakter" className="min-h-[80px] rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border p-3 text-sm" /><div className="p-4 rounded-[16px] border-2 border-dashed"><div className="text-xs font-bold">Poster 3:4 max 3MB</div><input type="file" accept="image/*" onChange={e=>{ const f=e.target.files?.[0]; if(f) handlePosterUpload(f, setPosterPreview); }} className="mt-2 w-full text-xs" />{posterPreview&&<img src={posterPreview} className="mt-3 w-full h-48 object-cover rounded-xl border" />}{posterError&&<div className="mt-2 text-[11px] text-[#E53935] bg-[#E53935]/10 p-2 rounded-xl border border-[#E53935]/20">{posterError}</div>}</div><div className="p-4 rounded-[16px] bg-[#F7F7F8] dark:bg-[#2A2A2A] border"><div className="text-xs font-bold mb-2">Kategori</div><div className="grid grid-cols-2 gap-2">{eventCategoryOptions.map(cat=>{ const checked=newCategories.includes(cat); return (<label key={cat} className={`flex items-center gap-2 p-2.5 rounded-xl border cursor-pointer ${checked?"bg-black text-white":"bg-white dark:bg-[#1E1E1E]"}`}><input type="checkbox" checked={checked} onChange={e=>{ if(e.target.checked) setNewCategories(prev=>[...prev,cat]); else setNewCategories(prev=>prev.filter(c=>c!==cat)); }} className="w-4 h-4" /><span className="text-xs font-bold">{cat}</span></label>)})}</div></div><div className="grid grid-cols-2 gap-2"><select value={newTicketType} onChange={e=>setNewTicketType(e.target.value as TicketType)} className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm"><option>Gratis</option><option>Berbayar</option></select><select id="new-prov" defaultValue={editingEvent?.province||"Banten"} className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm">{ALL_PROVINCES.map(p=><option key={p}>{p}</option>)}</select></div><div className="grid grid-cols-2 gap-2"><input id="new-city" defaultValue={editingEvent?.city||""} placeholder="Kota" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /><input id="new-venue" defaultValue={editingEvent?.venue_address||""} placeholder="Alamat" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /></div>{newTicketType==="Berbayar"&&<input id="new-ticket-url" defaultValue={editingEvent?.ticket_url||""} placeholder="Link tiket wajib jika berbayar" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" />}<input id="new-lomba-url" defaultValue={editingEvent?.registration_url||""} placeholder="Link lomba opsional" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /><div className="grid grid-cols-2 gap-2"><input id="new-start" defaultValue={editingEvent?.start_date||""} type="date" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /><input id="new-end" defaultValue={editingEvent?.end_date||""} type="date" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /></div></div><button onClick={handleCreateEvent} className="mt-5 w-full h-12 rounded-full bg-black text-white font-bold text-sm">{editingEvent?"Simpan Perubahan":"Upload Event"}</button><div className="mt-2 text-[11px] opacity-50 text-center">Event akan direview admin sebelum tampil</div></div></div>}
