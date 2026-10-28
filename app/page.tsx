@@ -426,7 +426,7 @@ export default function Page(){
    <header className="sticky top-0 z-40 backdrop-blur-xl bg-white/80 dark:bg-[#1A1A1A]/80 border-b">
     <div className="max-w-[1280px] mx-auto px-4 h-[64px] flex items-center justify-between">
      <div className="flex items-center gap-3 cursor-pointer" onClick={()=>{ const now=Date.now(); const last=Number(localStorage.getItem('logo_last')||0); if(now-last<4000){ const c=logoClicks+1; setLogoClicks(c); if(c>=5){ setShowAdmin(true); setLogoClicks(0); } } else setLogoClicks(1); localStorage.setItem('logo_last',String(now)); }}>
-      <img src="/ngipen_logo_cutout.png" alt="NGIPEN" className="w-9 h-9 object-contain rounded-xl" />
+      <img src="/logo.png" alt="NGIPEN" className="w-9 h-9 object-contain rounded-xl" />
       <div><div className="font-black leading-none">NGIPEN</div><div className="text-[10px] tracking-widest opacity-60">SATU HOBBY SATU KESERUAN</div></div>
      </div>
      <div className="hidden md:flex items-center gap-2">
