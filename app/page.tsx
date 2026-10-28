@@ -330,14 +330,6 @@ export default function Page(){
   await supabase.from('users').update({ password_hash:newPass }).eq('id',currentUserId);
   setToast("Password diganti"); setTimeout(()=>setToast(""),2000);
  };
- const handleChangeEOPassword = async()=>{
-  const oldPass = (document.getElementById('edit-eo-oldpass') as HTMLInputElement)?.value;
-  const newPass = (document.getElementById('edit-eo-newpass') as HTMLInputElement)?.value;
-  const storedPass = data?.pin_hash?.split('|')[0]||''; const storedPin = data?.pin_hash?.split('|')[1]||'';
-  if(storedPass!==oldPass){ setToast("Password lama salah"); setTimeout(()=>setToast(""),2000); return; }
-  if(!newPass||newPass.length<8){ setToast("Min 8"); setTimeout(()=>setToast(""),2000); return; }
-  setToast("Password EO diganti"); setTimeout(()=>setToast(""),2000);
- };
 
  // Derived
  const approvedEvents = useMemo(()=>events.filter(e=>e.moderation_status==='Approved'),[events]);
