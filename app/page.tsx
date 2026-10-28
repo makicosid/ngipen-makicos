@@ -256,7 +256,7 @@ export default function Page(){
     moderation_status:'Pending', is_sponsored:false, sponsored_priority:0,
     views:0, saves_count:0, avg_rating:0, rating_count:0, organizer_name:currentUser
    };
-   let data;
+   let data:any = null;
    if(editingEvent){
     const { data: upd, error } = await supabase.from('events').update({...payload, moderation_status:'Pending'}).eq('id',editingEvent.id).select().single();
     if(error) throw error; data=upd;
@@ -307,7 +307,7 @@ export default function Page(){
   setMyRatings(prev=>({...prev,[eventId]:rating}));
   // recalc avg
   const { data: all } = await supabase.from('event_reviews').select('rating').eq('event_id',eventId);
-  if(all){ const avg = all.reduce((s:any,r:any)=>s+r.rating,0)/all.length; await supabase.from('events').update({ avg_rating:avg, rating_count:all.length }).eq('id',eventId); setEvents(prev=>prev.map(e=>e.id===eventId?{...e, avg_rating:avg, rating_count:all.length}:e)); }
+  if(all){ const avg = (all as any[]).reduce((s:any,r:any)=>s+r.rating,0)/(all as any[]).length; await supabase.from('events').update({ avg_rating:avg, rating_count:all.length }).eq('id',eventId); setEvents(prev=>prev.map(e=>e.id===eventId?{...e, avg_rating:avg, rating_count:all.length}:e)); }
   setToast(`Rating ${rating}/10 disimpan`); setTimeout(()=>setToast(""),2000);
  };
  const handleAddComment = async()=>{
