@@ -194,9 +194,9 @@ export default function Page(){
   const n = (document.getElementById('login-eo-n') as HTMLInputElement)?.value?.trim();
   const p = (document.getElementById('login-eo-p') as HTMLInputElement)?.value;
   const pin = (document.getElementById('login-eo-pin') as HTMLInputElement)?.value?.trim();
-  const { data } = await supabase.from('organizers').select('id, name, bio, avatar_url, social_links, created_at, email, whatsapp').eq('name',n).maybeSingle();
+  const { data } = await supabase.from('organizers').select('id, name, pin_hash, bio, avatar_url, social_links, created_at, email, whatsapp').eq('name',n).maybeSingle();
   if(!data){ setToast("EO tidak ditemukan"); setTimeout(()=>setToast(""),2000); return; }
-  const storedPass = data.pin_hash?.split('|')[0]||''; const storedPin = data.pin_hash?.split('|')[1]||'';
+  const storedPass = (data as any).pin_hash?.split('|')[0]||''; const storedPin = (data as any).pin_hash?.split('|')[1]||'';
   if(storedPass!==p||storedPin!==pin){ setToast("Password/PIN salah"); setTimeout(()=>setToast(""),2000); return; }
   localStorage.setItem('ngipen_role','eo'); localStorage.setItem('ngipen_user',data.name); localStorage.setItem('ngipen_eo_id',data.id);
   setCurrentRole('eo'); setCurrentUser(data.name); setCurrentEOId(data.id); setEoBio(data.bio||""); const s=data.social_links||{}; setEoInstagram(s.instagram||""); setEoTiktok(s.tiktok||""); setEoYoutube(s.youtube||""); setEoWebsite(s.website||"");
@@ -353,7 +353,7 @@ export default function Page(){
   const oldPass = (document.getElementById('edit-user-oldpass') as HTMLInputElement)?.value;
   const newPass = (document.getElementById('edit-user-newpass') as HTMLInputElement)?.value;
   const { data } = await supabase.from('users').select('password_hash').eq('id',currentUserId).maybeSingle();
-  if(!data || data.password_hash!==oldPass){ setToast("Password lama salah"); setTimeout(()=>setToast(""),2000); return; }
+  if(!data || (data as any).password_hash!==oldPass){ setToast("Password lama salah"); setTimeout(()=>setToast(""),2000); return; }
   if(!newPass||newPass.length<8||!/[a-zA-Z]/.test(newPass)||!/[0-9]/.test(newPass)){ setToast("Password baru min 8 huruf+angka"); setTimeout(()=>setToast(""),2000); return; }
   await supabase.from('users').update({ password_hash:newPass }).eq('id',currentUserId);
   setToast("Password diganti"); setTimeout(()=>setToast(""),2000);
