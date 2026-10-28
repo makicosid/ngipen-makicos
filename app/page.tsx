@@ -108,10 +108,10 @@ export default function Page(){
     const { data: pinData } = await supabase.from('admin_settings').select('*').eq('setting_key','admin_pin').maybeSingle();
     if(pinData?.setting_value) setAdminPin(String(pinData.setting_value).replace(/"/g,''));
 
-    const { data: usersData } = await supabase.from('users').select('*').order('created_at',{ascending:false});
+    const { data: usersData } = await supabase.from('users').select('id, username, display_name, bio, avatar_url, created_at').order('created_at',{ascending:false});
     if(usersData) setRegisteredUsers(usersData as any);
 
-    const { data: eoData } = await supabase.from('organizers').select('*').order('created_at',{ascending:false});
+    const { data: eoData } = await supabase.from('organizers').select('id, name, pin_hash, bio, avatar_url, social_links, created_at, email, whatsapp').order('created_at',{ascending:false});
     if(eoData){
      setRegisteredEOs(eoData as any);
      // load current EO profile data for edit form
@@ -171,8 +171,8 @@ export default function Page(){
  const handleLoginUser = async()=>{
   const u = (document.getElementById('login-user-u') as HTMLInputElement)?.value?.trim().toLowerCase();
   const p = (document.getElementById('login-user-p') as HTMLInputElement)?.value;
-  const { data } = await supabase.from('users').select('*').eq('username',u).maybeSingle();
-  if(!data || data.password_hash!==p){ setToast("Username/password salah"); setTimeout(()=>setToast(""),2000); return; }
+  const { data } = await supabase.from('users').select('id, username, display_name, bio, avatar_url, created_at').eq('username',u).maybeSingle();
+  if(!data || (data as any).password_hash!==p){ setToast("Username/password salah"); setTimeout(()=>setToast(""),2000); return; }
   localStorage.setItem('ngipen_role','user'); localStorage.setItem('ngipen_user',data.display_name); localStorage.setItem('ngipen_user_id',data.id);
   setCurrentRole('user'); setCurrentUser(data.display_name); setCurrentUserId(data.id);
   const { data: saves } = await supabase.from('event_saves').select('*').eq('user_id',data.id); if(saves) setSavedIds(saves.map((s:any)=>s.event_id));
@@ -194,7 +194,7 @@ export default function Page(){
   const n = (document.getElementById('login-eo-n') as HTMLInputElement)?.value?.trim();
   const p = (document.getElementById('login-eo-p') as HTMLInputElement)?.value;
   const pin = (document.getElementById('login-eo-pin') as HTMLInputElement)?.value?.trim();
-  const { data } = await supabase.from('organizers').select('*').eq('name',n).maybeSingle();
+  const { data } = await supabase.from('organizers').select('id, name, pin_hash, bio, avatar_url, social_links, created_at, email, whatsapp').eq('name',n).maybeSingle();
   if(!data){ setToast("EO tidak ditemukan"); setTimeout(()=>setToast(""),2000); return; }
   const storedPass = data.pin_hash?.split('|')[0]||''; const storedPin = data.pin_hash?.split('|')[1]||'';
   if(storedPass!==p||storedPin!==pin){ setToast("Password/PIN salah"); setTimeout(()=>setToast(""),2000); return; }
@@ -256,7 +256,7 @@ export default function Page(){
     moderation_status:'Pending', is_sponsored:false, sponsored_priority:0,
     views:0, saves_count:0, avg_rating:0, rating_count:0, organizer_name:currentUser
    };
-   let data:any = null;
+   let data;
    if(editingEvent){
     const { data: upd, error } = await supabase.from('events').update({...payload, moderation_status:'Pending'}).eq('id',editingEvent.id).select().single();
     if(error) throw error; data=upd;
@@ -306,35 +306,17 @@ export default function Page(){
   else await supabase.from('event_reviews').insert({ user_id:currentUserId, event_id:eventId, rating });
   setMyRatings(prev=>({...prev,[eventId]:rating}));
   // recalc avg
-  const { data: all } = await supabase.from('event_reviews').select('*').eq('event_id',eventId);
-  if(all){
-   const avg = (all as any).reduce((s:any,r:any)=>s+r.rating,0)/all.length;
-   await supabase.from('events').update({ avg_rating:avg, rating_count:all.length }).eq('id',eventId);
-   setEvents(prev=>prev.map(e=>e.id===eventId?{...e, avg_rating:avg, rating_count:all.length}:e));
-   if(selectedEvent && selectedEvent.id===eventId) setSelectedEvent(prev=>prev?{...prev, avg_rating:avg, rating_count:all.length}:null);
-   setReviews(prev=>{ const other = prev.filter(r=>r.event_id!==eventId); return [...(all as any), ...other]; });
-  }
+  const { data: all } = await supabase.from('event_reviews').select('rating').eq('event_id',eventId);
+  if(all){ const avg = all.reduce((s:any,r:any)=>s+r.rating,0)/all.length; await supabase.from('events').update({ avg_rating:avg, rating_count:all.length }).eq('id',eventId); setEvents(prev=>prev.map(e=>e.id===eventId?{...e, avg_rating:avg, rating_count:all.length}:e)); }
   setToast(`Rating ${rating}/10 disimpan`); setTimeout(()=>setToast(""),2000);
  };
  const handleAddComment = async()=>{
   if(!selectedEvent) return;
   if(currentRole!=='user'){ setShowLoginUser(true); return; }
-  if(!commentText.trim() && !myRatings[selectedEvent.id]){ setToast("Rating atau komentar wajib"); setTimeout(()=>setToast(""),2000); return; }
-  const { data: exist } = await supabase.from('event_reviews').select('*').eq('user_id',currentUserId).eq('event_id',selectedEvent.id).maybeSingle();
-  if(exist){
-   await supabase.from('event_reviews').update({ rating: myRatings[selectedEvent.id]||exist.rating, comment: commentText.trim()||exist.comment }).eq('id',exist.id);
-  } else {
-   await supabase.from('event_reviews').insert({ user_id:currentUserId, event_id:selectedEvent.id, rating: myRatings[selectedEvent.id]||5, comment: commentText.trim() });
-  }
-  setCommentText(""); setToast("Komentar & rating disimpan"); setTimeout(()=>setToast(""),2000);
-  const { data: all } = await supabase.from('event_reviews').select('*').eq('event_id',selectedEvent.id).order('created_at',{ascending:false});
-  if(all){
-   setReviews(prev=>{ const other = prev.filter(r=>r.event_id!==selectedEvent.id); return [...(all as any), ...other]; });
-   const avg = (all as any).reduce((s:any,r:any)=>s+r.rating,0)/all.length;
-   await supabase.from('events').update({ avg_rating:avg, rating_count:all.length }).eq('id',selectedEvent.id);
-   setEvents(prev=>prev.map(e=>e.id===selectedEvent.id?{...e, avg_rating:avg, rating_count:all.length}:e));
-   setSelectedEvent(prev=>prev?{...prev, avg_rating:avg, rating_count:all.length}:null);
-  }
+  if(!commentText.trim()) return;
+  await supabase.from('event_reviews').insert({ user_id:currentUserId, event_id:selectedEvent.id, rating:myRatings[selectedEvent.id]||0, comment:commentText.trim() });
+  setCommentText(""); setToast("Komentar ditambahkan"); setTimeout(()=>setToast(""),2000);
+  const { data: all } = await supabase.from('event_reviews').select('*').eq('event_id',selectedEvent.id); if(all) setReviews(all as any);
  };
  const handleUploadDoc = async()=>{
   if(!selectedEvent) return;
@@ -425,10 +407,6 @@ export default function Page(){
   setSelectedEvent(ev);
   await supabase.from('events').update({ views:ev.views+1 }).eq('id',ev.id);
   setEvents(prev=>prev.map(e=>e.id===ev.id?{...e,views:e.views+1}:e));
-  const { data: revs } = await supabase.from('event_reviews').select('*').eq('event_id',ev.id).order('created_at',{ascending:false});
-  if(revs) setReviews(prev=>{ const other = prev.filter(r=>r.event_id!==ev.id); return [...(revs as any), ...other]; });
-  const { data: d1 } = await supabase.from('event_documentations').select('*').eq('event_id',ev.id).order('created_at',{ascending:false});
-  if(d1 && d1.length>0) setDocs(prev=>{ const other = prev.filter(d=>d.event_id!==ev.id); return [...(d1 as any), ...other]; });
  };
 
  return (
@@ -497,36 +475,8 @@ export default function Page(){
     </div>
    </div>
 
-   {/* EO DASHBOARD - restored with stats & chart */}
-   {currentRole==='eo' && (
-    <div className="max-w-[1280px] mx-auto px-4 mt-6">
-     <div className="rounded-[24px] bg-white dark:bg-[#1A1A1A] border p-6">
-      <div className="flex items-center justify-between">
-       <div className="font-black text-lg">Dashboard EO • {currentUser}</div>
-       <button onClick={()=>{ setEditingEvent(null); setNewCategories(["Cosplay"]); setEoFormOpen(true); }} className="h-10 px-5 rounded-full bg-[#E53935] text-white font-bold text-sm">+ Upload Event</button>
-      </div>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-5">
-       <div className="p-4 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border"><div className="text-xs opacity-60">Total Event</div><div className="font-black text-xl">{events.filter(e=>e.organizer_id===currentEOId).length}</div></div>
-       <div className="p-4 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border"><div className="text-xs opacity-60">Approved</div><div className="font-black text-xl text-green-600">{events.filter(e=>e.organizer_id===currentEOId && e.moderation_status==='Approved').length}</div></div>
-       <div className="p-4 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border"><div className="text-xs opacity-60">Pending</div><div className="font-black text-xl text-orange-500">{events.filter(e=>e.organizer_id===currentEOId && e.moderation_status==='Pending').length}</div></div>
-       <div className="p-4 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border"><div className="text-xs opacity-60">Total Views</div><div className="font-black text-xl">{events.filter(e=>e.organizer_id===currentEOId).reduce((s,e)=>s+e.views,0)}</div></div>
-      </div>
-      <div className="mt-6">
-       <div className="font-bold text-sm">Views per Event</div>
-       <div className="mt-3 grid gap-2">
-        {events.filter(e=>e.organizer_id===currentEOId).slice(0,8).map(ev=>{
-         const maxV = Math.max(1, ...events.filter(e=>e.organizer_id===currentEOId).map(e=>e.views));
-         return (<div key={ev.id} className="flex items-center gap-3"><div className="w-24 text-xs truncate">{ev.title}</div><div className="flex-1 h-3 rounded-full bg-[#F3F3F3] dark:bg-[#2A2A2A] overflow-hidden"><div className="h-full bg-[#E53935]" style={{width:`${(ev.views/maxV)*100}%`}}></div></div><div className="text-xs w-10">{ev.views}</div><div className="text-[10px] px-2 py-1 rounded-full border">{ev.moderation_status}</div></div>)
-        })}
-       </div>
-      </div>
-     </div>
-    </div>
-   )}
-
    {/* GRID */}
    <div className="max-w-[1280px] mx-auto px-4 mt-6">
-
     {loading ? <div className="text-center py-20 opacity-60">Memuat event...</div> :
      filteredEvents.length===0 ? (
       <div className="text-center py-20">
@@ -580,7 +530,7 @@ export default function Page(){
        <button onClick={()=>setAdminTab("users")} className={`h-10 px-4 rounded-full font-bold text-sm ${adminTab==='users'?'bg-black text-white':'border'}`}>Users</button>
        <button onClick={()=>setAdminTab("eos")} className={`h-10 px-4 rounded-full font-bold text-sm ${adminTab==='eos'?'bg-black text-white':'border'}`}>EOs</button>
       </div>
-      {adminTab==='moderation' && <div className="mt-6 grid gap-3">{events.length===0?<div className="text-sm opacity-60 text-center py-8">Belum ada event</div>:events.map(ev=>(<div key={ev.id} className="p-4 rounded-xl border flex items-center gap-4"><img src={ev.poster_url} className="w-16 h-20 object-cover rounded-xl" /><div className="flex-1"><div className="font-bold text-sm">{ev.title}</div><div className="text-xs opacity-60">{ev.organizer_name} • {ev.moderation_status} {ev.is_sponsored&&`• Sponsor P${ev.sponsored_priority}`}</div></div><div className="flex gap-1 flex-wrap"><button onClick={()=>handleModeration(ev.id,'Approved')} className="h-8 px-3 rounded-full bg-green-600 text-white font-bold text-xs">Approve</button><button onClick={()=>handleModeration(ev.id,'Rejected')} className="h-8 px-3 rounded-full bg-[#E53935] text-white font-bold text-xs">Reject</button><button onClick={()=>handleModeration(ev.id,'Hidden')} className="h-8 px-3 rounded-full border font-bold text-xs">Hidden</button><button onClick={()=>handleModeration(ev.id,ev.moderation_status,true,1)} className="h-8 px-3 rounded-full bg-[#FFD600] text-black font-bold text-xs">Sponsor</button>{ev.is_sponsored&&<button onClick={()=>handleModeration(ev.id,ev.moderation_status,false)} className="h-8 px-3 rounded-full border font-bold text-xs">UnSponsor</button>}<button onClick={async()=>{ if(confirm('Hapus permanen?')){ await supabase.from('events').delete().eq('id',ev.id); setEvents(prev=>prev.filter(e=>e.id!==ev.id)); } }} className="h-8 px-3 rounded-full border font-bold text-xs">Hapus</button></div></div>))}</div>}
+      {adminTab==='moderation' && <div className="mt-6 grid gap-3">{events.filter(e=>e.moderation_status!=='Approved' || e.is_sponsored).length===0?<div className="text-sm opacity-60 text-center py-8">Tidak ada yang perlu dimoderasi</div>:events.filter(e=>e.moderation_status==='Pending' || e.is_sponsored).map(ev=>(<div key={ev.id} className="p-4 rounded-xl border flex items-center gap-4"><img src={ev.poster_url} className="w-16 h-20 object-cover rounded-xl" /><div className="flex-1"><div className="font-bold text-sm">{ev.title}</div><div className="text-xs opacity-60">{ev.organizer_name} • {ev.moderation_status} {ev.is_sponsored&&`• Sponsor P${ev.sponsored_priority}`}</div></div><div className="flex gap-1 flex-wrap"><button onClick={()=>handleModeration(ev.id,'Approved')} className="h-8 px-3 rounded-full bg-green-600 text-white font-bold text-xs">Approve</button><button onClick={()=>handleModeration(ev.id,'Rejected')} className="h-8 px-3 rounded-full bg-[#E53935] text-white font-bold text-xs">Reject</button><button onClick={()=>handleModeration(ev.id,'Hidden')} className="h-8 px-3 rounded-full border font-bold text-xs">Hidden</button><button onClick={()=>handleModeration(ev.id,ev.moderation_status,true,1)} className="h-8 px-3 rounded-full bg-[#FFD600] text-black font-bold text-xs">Sponsor</button>{ev.is_sponsored&&<button onClick={()=>handleModeration(ev.id,ev.moderation_status,false)} className="h-8 px-3 rounded-full border font-bold text-xs">UnSponsor</button>}<button onClick={async()=>{ if(confirm('Hapus permanen?')){ await supabase.from('events').delete().eq('id',ev.id); setEvents(prev=>prev.filter(e=>e.id!==ev.id)); } }} className="h-8 px-3 rounded-full border font-bold text-xs">Hapus</button></div></div>))}</div>}
       {adminTab==='users' && <div className="mt-6 grid gap-2">{registeredUsers.map(u=>(<div key={u.id} className="p-3 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border flex justify-between"><div><div className="font-bold text-sm">@{u.username}</div><div className="text-xs opacity-60">{u.display_name} • {new Date(u.created_at).toLocaleDateString()}</div></div></div>))}</div>}
       {adminTab==='eos' && <div className="mt-6 grid gap-2">{registeredEOs.map(eo=>(<div key={eo.id} className="p-3 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border flex justify-between"><div><div className="font-bold text-sm">{eo.name}</div><div className="text-xs opacity-60">{eo.email} • {eo.whatsapp} • PIN {eo.pin_hash?.split('|')[1]}</div></div><div className="text-xs font-bold">{events.filter(ev=>ev.organizer_id===eo.id).length} event</div></div>))}</div>}
       <div className="mt-8 pt-6 border-t">
@@ -605,7 +555,7 @@ export default function Page(){
         <button onClick={async()=>{
          const eo = registeredEOs.find(e=>e.id===selectedEvent.organizer_id);
          if(eo){ setShowEOPublic(eo); }
-         else { const { data } = await supabase.from('organizers').select('*').eq('id',selectedEvent.organizer_id).maybeSingle(); if(data) setShowEOPublic(data as any); }
+         else { const { data } = await supabase.from('organizers').select('id, name, pin_hash, bio, avatar_url, social_links, created_at, email, whatsapp').eq('id',selectedEvent.organizer_id).maybeSingle(); if(data) setShowEOPublic(data as any); }
         }} className="h-9 px-4 rounded-full bg-[#F3F3F3] dark:bg-[#2A2A2A] border font-bold text-xs">👤 {selectedEvent.organizer_name} • Lihat Profil EO</button>
         <div className="text-xs opacity-60">👁 {selectedEvent.views} • {selectedEvent.city}, {selectedEvent.province}</div>
        </div>
