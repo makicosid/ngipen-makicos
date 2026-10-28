@@ -171,8 +171,8 @@ export default function Page(){
  const handleLoginUser = async()=>{
   const u = (document.getElementById('login-user-u') as HTMLInputElement)?.value?.trim().toLowerCase();
   const p = (document.getElementById('login-user-p') as HTMLInputElement)?.value;
-  const { data } = await supabase.from('users').select('id, username, display_name, bio, avatar_url, created_at').eq('username',u).maybeSingle();
-  if(!data || data.password_hash!==p){ setToast("Username/password salah"); setTimeout(()=>setToast(""),2000); return; }
+  const { data } = await supabase.from('users').select('id, username, password_hash, display_name, bio, avatar_url, created_at').eq('username',u).maybeSingle();
+  if(!data || (data as any).password_hash!==p){ setToast("Username/password salah"); setTimeout(()=>setToast(""),2000); return; }
   localStorage.setItem('ngipen_role','user'); localStorage.setItem('ngipen_user',data.display_name); localStorage.setItem('ngipen_user_id',data.id);
   setCurrentRole('user'); setCurrentUser(data.display_name); setCurrentUserId(data.id);
   const { data: saves } = await supabase.from('event_saves').select('*').eq('user_id',data.id); if(saves) setSavedIds(saves.map((s:any)=>s.event_id));
@@ -194,9 +194,9 @@ export default function Page(){
   const n = (document.getElementById('login-eo-n') as HTMLInputElement)?.value?.trim();
   const p = (document.getElementById('login-eo-p') as HTMLInputElement)?.value;
   const pin = (document.getElementById('login-eo-pin') as HTMLInputElement)?.value?.trim();
-  const { data } = await supabase.from('organizers').select('id, name, bio, avatar_url, social_links, created_at, email, whatsapp').eq('name',n).maybeSingle();
+  const { data } = await supabase.from('organizers').select('id, name, pin_hash, bio, avatar_url, social_links, created_at, email, whatsapp').eq('name',n).maybeSingle();
   if(!data){ setToast("EO tidak ditemukan"); setTimeout(()=>setToast(""),2000); return; }
-  const storedPass = data.pin_hash?.split('|')[0]||''; const storedPin = data.pin_hash?.split('|')[1]||'';
+  const storedPass = (data as any).pin_hash?.split('|')[0]||''; const storedPin = (data as any).pin_hash?.split('|')[1]||'';
   if(storedPass!==p||storedPin!==pin){ setToast("Password/PIN salah"); setTimeout(()=>setToast(""),2000); return; }
   localStorage.setItem('ngipen_role','eo'); localStorage.setItem('ngipen_user',data.name); localStorage.setItem('ngipen_eo_id',data.id);
   setCurrentRole('eo'); setCurrentUser(data.name); setCurrentEOId(data.id); setEoBio(data.bio||""); const s=data.social_links||{}; setEoInstagram(s.instagram||""); setEoTiktok(s.tiktok||""); setEoYoutube(s.youtube||""); setEoWebsite(s.website||"");
@@ -256,7 +256,7 @@ export default function Page(){
     moderation_status:'Pending', is_sponsored:false, sponsored_priority:0,
     views:0, saves_count:0, avg_rating:0, rating_count:0, organizer_name:currentUser
    };
-   let data;
+   let data:any = null;
    if(editingEvent){
     const { data: upd, error } = await supabase.from('events').update({...payload, moderation_status:'Pending'}).eq('id',editingEvent.id).select().single();
     if(error) throw error; data=upd;
