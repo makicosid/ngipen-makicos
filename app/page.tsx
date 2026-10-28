@@ -370,19 +370,19 @@ export default function Page(){
       <div><div className="font-black leading-none">NGIPEN</div><div className="text-[10px] tracking-widest opacity-60">SATU HOBBY SATU KESERUAN</div></div>
      </div>
      <div className="hidden md:flex items-center gap-2">
-      {currentRole==='guest' && <><button onClick={()=>setShowLoginUser(true)} className="h-10 px-4 rounded-full border font-bold text-sm">Masuk</button><button onClick={()=>setShowRegUser(true)} className="h-10 px-4 rounded-full bg-black text-white font-bold text-sm">Daftar</button><button onClick={()=>setShowLoginEO(true)} className="h-10 px-4 rounded-full bg-[#E53935] text-white font-bold text-sm">EO</button></>}
+      {currentRole==='guest' && <><button onClick={()=>setShowLoginUser(true)} className="h-10 px-4 rounded-full border font-bold text-sm">Masuk</button><button onClick={()=>setShowRegUser(true)} className="h-10 px-4 rounded-full bg-black text-white font-bold text-sm">Daftar</button></>}
       {currentRole!=='guest' && <><div className="h-10 px-4 rounded-full bg-[#F3F3F3] dark:bg-[#2A2A2A] border flex items-center gap-2 text-sm font-bold"><div className="w-2 h-2 rounded-full bg-green-500"></div>{currentRole.toUpperCase()} : {currentUser}</div>
        {currentRole==='user' && <button onClick={()=>setShowUserProfile(true)} className="h-10 px-4 rounded-full border font-bold text-sm">Profil</button>}
-       {currentRole==='user' && <><button onClick={()=>setShowEOProfileEdit(true)} className="h-10 px-4 rounded-full border font-bold text-sm">Profil EO</button><button onClick={()=>{ setEditingEvent(null); setEventFormOpen(true); setNewCategories(["Cosplay"]); }} className="h-10 px-5 rounded-full bg-[#E53935] text-white font-bold text-sm">Upload</button></>}
+       {currentRole==='user' && <button onClick={()=>{ setEditingEvent(null); setEventFormOpen(true); setNewCategories(["Cosplay"]); }} className="h-10 px-5 rounded-full bg-[#E53935] text-white font-bold text-sm">Upload</button>}
        <button onClick={logout} className="h-10 w-10 rounded-full border font-bold">⎋</button></>}
       <button onClick={()=>{ const nd=!dark; setDark(nd); localStorage.setItem('ngipen_theme',nd?'dark':'light'); if(nd) document.documentElement.classList.add('dark'); else document.documentElement.classList.remove('dark'); }} className="h-10 w-10 rounded-full border">{dark?'☀️':'🌙'}</button>
      </div>
      <button onClick={()=>setMobileOpen(!mobileOpen)} className="md:hidden w-11 h-11 rounded-full border flex items-center justify-center">☰</button>
     </div>
     {mobileOpen && <div className="md:hidden border-t p-4 grid gap-2 bg-white dark:bg-[#1A1A1A]">
-     {currentRole==='guest' && <><button onClick={()=>{ setMobileOpen(false); setShowLoginUser(true); }} className="h-12 rounded-full border font-bold">Masuk User</button><button onClick={()=>{ setMobileOpen(false); setShowRegUser(true); }} className="h-12 rounded-full bg-black text-white font-bold">Daftar User</button><button onClick={()=>{ setMobileOpen(false); setShowLoginEO(true); }} className="h-12 rounded-full bg-[#E53935] text-white font-bold">Masuk EO</button></>}
+     {currentRole==='guest' && <><button onClick={()=>{ setMobileOpen(false); setShowLoginUser(true); }} className="h-12 rounded-full border font-bold">Masuk User</button><button onClick={()=>{ setMobileOpen(false); setShowRegUser(true); }} className="h-12 rounded-full bg-black text-white font-bold">Daftar User</button><button onClick={()=>{ setMobileOpen(false); setShowLoginUser(true); }} className="h-12 rounded-full bg-[#E53935] text-white font-bold">Masuk</button></>}
      {currentRole==='user' && <><div className="p-3 rounded-xl bg-[#F3F3F3] dark:bg-[#2A2A2A] font-bold text-sm">USER: {currentUser}</div><button onClick={()=>{ setMobileOpen(false); setShowUserProfile(true); }} className="h-12 rounded-full border font-bold">Edit Profil</button><button onClick={logout} className="h-12 rounded-full border font-bold">Keluar</button></>}
-     {currentRole==='user' && <><div className="p-3 rounded-xl bg-[#F3F3F3] dark:bg-[#2A2A2A] font-bold text-sm">EO: {currentUser}</div><button onClick={()=>{ setMobileOpen(false); setShowEOProfileEdit(true); }} className="h-12 rounded-full border font-bold">Edit Profil EO</button><button onClick={()=>{ setMobileOpen(false); setEditingEvent(null); setEventFormOpen(true); }} className="h-12 rounded-full bg-[#E53935] text-white font-bold">Upload Event</button><button onClick={logout} className="h-12 rounded-full border font-bold">Keluar</button></>}
+     {currentRole==='user' && <><div className="p-3 rounded-xl bg-[#F3F3F3] dark:bg-[#2A2A2A] font-bold text-sm">USER: {currentUser}</div><button onClick={()=>{ setMobileOpen(false); setShowUserProfile(true); }} className="h-12 rounded-full border font-bold">Edit Profil</button><button onClick={()=>{ setMobileOpen(false); setEditingEvent(null); setEventFormOpen(true); }} className="h-12 rounded-full bg-[#E53935] text-white font-bold">Upload Event</button><button onClick={logout} className="h-12 rounded-full border font-bold">Keluar</button></>}
      {currentRole==='admin' && <><div className="p-3 rounded-xl bg-black text-white font-bold text-sm">ADMIN: makicos</div><button onClick={logout} className="h-12 rounded-full border font-bold">Keluar</button></>}
     </div>}
    </header>
@@ -529,7 +529,7 @@ export default function Page(){
        <div className="flex items-center gap-2 mt-3">
         <button onClick={async()=>{
          if(eo){ setShowEOPublic(eo); }
-        }} className="h-9 px-4 rounded-full bg-[#F3F3F3] dark:bg-[#2A2A2A] border font-bold text-xs">👤 {selectedEvent.organizer_name} • Lihat Profil EO</button>
+        }} className="h-9 px-4 rounded-full bg-[#F3F3F3] dark:bg-[#2A2A2A] border font-bold text-xs">👤 {selectedEvent.organizer_name} • Lihat Profil</button>
         <div className="text-xs opacity-60">👁 {selectedEvent.views} • {selectedEvent.city}, {selectedEvent.province}</div>
        </div>
        <div className="flex flex-wrap gap-1.5 mt-3">{selectedEvent.categories.map(c=><span key={c} className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-black text-white">{c}</span>)}<span className="text-[11px] font-bold px-2.5 py-1 rounded-full border">{selectedEvent.ticket_type}</span></div>
