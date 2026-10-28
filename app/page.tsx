@@ -108,10 +108,10 @@ export default function Page(){
     const { data: pinData } = await supabase.from('admin_settings').select('*').eq('setting_key','admin_pin').maybeSingle();
     if(pinData?.setting_value) setAdminPin(String(pinData.setting_value).replace(/"/g,''));
 
-    const { data: usersData } = await supabase.from('users').select('id, username, password_hash, display_name, bio, avatar_url, created_at').order('created_at',{ascending:false});
+    const { data: usersData } = await supabase.from('users').select('*').order('created_at',{ascending:false});
     if(usersData) setRegisteredUsers(usersData as any);
 
-    const { data: eoData } = await supabase.from('organizers').select('id, name, pin_hash, bio, avatar_url, social_links, created_at, email, whatsapp').order('created_at',{ascending:false});
+    const { data: eoData } = await supabase.from('organizers').select('*').order('created_at',{ascending:false});
     if(eoData){
      setRegisteredEOs(eoData as any);
      // load current EO profile data for edit form
@@ -171,7 +171,7 @@ export default function Page(){
  const handleLoginUser = async()=>{
   const u = (document.getElementById('login-user-u') as HTMLInputElement)?.value?.trim().toLowerCase();
   const p = (document.getElementById('login-user-p') as HTMLInputElement)?.value;
-  const { data } = await supabase.from('users').select('id, username, password_hash, display_name, bio, avatar_url, created_at').eq('username',u).maybeSingle();
+  const { data } = await supabase.from('users').select('*').eq('username',u).maybeSingle();
   if(!data || (data as any).password_hash!==p){ setToast("Username/password salah"); setTimeout(()=>setToast(""),2000); return; }
   localStorage.setItem('ngipen_role','user'); localStorage.setItem('ngipen_user',data.display_name); localStorage.setItem('ngipen_user_id',data.id);
   setCurrentRole('user'); setCurrentUser(data.display_name); setCurrentUserId(data.id);
@@ -194,7 +194,7 @@ export default function Page(){
   const n = (document.getElementById('login-eo-n') as HTMLInputElement)?.value?.trim();
   const p = (document.getElementById('login-eo-p') as HTMLInputElement)?.value;
   const pin = (document.getElementById('login-eo-pin') as HTMLInputElement)?.value?.trim();
-  const { data } = await supabase.from('organizers').select('id, name, pin_hash, bio, avatar_url, social_links, created_at, email, whatsapp').eq('name',n).maybeSingle();
+  const { data } = await supabase.from('organizers').select('*').eq('name',n).maybeSingle();
   if(!data){ setToast("EO tidak ditemukan"); setTimeout(()=>setToast(""),2000); return; }
   const storedPass = (data as any).pin_hash?.split('|')[0]||''; const storedPin = (data as any).pin_hash?.split('|')[1]||'';
   if(storedPass!==p||storedPin!==pin){ setToast("Password/PIN salah"); setTimeout(()=>setToast(""),2000); return; }
@@ -220,16 +220,10 @@ export default function Page(){
  };
  const handleLoginAdmin = async()=>{
   const u = (document.getElementById('admin-user') as HTMLInputElement)?.value?.trim();
-  const p = (document.getElementById('admin-pin') as HTMLInputElement)?.value?.trim();
-  if(!u || !p){ setToast("Isi username & pin"); setTimeout(()=>setToast(""),2000); return; }
-  const { data } = await supabase.from('admin_settings').select('username, pin_hash').eq('username', u).maybeSingle();
-  if(data && (data as any).pin_hash === p){
-    localStorage.setItem('ngipen_role','admin'); setCurrentRole('admin'); setShowAdmin(false); setToast("Admin login"); setTimeout(()=>setToast(""),2000); return;
-  }
-  if(u==='makicos' && (p==='1111' || p==='2567')){
-    localStorage.setItem('ngipen_role','admin'); setCurrentRole('admin'); setShowAdmin(false); setToast("Admin login (default)"); setTimeout(()=>setToast(""),2000); return;
-  }
-  setToast("Admin salah"); setTimeout(()=>setToast(""),2000);
+  const pin = (document.getElementById('admin-pin') as HTMLInputElement)?.value?.trim();
+  if(u!=='makicos' || pin!==adminPin){ setToast("Admin salah"); setTimeout(()=>setToast(""),2000); return; }
+  localStorage.setItem('ngipen_role','admin'); localStorage.setItem('ngipen_user','makicos');
+  setCurrentRole('admin'); setCurrentUser('makicos'); setShowAdmin(false); setToast("Admin masuk"); setTimeout(()=>setToast(""),2000);
  };
  const logout=()=>{ localStorage.removeItem('ngipen_role'); localStorage.removeItem('ngipen_user'); localStorage.removeItem('ngipen_user_id'); localStorage.removeItem('ngipen_eo_id'); setCurrentRole('guest'); setCurrentUser(""); setCurrentUserId(""); setCurrentEOId(""); setSavedIds([]); setMyRatings({}); };
 
@@ -481,8 +475,27 @@ export default function Page(){
     </div>
    </div>
 
+   {/* EO DASHBOARD - Clean */}
+   {currentRole==='eo' && (
+    <div className="max-w-[1280px] mx-auto px-4 mt-6">
+     <div className="rounded-[24px] bg-white dark:bg-[#1A1A1A] border p-6">
+      <div className="flex items-center justify-between">
+       <div className="font-black text-lg">Dashboard EO • {currentUser}</div>
+       <button onClick={()=>{ setEditingEvent(null); setNewCategories(["Cosplay"]); setEoFormOpen(true); }} className="h-10 px-5 rounded-full bg-[#E53935] text-white font-bold text-sm">+ Upload Event</button>
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-5">
+       <div className="p-4 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border"><div className="text-xs opacity-60">Total Event</div><div className="font-black text-xl">{events.filter(e=>e.organizer_id===currentEOId).length}</div></div>
+       <div className="p-4 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border"><div className="text-xs opacity-60">Approved</div><div className="font-black text-xl text-green-600">{events.filter(e=>e.organizer_id===currentEOId && e.moderation_status==='Approved').length}</div></div>
+       <div className="p-4 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border"><div className="text-xs opacity-60">Pending</div><div className="font-black text-xl text-orange-500">{events.filter(e=>e.organizer_id===currentEOId && e.moderation_status==='Pending').length}</div></div>
+       <div className="p-4 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border"><div className="text-xs opacity-60">Total Views</div><div className="font-black text-xl">{events.filter(e=>e.organizer_id===currentEOId).reduce((s,e)=>s+e.views,0)}</div></div>
+      </div>
+     </div>
+    </div>
+   )}
+
    {/* GRID */}
    <div className="max-w-[1280px] mx-auto px-4 mt-6">
+
     {loading ? <div className="text-center py-20 opacity-60">Memuat event...</div> :
      filteredEvents.length===0 ? (
       <div className="text-center py-20">
@@ -536,7 +549,7 @@ export default function Page(){
        <button onClick={()=>setAdminTab("users")} className={`h-10 px-4 rounded-full font-bold text-sm ${adminTab==='users'?'bg-black text-white':'border'}`}>Users</button>
        <button onClick={()=>setAdminTab("eos")} className={`h-10 px-4 rounded-full font-bold text-sm ${adminTab==='eos'?'bg-black text-white':'border'}`}>EOs</button>
       </div>
-      {adminTab==='moderation' && <div className="mt-6 grid gap-3">{events.filter(e=>e.moderation_status!=='Approved' || e.is_sponsored).length===0?<div className="text-sm opacity-60 text-center py-8">Tidak ada yang perlu dimoderasi</div>:events.filter(e=>e.moderation_status==='Pending' || e.is_sponsored).map(ev=>(<div key={ev.id} className="p-4 rounded-xl border flex items-center gap-4"><img src={ev.poster_url} className="w-16 h-20 object-cover rounded-xl" /><div className="flex-1"><div className="font-bold text-sm">{ev.title}</div><div className="text-xs opacity-60">{ev.organizer_name} • {ev.moderation_status} {ev.is_sponsored&&`• Sponsor P${ev.sponsored_priority}`}</div></div><div className="flex gap-1 flex-wrap"><button onClick={()=>handleModeration(ev.id,'Approved')} className="h-8 px-3 rounded-full bg-green-600 text-white font-bold text-xs">Approve</button><button onClick={()=>handleModeration(ev.id,'Rejected')} className="h-8 px-3 rounded-full bg-[#E53935] text-white font-bold text-xs">Reject</button><button onClick={()=>handleModeration(ev.id,'Hidden')} className="h-8 px-3 rounded-full border font-bold text-xs">Hidden</button><button onClick={()=>handleModeration(ev.id,ev.moderation_status,true,1)} className="h-8 px-3 rounded-full bg-[#FFD600] text-black font-bold text-xs">Sponsor</button>{ev.is_sponsored&&<button onClick={()=>handleModeration(ev.id,ev.moderation_status,false)} className="h-8 px-3 rounded-full border font-bold text-xs">UnSponsor</button>}<button onClick={async()=>{ if(confirm('Hapus permanen?')){ await supabase.from('events').delete().eq('id',ev.id); setEvents(prev=>prev.filter(e=>e.id!==ev.id)); } }} className="h-8 px-3 rounded-full border font-bold text-xs">Hapus</button></div></div>))}</div>}
+      {adminTab==='moderation' && <div className="mt-6 grid gap-3">{events.length===0?<div className="text-sm opacity-60 text-center py-8">Belum ada event</div>:events.map(ev=>(<div key={ev.id} className="p-4 rounded-xl border flex items-center gap-4"><img src={ev.poster_url} className="w-16 h-20 object-cover rounded-xl" /><div className="flex-1"><div className="font-bold text-sm">{ev.title}</div><div className="text-xs opacity-60">{ev.organizer_name} • {ev.moderation_status} {ev.is_sponsored&&`• Sponsor P${ev.sponsored_priority}`}</div></div><div className="flex gap-1 flex-wrap"><button onClick={()=>handleModeration(ev.id,'Approved')} className="h-8 px-3 rounded-full bg-green-600 text-white font-bold text-xs">Approve</button><button onClick={()=>handleModeration(ev.id,'Rejected')} className="h-8 px-3 rounded-full bg-[#E53935] text-white font-bold text-xs">Reject</button><button onClick={()=>handleModeration(ev.id,'Hidden')} className="h-8 px-3 rounded-full border font-bold text-xs">Hidden</button><button onClick={()=>handleModeration(ev.id,ev.moderation_status,true,1)} className="h-8 px-3 rounded-full bg-[#FFD600] text-black font-bold text-xs">Sponsor</button>{ev.is_sponsored&&<button onClick={()=>handleModeration(ev.id,ev.moderation_status,false)} className="h-8 px-3 rounded-full border font-bold text-xs">UnSponsor</button>}<button onClick={async()=>{ if(confirm('Hapus permanen?')){ await supabase.from('events').delete().eq('id',ev.id); setEvents(prev=>prev.filter(e=>e.id!==ev.id)); } }} className="h-8 px-3 rounded-full border font-bold text-xs">Hapus</button></div></div>))}</div>}
       {adminTab==='users' && <div className="mt-6 grid gap-2">{registeredUsers.map(u=>(<div key={u.id} className="p-3 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border flex justify-between"><div><div className="font-bold text-sm">@{u.username}</div><div className="text-xs opacity-60">{u.display_name} • {new Date(u.created_at).toLocaleDateString()}</div></div></div>))}</div>}
       {adminTab==='eos' && <div className="mt-6 grid gap-2">{registeredEOs.map(eo=>(<div key={eo.id} className="p-3 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border flex justify-between"><div><div className="font-bold text-sm">{eo.name}</div><div className="text-xs opacity-60">{eo.email} • {eo.whatsapp} • PIN {eo.pin_hash?.split('|')[1]}</div></div><div className="text-xs font-bold">{events.filter(ev=>ev.organizer_id===eo.id).length} event</div></div>))}</div>}
       <div className="mt-8 pt-6 border-t">
@@ -561,7 +574,7 @@ export default function Page(){
         <button onClick={async()=>{
          const eo = registeredEOs.find(e=>e.id===selectedEvent.organizer_id);
          if(eo){ setShowEOPublic(eo); }
-         else { const { data } = await supabase.from('organizers').select('id, name, pin_hash, bio, avatar_url, social_links, created_at, email, whatsapp').eq('id',selectedEvent.organizer_id).maybeSingle(); if(data) setShowEOPublic(data as any); }
+         else { const { data } = await supabase.from('organizers').select('*').eq('id',selectedEvent.organizer_id).maybeSingle(); if(data) setShowEOPublic(data as any); }
         }} className="h-9 px-4 rounded-full bg-[#F3F3F3] dark:bg-[#2A2A2A] border font-bold text-xs">👤 {selectedEvent.organizer_name} • Lihat Profil EO</button>
         <div className="text-xs opacity-60">👁 {selectedEvent.views} • {selectedEvent.city}, {selectedEvent.province}</div>
        </div>
@@ -633,7 +646,7 @@ export default function Page(){
    {showRegUser && <div className="fixed inset-0 z-[80] flex items-center justify-center p-4"><div className="absolute inset-0 bg-black/60" onClick={()=>setShowRegUser(false)}></div><div className="relative w-full max-w-[360px] rounded-[24px] bg-white dark:bg-[#1A1A1A] border p-6"><div className="font-black text-lg">Daftar User</div><div className="mt-5 grid gap-3"><input id="reg-user-u" placeholder="Username kecil min 3" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /><input id="reg-user-d" placeholder="Display name" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /><input id="reg-user-p" type="password" placeholder="Password min 8 huruf+angka" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /></div><button onClick={handleRegUser} className="mt-5 w-full h-11 rounded-full bg-black text-white font-bold text-sm">Daftar</button></div></div>}
    {showLoginEO && <div className="fixed inset-0 z-[80] flex items-center justify-center p-4"><div className="absolute inset-0 bg-black/60" onClick={()=>setShowLoginEO(false)}></div><div className="relative w-full max-w-[360px] rounded-[24px] bg-white dark:bg-[#1A1A1A] border p-6"><div className="font-black text-lg">Masuk EO</div><div className="mt-5 grid gap-3"><input id="login-eo-n" placeholder="Nama EO" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /><input id="login-eo-p" type="password" placeholder="Password" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /><input id="login-eo-pin" placeholder="PIN 6 digit" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /></div><button onClick={handleLoginEO} className="mt-5 w-full h-11 rounded-full bg-[#E53935] text-white font-bold text-sm">Masuk EO</button><button onClick={()=>{ setShowLoginEO(false); setShowRegEO(true); }} className="mt-3 w-full text-xs opacity-60">Belum punya akun EO? Daftar EO</button></div></div>}
    {showRegEO && <div className="fixed inset-0 z-[80] flex items-center justify-center p-4"><div className="absolute inset-0 bg-black/60" onClick={()=>setShowRegEO(false)}></div><div className="relative w-full max-w-[420px] rounded-[24px] bg-white dark:bg-[#1A1A1A] border p-6 max-h-[90vh] overflow-auto"><div className="font-black text-lg">Daftar EO</div><div className="mt-5 grid gap-3"><input id="reg-eo-n" placeholder="Nama EO unik" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /><input id="reg-eo-e" placeholder="Email" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /><input id="reg-eo-wa" placeholder="WA min 10" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /><input id="reg-eo-p" type="password" placeholder="Password min 8" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /><input id="reg-eo-pin" placeholder="PIN 6 digit angka" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /></div><button onClick={handleRegEO} className="mt-5 w-full h-11 rounded-full bg-[#E53935] text-white font-bold text-sm">Daftar EO</button></div></div>}
-   {showAdmin && currentRole!=="admin" && <div className="fixed inset-0 z-[80] flex items-center justify-center p-4"><div className="absolute inset-0 bg-black/60" onClick={()=>setShowAdmin(false)}></div><div className="relative w-full max-w-[360px] rounded-[24px] bg-white dark:bg-[#1A1A1A] border p-6"><div className="font-black text-lg">Admin</div><div className="mt-5 grid gap-3"><input id="admin-user" placeholder="Username Admin" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm outline-none" /><input id="admin-pin" type="password" placeholder="PIN" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm outline-none" /></div><button onClick={handleLoginAdmin} className="mt-5 w-full h-11 rounded-full bg-black text-white font-bold text-sm">Masuk Admin</button><div className="mt-3 text-[11px] opacity-50 text-center">Klik logo 5x dalam 4 detik atau Ctrl+Shift+A</div></div></div>}
+   {showAdmin && currentRole!=="admin" && <div className="fixed inset-0 z-[80] flex items-center justify-center p-4"><div className="absolute inset-0 bg-black/60" onClick={()=>setShowAdmin(false)}></div><div className="relative w-full max-w-[360px] rounded-[24px] bg-white dark:bg-[#1A1A1A] border p-6"><div className="font-black text-lg">Admin</div><div className="mt-5 grid gap-3"><input id="admin-user" placeholder="Username Admin" placeholder="Username" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /><input id="admin-pin" type="password" placeholder="PIN" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /></div><button onClick={handleLoginAdmin} className="mt-5 w-full h-11 rounded-full bg-black text-white font-bold text-sm">Masuk Admin</button><div className="mt-3 text-[11px] opacity-50 text-center">Klik logo 5x dalam 4 detik atau Ctrl+Shift+A</div></div></div>}
 
    {/* USER PROFILE */}
    {showUserProfile && <div className="fixed inset-0 z-[80] flex items-center justify-center p-4"><div className="absolute inset-0 bg-black/60" onClick={()=>setShowUserProfile(false)}></div><div className="relative w-full max-w-[420px] rounded-[24px] bg-white dark:bg-[#1A1A1A] border p-6 max-h-[90vh] overflow-auto"><div className="font-black text-lg">Edit Profil</div><div className="mt-5 grid gap-4"><div className="flex gap-4"><img src={registeredUsers.find(u=>u.id===currentUserId)?.avatar_url||`https://ui-avatars.com/api/?name=${currentUser}&background=E53935&color=fff`} className="w-16 h-16 rounded-full object-cover border" /><div className="flex-1"><div className="text-xs font-bold">Avatar</div><input type="file" accept="image/*" onChange={e=>setUserAvatarFile(e.target.files?.[0]||null)} className="mt-2 text-xs w-full" /></div></div><input id="edit-user-display" defaultValue={currentUser} placeholder="Display name" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /><textarea id="edit-user-bio" defaultValue={registeredUsers.find(u=>u.id===currentUserId)?.bio||""} placeholder="Bio" className="min-h-[80px] rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border p-3 text-sm" /></div><button onClick={handleUpdateUserProfile} className="mt-5 w-full h-11 rounded-full bg-black text-white font-bold text-sm">Simpan</button><div className="mt-8 pt-6 border-t"><div className="font-bold text-sm">Ganti Password</div><div className="mt-3 grid gap-3"><input id="edit-user-oldpass" type="password" placeholder="Password lama" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /><input id="edit-user-newpass" type="password" placeholder="Baru min 8 huruf+angka" className="h-11 rounded-xl bg-[#F7F7F8] dark:bg-[#2A2A2A] border px-4 text-sm" /><button onClick={handleChangeUserPassword} className="h-11 rounded-full border font-bold text-sm">Ganti Password</button></div></div></div></div>}
