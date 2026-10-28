@@ -256,7 +256,7 @@ export default function Page(){
     moderation_status:'Pending', is_sponsored:false, sponsored_priority:0,
     views:0, saves_count:0, avg_rating:0, rating_count:0, organizer_name:currentUser
    };
-   let data:any = null;
+   let data;
    if(editingEvent){
     const { data: upd, error } = await supabase.from('events').update({...payload, moderation_status:'Pending'}).eq('id',editingEvent.id).select().single();
     if(error) throw error; data=upd;
