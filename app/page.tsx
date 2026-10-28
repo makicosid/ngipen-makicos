@@ -111,7 +111,7 @@ export default function Page(){
     const { data: usersData } = await supabase.from('users').select('id, username, display_name, bio, avatar_url, created_at').order('created_at',{ascending:false});
     if(usersData) setRegisteredUsers(usersData as any);
 
-    const { data: eoData } = await supabase.from('organizers').select('id, name, pin_hash, bio, avatar_url, social_links, created_at, email, whatsapp').order('created_at',{ascending:false});
+    const { data: eoData } = await supabase.from('organizers').select('id, name, bio, avatar_url, social_links, created_at, email, whatsapp').order('created_at',{ascending:false});
     if(eoData){
      setRegisteredEOs(eoData as any);
      // load current EO profile data for edit form
@@ -172,7 +172,7 @@ export default function Page(){
   const u = (document.getElementById('login-user-u') as HTMLInputElement)?.value?.trim().toLowerCase();
   const p = (document.getElementById('login-user-p') as HTMLInputElement)?.value;
   const { data } = await supabase.from('users').select('id, username, display_name, bio, avatar_url, created_at').eq('username',u).maybeSingle();
-  if(!data || (data as any).password_hash!==p){ setToast("Username/password salah"); setTimeout(()=>setToast(""),2000); return; }
+  if(!data || data.password_hash!==p){ setToast("Username/password salah"); setTimeout(()=>setToast(""),2000); return; }
   localStorage.setItem('ngipen_role','user'); localStorage.setItem('ngipen_user',data.display_name); localStorage.setItem('ngipen_user_id',data.id);
   setCurrentRole('user'); setCurrentUser(data.display_name); setCurrentUserId(data.id);
   const { data: saves } = await supabase.from('event_saves').select('*').eq('user_id',data.id); if(saves) setSavedIds(saves.map((s:any)=>s.event_id));
@@ -194,7 +194,7 @@ export default function Page(){
   const n = (document.getElementById('login-eo-n') as HTMLInputElement)?.value?.trim();
   const p = (document.getElementById('login-eo-p') as HTMLInputElement)?.value;
   const pin = (document.getElementById('login-eo-pin') as HTMLInputElement)?.value?.trim();
-  const { data } = await supabase.from('organizers').select('id, name, pin_hash, bio, avatar_url, social_links, created_at, email, whatsapp').eq('name',n).maybeSingle();
+  const { data } = await supabase.from('organizers').select('id, name, bio, avatar_url, social_links, created_at, email, whatsapp').eq('name',n).maybeSingle();
   if(!data){ setToast("EO tidak ditemukan"); setTimeout(()=>setToast(""),2000); return; }
   const storedPass = data.pin_hash?.split('|')[0]||''; const storedPin = data.pin_hash?.split('|')[1]||'';
   if(storedPass!==p||storedPin!==pin){ setToast("Password/PIN salah"); setTimeout(()=>setToast(""),2000); return; }
@@ -256,7 +256,7 @@ export default function Page(){
     moderation_status:'Pending', is_sponsored:false, sponsored_priority:0,
     views:0, saves_count:0, avg_rating:0, rating_count:0, organizer_name:currentUser
    };
-   let data;
+   let data:any = null;
    if(editingEvent){
     const { data: upd, error } = await supabase.from('events').update({...payload, moderation_status:'Pending'}).eq('id',editingEvent.id).select().single();
     if(error) throw error; data=upd;
@@ -555,7 +555,7 @@ export default function Page(){
         <button onClick={async()=>{
          const eo = registeredEOs.find(e=>e.id===selectedEvent.organizer_id);
          if(eo){ setShowEOPublic(eo); }
-         else { const { data } = await supabase.from('organizers').select('id, name, pin_hash, bio, avatar_url, social_links, created_at, email, whatsapp').eq('id',selectedEvent.organizer_id).maybeSingle(); if(data) setShowEOPublic(data as any); }
+         else { const { data } = await supabase.from('organizers').select('id, name, bio, avatar_url, social_links, created_at, email, whatsapp').eq('id',selectedEvent.organizer_id).maybeSingle(); if(data) setShowEOPublic(data as any); }
         }} className="h-9 px-4 rounded-full bg-[#F3F3F3] dark:bg-[#2A2A2A] border font-bold text-xs">👤 {selectedEvent.organizer_name} • Lihat Profil EO</button>
         <div className="text-xs opacity-60">👁 {selectedEvent.views} • {selectedEvent.city}, {selectedEvent.province}</div>
        </div>
