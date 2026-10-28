@@ -105,15 +105,6 @@ export default function Page(){
     const { data: usersData } = await supabase.from('users').select('*').order('created_at',{ascending:false});
     if(usersData) setRegisteredUsers(usersData as any);
 
-    const { data: eoData } = await supabase.from('organizers').select('*').order('created_at',{ascending:false});
-    if(eoData){
-     setRegisteredEOs(eoData as any);
-     // load current EO profile data for edit form
-     const savedEOId = localStorage.getItem('ngipen_eo_id');
-     if(savedEOId){
-      const mine = (eoData as any).find((e:any)=>e.id===savedEOId);
-      if(mine){ setEoBio(mine.bio||""); const s=mine.social_links||{}; setEoInstagram(s.instagram||""); setEoTiktok(s.tiktok||""); setEoYoutube(s.youtube||""); setEoWebsite(s.website||""); }
-     }
     }
 
     const { data: eventsData } = await supabase.from('events').select('*').order('created_at',{ascending:false});
@@ -210,7 +201,6 @@ export default function Page(){
   const { data: exist } = await supabase.from('organizers').select('id').eq('name',name).maybeSingle(); if(exist){ setToast("Nama EO dipakai"); setTimeout(()=>setToast(""),2000); return; }
   const { data, error } = await supabase.from('organizers').insert({ name, normalized_name:name.toLowerCase(), email, whatsapp:wa, pin_hash:`${pass}|${pin}`, bio:'', avatar_url:'', social_links:{}, verification_status:'verified' }).select().single();
   if(error){ setToast("Gagal: "+error.message); setTimeout(()=>setToast(""),2000); return; }
-  setRegisteredEOs(prev=>[data as any,...prev]); setShowRegEO(false); setToast("EO terdaftar, silakan login"); setTimeout(()=>setToast(""),2000);
  };
  const handleLoginAdmin = async()=>{
   const u = (document.getElementById('admin-user') as HTMLInputElement)?.value?.trim();
@@ -680,3 +670,4 @@ export default function Page(){
   </div>
  );
 }
+
