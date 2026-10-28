@@ -21,6 +21,12 @@ interface Event {
 interface Doc { id: string; event_id: string; user_id: string; username: string; image_url: string; caption: string; created_at: string; }
 interface Review { id: string; event_id: string; user_id: string; rating: number; comment?: string; created_at: string; }
 interface RegUser { id: string; username: string; password_hash: string; display_name: string; bio?: string; avatar_url?: string; created_at: string; }
+
+const ALL_PROVINCES = ["Aceh","Sumatera Utara","Sumatera Barat","Riau","Jambi","Sumatera Selatan","Bengkulu","Lampung","Kepulauan Bangka Belitung","Kepulauan Riau","DKI Jakarta","Jawa Barat","Jawa Tengah","DI Yogyakarta","Jawa Timur","Banten","Bali","Nusa Tenggara Barat","Nusa Tenggara Timur","Kalimantan Barat","Kalimantan Tengah","Kalimantan Selatan","Kalimantan Timur","Kalimantan Utara","Sulawesi Utara","Sulawesi Tengah","Sulawesi Selatan","Sulawesi Tenggara","Gorontalo","Sulawesi Barat","Maluku","Maluku Utara","Papua","Papua Barat","Papua Selatan","Papua Tengah","Papua Pegunungan","Papua Barat Daya"];
+const eventCategoryOptions: Category[] = ["Cosplay","Idol","Toys Event","Market Event"];
+
+function getTimeStatus(e: Event): TimeStatus {
+ const now = new Date(); const start = new Date(`${e.start_date}T${e.start_time}`); const end = new Date(`${e.end_date}T${e.end_time}`);
  if (now < start) return "Upcoming"; if (now >= start && now < end) return "Ongoing"; return "Completed";
 }
 function slugify(t:string){ return t.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''); }
@@ -89,11 +95,6 @@ export default function Page(){
 
     const { data: usersData } = await supabase.from('users').select('*').order('created_at',{ascending:false});
     if(usersData) setRegisteredUsers(usersData as any);
-
-    if(eoData){
-     // load current EO profile data for edit form
-     }
-    }
 
     const { data: eventsData } = await supabase.from('events').select('*').order('created_at',{ascending:false});
     if(eventsData){
