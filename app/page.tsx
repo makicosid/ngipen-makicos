@@ -1061,10 +1061,24 @@ const [eventStatusTab, setEventStatusTab] = useState<
       return;
     }
 
-    if (!docFile) {
-      setToast("Pilih foto dokumentasi.");
-      return;
-    }
+
+if (!docFile) {
+  setToast("Pilih foto dokumentasi.");
+  return;
+}
+
+const allowedImageTypes = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+];
+
+if (!allowedImageTypes.includes(docFile.type)) {
+  setToast("Format foto harus JPG, PNG, atau WebP.");
+  setTimeout(() => setToast(""), 2500);
+  return;
+}
+
 
     if (docFile.size > 10 * 1024 * 1024) {
       setToast("Ukuran foto maksimal 10 MB.");
