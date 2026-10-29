@@ -1764,6 +1764,34 @@ export default function Page() {
               </section>
             )}
 
+            {/* PROMOSIKAN EVENT — KONTAK WHATSAPP */}
+            {currentRole === "user" && (
+              <section className="mx-auto max-w-[1400px] px-4 pb-8">
+                <div className="flex flex-col justify-between gap-4 rounded-2xl border border-red-200 bg-red-50 p-5 dark:border-red-900 dark:bg-red-950/30 sm:flex-row sm:items-center sm:p-6">
+                  <div className="max-w-3xl">
+                    <p className="text-xs font-black uppercase tracking-wider text-red-600 dark:text-red-300">
+                      Promosi NGIPEN
+                    </p>
+                    <h2 className="mt-1 text-xl font-black sm:text-2xl">
+                      Ingin event kamu lebih dikenal?
+                    </h2>
+                    <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
+                      Hubungi tim NGIPEN untuk menanyakan promosi atau sponsor event kamu melalui WhatsApp.
+                    </p>
+                  </div>
+                  <a
+                    href="https://wa.me/6281381067774?text=Halo%20tim%20NGIPEN%2C%20saya%20ingin%20menanyakan%20promosi%20event."
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-green-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-green-700"
+                  >
+                    <span aria-hidden="true">💬</span>
+                    Promosikan Event via WhatsApp
+                  </a>
+                </div>
+              </section>
+            )}
+
             {/* CAROUSEL SPONSOR / PROMOTE */}
             {sponsoredEvents.length > 0 && (
               <section className="mx-auto max-w-[1400px] px-4 pb-8">
@@ -2180,15 +2208,6 @@ export default function Page() {
                     <p className="mt-1 font-semibold">
                       📍 {selectedEvent.venue_address || selectedEvent.city},{" "}
                       {selectedEvent.province}
-                    </p>
-                  </div>
-
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                      Penyelenggara
-                    </p>
-                    <p className="mt-1 font-semibold">
-                      {selectedEvent.organizer_name || "Penyelenggara event"}
                     </p>
                   </div>
 
