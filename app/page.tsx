@@ -127,15 +127,31 @@ const eventCategoryOptions: Category[] = [
   "Market Event",
 ];
 
+
 function getTimeStatus(event: Event): TimeStatus {
   const now = new Date();
-  const start = new Date(`${event.start_date}T${event.start_time}`);
-  const end = new Date(`${event.end_date}T${event.end_time}`);
+
+  const startTime = event.start_time || "00:00:00";
+  const endTime = event.end_time || "23:59:59";
+
+  const start = new Date(`${event.start_date}T${startTime}+07:00`);
+  const end = new Date(`${event.end_date}T${endTime}+07:00`);
+
+  if (
+    !event.start_date ||
+    !event.end_date ||
+    Number.isNaN(start.getTime()) ||
+    Number.isNaN(end.getTime())
+  ) {
+    return "Upcoming";
+  }
 
   if (now < start) return "Upcoming";
-  if (now >= start && now < end) return "Ongoing";
+  if (now < end) return "Ongoing";
+
   return "Completed";
 }
+
 
 function slugify(value: string) {
   return value
