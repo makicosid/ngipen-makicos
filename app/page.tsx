@@ -2532,8 +2532,9 @@ if (!allowedImageTypes.includes(docFile.type)) {
                     <input
                       id="documentation-file"
                       type="file"
-                      accept="image/*"
-                      onChange={(event) =>
+                      
+accept="image/jpeg,image/png,image/webp"
+                        onChange={(event) =>
                         setDocFile(event.target.files?.[0] || null)
                       }
                       className="mt-3 block w-full text-sm"
