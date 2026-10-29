@@ -1987,7 +1987,10 @@ const [eventStatusTab, setEventStatusTab] = useState<
               <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
                 <div className="flex flex-wrap gap-2">
                   <button
-                    onClick={() => setUserTab("Semua")}
+                   onClick={() => {
+  setUserTab("Semua");
+  setEventStatusTab("Semua");
+}}
                     className={`rounded-full px-4 py-2 text-sm font-bold ${
                       userTab === "Semua"
                         ? "bg-red-600 text-white"
