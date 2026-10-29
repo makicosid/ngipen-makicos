@@ -2085,6 +2085,12 @@ const [eventStatusTab, setEventStatusTab] = useState<
                             </span>
                           )}
 
+{getTimeStatus(event) === "Completed" && (
+  <span className="absolute right-2 top-2 rounded-full bg-gray-800 px-2 py-1 text-[10px] font-black text-white">
+    COMPLETED
+  </span>
+)}
+
                           <span className="absolute bottom-2 left-2 rounded-full bg-black/75 px-2 py-1 text-[10px] font-bold text-white">
                             {event.ticket_type}
                           </span>
