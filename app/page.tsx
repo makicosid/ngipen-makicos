@@ -1361,8 +1361,10 @@ const [eventStatusTab, setEventStatusTab] = useState<
     }
 
     return result;
+  
   }, [
     approvedEvents,
+    eventStatusTab,
     userTab,
     savedIds,
     search,
@@ -1372,6 +1374,7 @@ const [eventStatusTab, setEventStatusTab] = useState<
     selectedTicket,
     sortMode,
   ]);
+
 
   const cities = useMemo(
     () =>
