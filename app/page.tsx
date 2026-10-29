@@ -164,6 +164,10 @@ export default function Page() {
   const [userTab, setUserTab] =
     useState<"Semua" | "Tersimpan">("Semua");
 
+const [eventStatusTab, setEventStatusTab] = useState<
+  "Semua" | "Upcoming" | "Ongoing" | "Completed"
+>("Semua");
+
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
 
   const [showLoginUser, setShowLoginUser] = useState(false);
@@ -1296,6 +1300,12 @@ export default function Page() {
 
   const filteredEvents = useMemo(() => {
     let result = [...approvedEvents];
+
+    if (eventStatusTab !== "Semua") {
+      result = result.filter(
+        (event) => getTimeStatus(event) === eventStatusTab
+      );
+    }
 
     if (userTab === "Tersimpan") {
       result = result.filter((event) => savedIds.includes(event.id));
