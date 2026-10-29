@@ -1981,6 +1981,20 @@ const [eventStatusTab, setEventStatusTab] = useState<
                     Semua Event
                   </button>
 
+{(["Upcoming", "Ongoing", "Completed"] as const).map((status) => (
+  <button
+    key={status}
+    onClick={() => setEventStatusTab(status)}
+    className={`rounded-full px-4 py-2 text-sm font-bold ${
+      eventStatusTab === status
+        ? "bg-red-600 text-white"
+        : "bg-gray-100 text-gray-600 dark:bg-gray-900 dark:text-gray-300"
+    }`}
+  >
+    {status === "Completed" ? "Selesai" : status}
+  </button>
+))}
+
                   {currentRole === "user" && (
                     <button
                       onClick={() => setUserTab("Tersimpan")}
