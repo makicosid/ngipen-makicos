@@ -333,12 +333,12 @@ export default function Page() {
 
         if (allReviews) {
           const userMap = new Map(
-            (usersData || []).map((user: any) => [user.id, user])
+            (usersData || []).map((user: any) => [String(user.id), user])
           );
 
           setReviews(
             allReviews.map((review: any) => {
-              const user: any = userMap.get(review.user_id);
+              const user: any = userMap.get(String(review.user_id));
 
               return {
                 ...review,
@@ -481,7 +481,8 @@ export default function Page() {
 
     localStorage.setItem("ngipen_role", "user");
     localStorage.setItem("ngipen_user", data.display_name);
-    localStorage.setItem("ngipen_user_id", data.id);
+    localStorage.setItem("ngipen_username", data.username);
+    localStorage.setItem("ngipen_user_id", String(data.id));
 
     setCurrentRole("user");
     setCurrentUser(data.display_name);
@@ -612,6 +613,7 @@ export default function Page() {
   const logout = () => {
     localStorage.removeItem("ngipen_role");
     localStorage.removeItem("ngipen_user");
+    localStorage.removeItem("ngipen_username");
     localStorage.removeItem("ngipen_user_id");
 
     setCurrentRole("guest");
@@ -941,126 +943,86 @@ export default function Page() {
   // Tambah atau perbarui komentar event
   const handleAddComment = async () => {
     if (!selectedEvent) return;
-
-    if (currentRole !== "user") {
+    if (currentRole !== "user" || !currentUserId) {
       setShowLoginUser(true);
       return;
     }
-
-    if (!commentText.trim() && !myRatings[selectedEvent.id]) {
-      setToast("Rating atau komentar wajib diisi.");
+    const text = commentText.trim();
+    if (!text && !myRatings[selectedEvent.id]) {
+      setToast("Isi komentar atau pilih rating terlebih dahulu.");
       setTimeout(() => setToast(""), 2000);
       return;
     }
-
-    const { data: existing } = await supabase
-      .from("event_reviews")
-      .select("*")
-      .eq("user_id", currentUserId)
-      .eq("event_id", selectedEvent.id)
-      .maybeSingle();
-
-    let saveError: any = null;
-
-    if (existing) {
-      const { error } = await supabase
-        .from("event_reviews")
-        .update({
-          rating: myRatings[selectedEvent.id] || existing.rating,
-          comment: commentText.trim() || existing.comment || "",
-        })
-        .eq("id", existing.id);
-
-      saveError = error;
-    } else {
-      const { error } = await supabase.from("event_reviews").insert({
-        user_id: currentUserId,
-        event_id: selectedEvent.id,
-        rating: myRatings[selectedEvent.id] || 5,
-        comment: commentText.trim(),
-      });
-
-      saveError = error;
-    }
-
-    if (saveError) {
-      setToast(`Gagal menyimpan komentar: ${saveError.message}`);
-      setTimeout(() => setToast(""), 3000);
+    if (docFile && docFile.size > 10 * 1024 * 1024) {
+      setToast("Ukuran dokumentasi maksimal 10 MB.");
       return;
     }
 
-    setCommentText("");
-    setToast("Komentar dan rating tersimpan.");
-    setTimeout(() => setToast(""), 2000);
+    try {
+      const { data: existing, error: lookupError } = await supabase
+        .from("event_reviews")
+        .select("id,rating,comment")
+        .eq("user_id", String(currentUserId))
+        .eq("event_id", String(selectedEvent.id))
+        .maybeSingle();
+      if (lookupError) throw lookupError;
 
-    if (docFile && getTimeStatus(selectedEvent) === "Completed") {
-      await handleUploadDoc();
-    }
+      const payload: Record<string, any> = {
+        rating: myRatings[selectedEvent.id] || existing?.rating || 5,
+        comment: text || existing?.comment || "",
+      };
+      let saveError: any = null;
+      if (existing) {
+        const result = await supabase.from("event_reviews").update(payload).eq("id", String(existing.id));
+        saveError = result.error;
+      } else {
+        const result = await supabase.from("event_reviews").insert({
+          user_id: String(currentUserId),
+          event_id: String(selectedEvent.id),
+          ...payload,
+        });
+        saveError = result.error;
+      }
+      if (saveError) throw saveError;
 
-    const { data: allReviews } = await supabase
-      .from("event_reviews")
-      .select("*")
-      .eq("event_id", selectedEvent.id)
-      .order("created_at", { ascending: false });
+      if (docFile && getTimeStatus(selectedEvent) === "Completed") {
+        await handleUploadDoc();
+      }
 
-    if (allReviews) {
-      const userMap = new Map(
-        registeredUsers.map((user) => [user.id, user])
-      );
+      const { data: allReviews, error: refreshError } = await supabase
+        .from("event_reviews")
+        .select("*")
+        .eq("event_id", String(selectedEvent.id))
+        .order("created_at", { ascending: false });
+      if (refreshError) throw refreshError;
 
-      const mappedReviews = allReviews.map((review: any) => {
-        const user: any = userMap.get(review.user_id);
-
+      const userMap = new Map(registeredUsers.map((user) => [String(user.id), user]));
+      const mapped = (allReviews || []).map((review: any) => {
+        const user = userMap.get(String(review.user_id));
         return {
           ...review,
-          username: user?.username || "user",
-          display_name: user?.display_name || user?.username || "User",
-          avatar_url: user?.avatar_url || "",
+          username: user?.username || review.username || "user",
+          display_name: user?.display_name || user?.username || review.display_name || "Pengguna",
+          avatar_url: user?.avatar_url || review.avatar_url || "",
         };
       });
-
       setReviews((prev) => [
-        ...mappedReviews,
-        ...prev.filter((review) => review.event_id !== selectedEvent.id),
+        ...mapped,
+        ...prev.filter((review) => String(review.event_id) !== String(selectedEvent.id)),
       ]);
 
-      if (allReviews.length > 0) {
-        const average =
-          allReviews.reduce(
-            (sum: number, review: any) => sum + review.rating,
-            0
-          ) / allReviews.length;
-
-        await supabase
-          .from("events")
-          .update({
-            avg_rating: average,
-            rating_count: allReviews.length,
-          })
-          .eq("id", selectedEvent.id);
-
-        setEvents((prev) =>
-          prev.map((event) =>
-            event.id === selectedEvent.id
-              ? {
-                  ...event,
-                  avg_rating: average,
-                  rating_count: allReviews.length,
-                }
-              : event
-          )
-        );
-
-        setSelectedEvent((prev) =>
-          prev
-            ? {
-                ...prev,
-                avg_rating: average,
-                rating_count: allReviews.length,
-              }
-            : null
-        );
+      if (allReviews?.length) {
+        const average = allReviews.reduce((sum: number, review: any) => sum + Number(review.rating || 0), 0) / allReviews.length;
+        await supabase.from("events").update({ avg_rating: average, rating_count: allReviews.length }).eq("id", String(selectedEvent.id));
+        setEvents((prev) => prev.map((event) => String(event.id) === String(selectedEvent.id) ? { ...event, avg_rating: average, rating_count: allReviews.length } : event));
+        setSelectedEvent((prev) => prev ? { ...prev, avg_rating: average, rating_count: allReviews.length } : null);
       }
+      setCommentText("");
+      setToast("Komentar dan rating berhasil disimpan.");
+      setTimeout(() => setToast(""), 2000);
+    } catch (error: any) {
+      setToast(`Gagal menyimpan komentar: ${error.message || "Periksa kolom dan izin Supabase."}`);
+      setTimeout(() => setToast(""), 4000);
     }
   };
 
@@ -1117,17 +1079,21 @@ export default function Page() {
     setTimeout(() => setToast(""), 2500);
   };
 
-  // Simpan perubahan profil user
+  // Simpan perubahan profil user; gunakan username sebagai kunci stabil untuk menghindari konflik tipe id text/uuid.
   const handleUpdateUserProfile = async () => {
-    if (!currentUserId) {
-      setToast("Sesi user tidak ditemukan. Silakan login ulang.");
+    const profileUser = registeredUsers.find(
+      (user) => String(user.id) === String(currentUserId)
+    );
+    const username = profileUser?.username || localStorage.getItem("ngipen_username") || "";
+
+    if (!username) {
+      setToast("Data akun tidak ditemukan. Keluar lalu login kembali.");
       return;
     }
 
     const displayName = (
       document.getElementById("edit-user-display") as HTMLInputElement
     )?.value?.trim();
-
     const bio = (
       document.getElementById("edit-user-bio") as HTMLTextAreaElement
     )?.value?.trim() || "";
@@ -1137,10 +1103,7 @@ export default function Page() {
       return;
     }
 
-    let avatarUrl =
-      registeredUsers.find((user) => user.id === currentUserId)?.avatar_url ||
-      "";
-
+    let avatarUrl = profileUser?.avatar_url || "";
     if (userAvatarFile) {
       try {
         avatarUrl = await uploadToBucket(userAvatarFile, "avatars");
@@ -1152,35 +1115,37 @@ export default function Page() {
 
     const { data, error } = await supabase
       .from("users")
-      .update({
-        display_name: displayName,
-        bio,
-        avatar_url: avatarUrl,
-      })
-      .eq("id", currentUserId)
-      .select("*")
+      .update({ display_name: displayName, bio, avatar_url: avatarUrl })
+      .eq("username", username)
+      .select("id,username,display_name,bio,avatar_url,created_at")
       .maybeSingle();
 
     if (error) {
       setToast(`Gagal menyimpan profil: ${error.message}`);
       return;
     }
+    if (!data) {
+      setToast("Profil tidak berubah di database. Periksa izin UPDATE/RLS tabel users di Supabase.");
+      return;
+    }
 
-    const updated = {
-      id: currentUserId,
-      username: currentUser,
-      display_name: displayName,
-      bio,
-      avatar_url: avatarUrl,
-      ...(data || {}),
-    } as RegUser;
-
-    setRegisteredUsers((prev) =>
-      prev.map((user) => (user.id === currentUserId ? updated : user))
-    );
-
+    const updated = data as RegUser;
+    setRegisteredUsers((prev) => {
+      const exists = prev.some((user) => user.username === username);
+      return exists
+        ? prev.map((user) => user.username === username ? updated : user)
+        : [updated, ...prev];
+    });
+    setReviews((prev) => prev.map((review) =>
+      String(review.user_id) === String(updated.id)
+        ? { ...review, username: updated.username, display_name: updated.display_name, avatar_url: updated.avatar_url || "" }
+        : review
+    ));
     setCurrentUser(displayName);
+    setCurrentUserId(String(updated.id));
     localStorage.setItem("ngipen_user", displayName);
+    localStorage.setItem("ngipen_username", updated.username);
+    localStorage.setItem("ngipen_user_id", String(updated.id));
     setUserAvatarFile(null);
     setShowUserProfile(false);
     setToast("Profil berhasil diperbarui.");
@@ -1425,8 +1390,20 @@ export default function Page() {
       .order("created_at", { ascending: false });
 
     if (data) {
+      const userMap = new Map(
+        registeredUsers.map((user) => [String(user.id), user])
+      );
+      const mapped = data.map((review: any) => {
+        const user = userMap.get(String(review.user_id));
+        return {
+          ...review,
+          username: user?.username || review.username || "user",
+          display_name: user?.display_name || user?.username || review.display_name || "Pengguna",
+          avatar_url: user?.avatar_url || review.avatar_url || "",
+        };
+      });
       setReviews((prev) => [
-        ...data,
+        ...mapped,
         ...prev.filter((review) => review.event_id !== event.id),
       ]);
     }
