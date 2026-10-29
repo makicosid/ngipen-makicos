@@ -993,6 +993,10 @@ export default function Page() {
     setToast("Komentar dan rating tersimpan.");
     setTimeout(() => setToast(""), 2000);
 
+    if (docFile && getTimeStatus(selectedEvent) === "Completed") {
+      await handleUploadDoc();
+    }
+
     const { data: allReviews } = await supabase
       .from("event_reviews")
       .select("*")
@@ -2312,6 +2316,38 @@ export default function Page() {
                     className="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm outline-none focus:border-red-500 dark:border-gray-700 dark:bg-gray-950"
                   />
 
+                  {getTimeStatus(selectedEvent) === "Completed" && (
+                    <div className="mt-4 rounded-xl border border-dashed border-gray-300 p-3 dark:border-gray-700">
+                      <label htmlFor="comment-documentation-file" className="text-sm font-bold">
+                        Lampirkan dokumentasi event (opsional)
+                      </label>
+                      <input
+                        id="comment-documentation-file"
+                        type="file"
+                        accept="image/*"
+                        onChange={(event) => {
+                          const file = event.target.files?.[0] || null;
+                          if (file && !file.type.startsWith("image/")) {
+                            setToast("File dokumentasi harus berupa gambar.");
+                            event.target.value = "";
+                            setDocFile(null);
+                            return;
+                          }
+                          if (file && file.size > 10 * 1024 * 1024) {
+                            setToast("Ukuran dokumentasi maksimal 10 MB.");
+                            event.target.value = "";
+                            setDocFile(null);
+                            return;
+                          }
+                          setDocFile(file);
+                        }}
+                        className="mt-2 block w-full text-sm"
+                      />
+                      <p className="mt-1 text-xs text-gray-500">Format gambar, maksimal 10 MB. Lampiran hanya tersedia setelah event selesai.</p>
+                      {docFile && <p className="mt-1 text-xs text-green-600">Dipilih: {docFile.name}</p>}
+                    </div>
+                  )}
+
                   <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
                     <span className="text-xs text-gray-500">
                       {commentText.length}/1500 karakter
@@ -2825,14 +2861,40 @@ export default function Page() {
                     </button>
                   </div>
 
+                  <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    <div className="rounded-xl border border-gray-200 bg-gray-50 p-3 dark:border-gray-800 dark:bg-gray-950">
+                      <p className="text-xs text-gray-500">Total pengguna</p>
+                      <p className="mt-1 text-2xl font-black">{registeredUsers.length}</p>
+                    </div>
+                    <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 dark:border-amber-900 dark:bg-amber-950/40">
+                      <p className="text-xs text-amber-800 dark:text-amber-300">Menunggu persetujuan</p>
+                      <p className="mt-1 text-2xl font-black">{events.filter((event) => event.moderation_status === "Pending").length}</p>
+                    </div>
+                    <div className="rounded-xl border border-green-200 bg-green-50 p-3 dark:border-green-900 dark:bg-green-950/40">
+                      <p className="text-xs text-green-800 dark:text-green-300">Disetujui</p>
+                      <p className="mt-1 text-2xl font-black">{events.filter((event) => event.moderation_status === "Approved").length}</p>
+                    </div>
+                    <div className="rounded-xl border border-gray-200 bg-gray-50 p-3 dark:border-gray-800 dark:bg-gray-950">
+                      <p className="text-xs text-gray-500">Total event</p>
+                      <p className="mt-1 text-2xl font-black">{events.length}</p>
+                    </div>
+                  </div>
+
                   {adminTab === "moderation" ? (
                     <div className="mt-4 max-h-[55vh] space-y-3 overflow-y-auto">
+                      <h3 className="sticky top-0 z-10 rounded-lg bg-white py-2 text-sm font-black dark:bg-gray-900">Daftar event — event Pending ditampilkan lebih dahulu</h3>
                       {events.length === 0 ? (
                         <p className="py-8 text-center text-sm text-gray-500">
                           Belum ada event yang dikirim.
                         </p>
                       ) : (
-                        events.map((event) => (
+                        [...events]
+                          .sort((a, b) => {
+                            if (a.moderation_status === "Pending" && b.moderation_status !== "Pending") return -1;
+                            if (a.moderation_status !== "Pending" && b.moderation_status === "Pending") return 1;
+                            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+                          })
+                          .map((event) => (
                           <article
                             key={event.id}
                             className="rounded-xl border border-gray-200 p-3 dark:border-gray-700"
@@ -2915,6 +2977,9 @@ export default function Page() {
                     </div>
                   ) : (
                     <div className="mt-4 max-h-[55vh] overflow-y-auto">
+                      <div className="mb-3 rounded-xl bg-gray-50 p-3 text-sm font-bold dark:bg-gray-950">
+                        Total {registeredUsers.length} pengguna terdaftar
+                      </div>
                       {usersLoadError && (
                         <p className="mb-3 rounded-xl bg-red-50 p-3 text-xs text-red-700 dark:bg-red-950 dark:text-red-300">
                           Data pengguna tidak dapat dimuat: {usersLoadError}
