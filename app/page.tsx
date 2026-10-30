@@ -168,6 +168,7 @@ export default function Page() {
   const [loading, setLoading] = useState(true);
   const [currentEventPage, setCurrentEventPage] = useState(1);
   const [eventsPerPage, setEventsPerPage] = useState(8);
+  const [showThisWeekOnly, setShowThisWeekOnly] = useState(false);
 
   const [search, setSearch] = useState("");
   const [selectedProv, setSelectedProv] = useState("Semua");
@@ -187,6 +188,17 @@ const [eventStatusTab, setEventStatusTab] = useState<
 >("Semua");
 
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+
+  // Setiap kali detail event dibuka, mulai dari bagian paling atas halaman.
+  useEffect(() => {
+    if (!selectedEvent) return;
+
+    const frame = window.requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [selectedEvent?.id]);
 
   const [showLoginUser, setShowLoginUser] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
@@ -253,8 +265,7 @@ const [eventStatusTab, setEventStatusTab] = useState<
     if (userId) setCurrentUserId(userId);
   }, []);
 
-  // Jumlah event per halaman mengikuti ukuran layar:
-  // HP = 8 event, desktop = 12 event.
+  // Jumlah event per halaman mengikuti ukuran layar: HP = 8, desktop = 12.
   useEffect(() => {
     const desktopQuery = window.matchMedia("(min-width: 768px)");
 
@@ -283,6 +294,7 @@ const [eventStatusTab, setEventStatusTab] = useState<
     sortMode,
     userTab,
     eventStatusTab,
+    showThisWeekOnly,
   ]);
 
   // Pintasan admin: Ctrl + Shift + A
@@ -1410,6 +1422,28 @@ if (!allowedImageTypes.includes(docFile.type)) {
       result = result.filter((event) => event.ticket_type === selectedTicket);
     }
 
+    if (showThisWeekOnly) {
+      // Minggu kalender lokal: Senin sampai Minggu.
+      const today = new Date();
+      const monday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      const daysSinceMonday = (monday.getDay() + 6) % 7;
+      monday.setDate(monday.getDate() - daysSinceMonday);
+
+      const sunday = new Date(monday);
+      sunday.setDate(monday.getDate() + 6);
+
+      const toDateKey = (date: Date) =>
+        `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+      const weekStart = toDateKey(monday);
+      const weekEnd = toDateKey(sunday);
+
+      // Event ditampilkan jika rentang acaranya beririsan dengan minggu ini.
+      result = result.filter(
+        (event) => Boolean(event.start_date && event.end_date) &&
+          event.start_date <= weekEnd && event.end_date >= weekStart
+      );
+    }
+
     if (sortMode === "Terpopuler") {
       result.sort(
         (a, b) =>
@@ -1436,9 +1470,9 @@ if (!allowedImageTypes.includes(docFile.type)) {
     selectedCity,
     selectedCat,
     selectedTicket,
+    showThisWeekOnly,
     sortMode,
   ]);
-
 
   const totalEventPages = Math.max(
     1,
@@ -2078,6 +2112,19 @@ if (!allowedImageTypes.includes(docFile.type)) {
                     }`}
                   >
                     Semua Event
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowThisWeekOnly((value) => !value)}
+                    aria-pressed={showThisWeekOnly}
+                    className={`rounded-full px-4 py-2 text-sm font-bold ${
+                      showThisWeekOnly
+                        ? "bg-red-600 text-white"
+                        : "bg-gray-100 text-gray-600 dark:bg-gray-900 dark:text-gray-300"
+                    }`}
+                  >
+                    Minggu Ini
                   </button>
 
 {(["Upcoming", "Ongoing", "Completed"] as const).map((status) => (
