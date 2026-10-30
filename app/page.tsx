@@ -166,6 +166,8 @@ export default function Page() {
 
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentEventPage, setCurrentEventPage] = useState(1);
+  const [eventsPerPage, setEventsPerPage] = useState(8);
 
   const [search, setSearch] = useState("");
   const [selectedProv, setSelectedProv] = useState("Semua");
@@ -250,6 +252,38 @@ const [eventStatusTab, setEventStatusTab] = useState<
     if (user) setCurrentUser(user);
     if (userId) setCurrentUserId(userId);
   }, []);
+
+  // Jumlah event per halaman mengikuti ukuran layar:
+  // HP = 8 event, desktop = 12 event.
+  useEffect(() => {
+    const desktopQuery = window.matchMedia("(min-width: 768px)");
+
+    const updateEventsPerPage = () => {
+      setEventsPerPage(desktopQuery.matches ? 12 : 8);
+      setCurrentEventPage(1);
+    };
+
+    updateEventsPerPage();
+    desktopQuery.addEventListener("change", updateEventsPerPage);
+
+    return () => {
+      desktopQuery.removeEventListener("change", updateEventsPerPage);
+    };
+  }, []);
+
+  // Kembali ke halaman pertama ketika pencarian, filter, atau urutan berubah.
+  useEffect(() => {
+    setCurrentEventPage(1);
+  }, [
+    search,
+    selectedProv,
+    selectedCity,
+    selectedCat,
+    selectedTicket,
+    sortMode,
+    userTab,
+    eventStatusTab,
+  ]);
 
   // Pintasan admin: Ctrl + Shift + A
   useEffect(() => {
@@ -1406,6 +1440,38 @@ if (!allowedImageTypes.includes(docFile.type)) {
   ]);
 
 
+  const totalEventPages = Math.max(
+    1,
+    Math.ceil(filteredEvents.length / eventsPerPage)
+  );
+
+  const paginatedEvents = useMemo(() => {
+    const startIndex = (currentEventPage - 1) * eventsPerPage;
+    return filteredEvents.slice(startIndex, startIndex + eventsPerPage);
+  }, [filteredEvents, currentEventPage, eventsPerPage]);
+
+  const visibleEventPages = useMemo(() => {
+    const startPage = Math.max(1, currentEventPage - 2);
+    const endPage = Math.min(totalEventPages, currentEventPage + 2);
+
+    return Array.from(
+      { length: endPage - startPage + 1 },
+      (_, index) => startPage + index
+    );
+  }, [currentEventPage, totalEventPages]);
+
+  useEffect(() => {
+    setCurrentEventPage((page) => Math.min(page, totalEventPages));
+  }, [totalEventPages]);
+
+  const goToEventPage = (page: number) => {
+    const nextPage = Math.min(Math.max(page, 1), totalEventPages);
+    setCurrentEventPage(nextPage);
+    document
+      .getElementById("daftar-event")
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   const cities = useMemo(
     () =>
       Array.from(
@@ -1920,7 +1986,7 @@ if (!allowedImageTypes.includes(docFile.type)) {
             {/* FILTER DAN DAFTAR EVENT */}
             <section
               id="daftar-event"
-              className="mx-auto max-w-[1400px] px-4 pb-12"
+              className="mx-auto max-w-[1400px] scroll-mt-24 px-4 pb-12"
             >
               <div className="mb-5">
                 <h2 className="text-2xl font-black sm:text-3xl">
@@ -2068,8 +2134,9 @@ if (!allowedImageTypes.includes(docFile.type)) {
                   </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5">
-                  {filteredEvents.map((event) => (
+                <>
+                <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4">
+                  {paginatedEvents.map((event) => (
                     <article
                       key={event.id}
                       className="group overflow-hidden rounded-2xl border border-gray-200 bg-white transition hover:-translate-y-1 hover:shadow-lg dark:border-gray-800 dark:bg-gray-900"
@@ -2161,6 +2228,52 @@ if (!allowedImageTypes.includes(docFile.type)) {
                     </article>
                   ))}
                 </div>
+
+                {totalEventPages > 1 && (
+                  <nav
+                    aria-label="Navigasi halaman daftar event"
+                    className="mt-8 flex flex-wrap items-center justify-center gap-2"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => goToEventPage(currentEventPage - 1)}
+                      disabled={currentEventPage === 1}
+                      className="rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold transition hover:border-red-500 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-700"
+                    >
+                      ← Sebelumnya
+                    </button>
+
+                    {visibleEventPages.map((page) => (
+                      <button
+                        key={page}
+                        type="button"
+                        onClick={() => goToEventPage(page)}
+                        aria-current={currentEventPage === page ? "page" : undefined}
+                        className={`h-10 min-w-10 rounded-xl px-3 text-sm font-bold transition ${
+                          currentEventPage === page
+                            ? "bg-red-600 text-white"
+                            : "border border-gray-200 hover:border-red-500 hover:text-red-600 dark:border-gray-700"
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    ))}
+
+                    <span className="px-1 text-xs text-gray-500">
+                      {currentEventPage} / {totalEventPages}
+                    </span>
+
+                    <button
+                      type="button"
+                      onClick={() => goToEventPage(currentEventPage + 1)}
+                      disabled={currentEventPage === totalEventPages}
+                      className="rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold transition hover:border-red-500 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-700"
+                    >
+                      Berikutnya →
+                    </button>
+                  </nav>
+                )}
+                </>
               )}
             </section>
           </main>
