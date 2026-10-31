@@ -169,6 +169,7 @@ export default function Page() {
   const [currentEventPage, setCurrentEventPage] = useState(1);
   const [eventsPerPage, setEventsPerPage] = useState(8);
   const [showThisWeekOnly, setShowThisWeekOnly] = useState(false);
+  const [realTimeTick, setRealTimeTick] = useState(0);
 
   const [search, setSearch] = useState("");
   const [selectedProv, setSelectedProv] = useState("Semua");
@@ -263,6 +264,15 @@ const [eventStatusTab, setEventStatusTab] = useState<
     if (role) setCurrentRole(role);
     if (user) setCurrentUser(user);
     if (userId) setCurrentUserId(userId);
+  }, []);
+
+  // Perbarui acuan tanggal secara berkala agar filter Minggu Ini tetap akurat.
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setRealTimeTick((value) => value + 1);
+    }, 60_000);
+
+    return () => window.clearInterval(interval);
   }, []);
 
   // Jumlah event per halaman mengikuti ukuran layar: HP = 8, desktop = 12.
@@ -1423,25 +1433,50 @@ if (!allowedImageTypes.includes(docFile.type)) {
     }
 
     if (showThisWeekOnly) {
-      // Minggu kalender lokal: Senin sampai Minggu.
-      const today = new Date();
-      const monday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-      const daysSinceMonday = (monday.getDay() + 6) % 7;
-      monday.setDate(monday.getDate() - daysSinceMonday);
+      // Periode filter adalah Jumat-Minggu pada minggu kalender WIB.
+      // Gunakan UTC hanya untuk manipulasi tanggal agar tidak terpengaruh zona waktu perangkat.
+      const jakartaParts = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Jakarta",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      }).formatToParts(new Date());
+      const dateParts = Object.fromEntries(
+        jakartaParts.map((part) => [part.type, part.value])
+      );
+      const year = Number(dateParts.year);
+      const month = Number(dateParts.month);
+      const day = Number(dateParts.day);
+      const jakartaToday = new Date(Date.UTC(year, month - 1, day));
+      const daysSinceMonday = (jakartaToday.getUTCDay() + 6) % 7;
+      const monday = new Date(jakartaToday);
+      monday.setUTCDate(jakartaToday.getUTCDate() - daysSinceMonday);
 
+      const friday = new Date(monday);
+      friday.setUTCDate(monday.getUTCDate() + 4);
       const sunday = new Date(monday);
-      sunday.setDate(monday.getDate() + 6);
+      sunday.setUTCDate(monday.getUTCDate() + 6);
 
       const toDateKey = (date: Date) =>
-        `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-      const weekStart = toDateKey(monday);
+        `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-${String(date.getUTCDate()).padStart(2, "0")}`;
+      const weekStart = toDateKey(friday);
       const weekEnd = toDateKey(sunday);
+      const isDateKey = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value);
 
-      // Event ditampilkan jika rentang acaranya beririsan dengan minggu ini.
-      result = result.filter(
-        (event) => Boolean(event.start_date && event.end_date) &&
-          event.start_date <= weekEnd && event.end_date >= weekStart
-      );
+      // Event ditampilkan jika rentang acaranya beririsan dengan Jumat-Minggu.
+      // Jika end_date kosong, perlakukan sebagai event satu hari.
+      result = result.filter((event) => {
+        const eventStart = event.start_date;
+        const eventEnd = event.end_date || eventStart;
+
+        return (
+          Boolean(eventStart) &&
+          isDateKey(eventStart) &&
+          isDateKey(eventEnd) &&
+          eventStart <= weekEnd &&
+          eventEnd >= weekStart
+        );
+      });
     }
 
     if (sortMode === "Terpopuler") {
@@ -1471,6 +1506,7 @@ if (!allowedImageTypes.includes(docFile.type)) {
     selectedCat,
     selectedTicket,
     showThisWeekOnly,
+    realTimeTick,
     sortMode,
   ]);
 
