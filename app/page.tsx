@@ -189,6 +189,7 @@ const [eventStatusTab, setEventStatusTab] = useState<
 >("Semua");
 
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const sharedEventOpenedRef = useRef<string | null>(null);
 
   // Setiap kali detail event dibuka, mulai dari bagian paling atas halaman.
   useEffect(() => {
@@ -202,8 +203,10 @@ const [eventStatusTab, setEventStatusTab] = useState<
   }, [selectedEvent?.id]);
 
   const [showLoginUser, setShowLoginUser] = useState(false);
-  const [showAdmin, setShowAdmin] = useState(false);
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [showRegUser, setShowRegUser] = useState(false);
+  const [showRegPassword, setShowRegPassword] = useState(false);
+  const [showAdmin, setShowAdmin] = useState(false);
   const [showUserProfile, setShowUserProfile] = useState(false);
 
   const [currentRole, setCurrentRole] = useState<Role>("guest");
@@ -1588,6 +1591,25 @@ if (!allowedImageTypes.includes(docFile.type)) {
     }
   };
 
+  // Buka detail event otomatis ketika halaman diakses melalui link ?event=<id>.
+  useEffect(() => {
+    if (typeof window === "undefined" || events.length === 0) return;
+
+    const sharedEventId = new URLSearchParams(window.location.search).get("event");
+    if (!sharedEventId || sharedEventOpenedRef.current === sharedEventId) return;
+
+    const sharedEvent = events.find(
+      (event) =>
+        String(event.id) === sharedEventId &&
+        event.moderation_status === "Approved"
+    );
+
+    if (sharedEvent) {
+      sharedEventOpenedRef.current = sharedEventId;
+      void openEvent(sharedEvent);
+    }
+  }, [events]);
+
   const toggleTheme = () => {
     const next = !dark;
 
@@ -1599,6 +1621,34 @@ if (!allowedImageTypes.includes(docFile.type)) {
   const showToast = (message: string) => {
     setToast(message);
     setTimeout(() => setToast(""), 2500);
+  };
+
+  // Bagikan tautan permanen berbasis ID event; halaman akan membuka detailnya saat link diakses.
+  const shareEvent = async (event: Event) => {
+    const shareUrl = new URL(window.location.origin + window.location.pathname);
+    shareUrl.searchParams.set("event", String(event.id));
+
+    const shareData = {
+      title: event.title,
+      text: `Lihat event ${event.title} di NGIPEN – MAKICOS`,
+      url: shareUrl.toString(),
+    };
+
+    if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch (error) {
+        if (error instanceof Error && error.name === "AbortError") return;
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(shareUrl.toString());
+      showToast("Link event berhasil disalin.");
+    } catch {
+      showToast("Link tidak dapat disalin otomatis. Coba buka halaman melalui browser.");
+    }
   };
 
   return (
@@ -2291,9 +2341,25 @@ if (!allowedImageTypes.includes(docFile.type)) {
                           ★ {(event.avg_rating || 0).toFixed(1)}
                         </span>
 
-                        <button
-                          type="button"
-                          onClick={() => toggleSave(event.id)}
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => void shareEvent(event)}
+                            aria-label={`Bagikan link event ${event.title}`}
+                            title="Bagikan link event"
+                            className="rounded-lg px-3 py-1 text-sm text-gray-500 hover:text-red-600"
+                          >
+                            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+                              <circle cx="18" cy="5" r="3" />
+                              <circle cx="6" cy="12" r="3" />
+                              <circle cx="18" cy="19" r="3" />
+                              <path strokeLinecap="round" strokeLinejoin="round" d="m8.7 10.6 6.6-4.2M8.7 13.4l6.6 4.2" />
+                            </svg>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => toggleSave(event.id)}
                           aria-label={
                             savedIds.includes(event.id)
                               ? "Hapus dari tersimpan"
@@ -2306,7 +2372,8 @@ if (!allowedImageTypes.includes(docFile.type)) {
                           }`}
                         >
                           {savedIds.includes(event.id) ? "♥" : "♡"}
-                        </button>
+                          </button>
+                        </div>
                       </div>
                     </article>
                   ))}
@@ -2367,7 +2434,13 @@ if (!allowedImageTypes.includes(docFile.type)) {
           <main className="mx-auto min-h-screen max-w-[1200px] px-4 py-6 sm:py-10">
             <button
               type="button"
-              onClick={() => setSelectedEvent(null)}
+              onClick={() => {
+                setSelectedEvent(null);
+                sharedEventOpenedRef.current = null;
+                const cleanUrl = new URL(window.location.href);
+                cleanUrl.searchParams.delete("event");
+                window.history.replaceState({}, "", cleanUrl.toString());
+              }}
               className="mb-6 inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-bold hover:border-red-500 hover:text-red-600 dark:border-gray-700 dark:bg-gray-900"
             >
               ← Kembali ke daftar event
@@ -2473,6 +2546,20 @@ if (!allowedImageTypes.includes(docFile.type)) {
 
                 {/* TOMBOL AKSI */}
                 <div className="mt-6 flex flex-wrap gap-3">
+                  <button
+                    type="button"
+                    onClick={() => void shareEvent(selectedEvent)}
+                    className="inline-flex items-center gap-2 rounded-xl border border-gray-300 px-4 py-3 text-sm font-bold hover:border-red-500 hover:text-red-600 dark:border-gray-700"
+                  >
+                    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+                      <circle cx="18" cy="5" r="3" />
+                      <circle cx="6" cy="12" r="3" />
+                      <circle cx="18" cy="19" r="3" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="m8.7 10.6 6.6-4.2M8.7 13.4l6.6 4.2" />
+                    </svg>
+                    Share Link Event
+                  </button>
+
                   <button
                     type="button"
                     onClick={() => toggleSave(selectedEvent.id)}
@@ -2865,14 +2952,35 @@ accept="image/jpeg,image/png,image/webp"
                   >
                     Password
                   </label>
-                  <input
-                    id="login-user-p"
-                    type="password"
-                    autoComplete="current-password"
-                    required
-                    placeholder="Masukkan password"
-                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 outline-none focus:border-red-500 dark:border-gray-700 dark:bg-gray-950"
-                  />
+                  <div className="relative">
+                    <input
+                      id="login-user-p"
+                      type={showLoginPassword ? "text" : "password"}
+                      autoComplete="current-password"
+                      required
+                      placeholder="Masukkan password"
+                      className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 pr-12 outline-none focus:border-red-500 dark:border-gray-700 dark:bg-gray-950"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowLoginPassword((visible) => !visible)}
+                      className="absolute inset-y-0 right-0 flex items-center px-4 text-gray-500 hover:text-red-600"
+                      aria-label={showLoginPassword ? "Sembunyikan password" : "Tampilkan password"}
+                      title={showLoginPassword ? "Sembunyikan password" : "Tampilkan password"}
+                    >
+                      {showLoginPassword ? (
+                        <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="m3 3 18 18M10.6 10.6a2 2 0 0 0 2.8 2.8" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9.9 5.2A10.8 10.8 0 0 1 12 5c5 0 8.5 4.5 9.5 7-.4 1-1.3 2.2-2.5 3.3M6.2 6.2C3.9 7.7 2.7 9.8 2.5 12c.7 1.8 3.9 7 9.5 7 1 0 2-.2 2.9-.6" />
+                        </svg>
+                      ) : (
+                        <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M2.5 12s3.5-7 9.5-7 9.5 7 9.5 7-3.5 7-9.5 7-9.5-7-9.5-7Z" />
+                          <circle cx="12" cy="12" r="3" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
                 </div>
 
                 <button
@@ -2981,15 +3089,36 @@ accept="image/jpeg,image/png,image/webp"
                   >
                     Password
                   </label>
-                  <input
-                    id="reg-user-p"
-                    type="password"
-                    autoComplete="new-password"
-                    minLength={8}
-                    required
-                    placeholder="Minimal 8 karakter"
-                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 outline-none focus:border-red-500 dark:border-gray-700 dark:bg-gray-950"
-                  />
+                  <div className="relative">
+                    <input
+                      id="reg-user-p"
+                      type={showRegPassword ? "text" : "password"}
+                      autoComplete="new-password"
+                      minLength={8}
+                      required
+                      placeholder="Minimal 8 karakter"
+                      className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 pr-12 outline-none focus:border-red-500 dark:border-gray-700 dark:bg-gray-950"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowRegPassword((visible) => !visible)}
+                      className="absolute inset-y-0 right-0 flex items-center px-4 text-gray-500 hover:text-red-600"
+                      aria-label={showRegPassword ? "Sembunyikan password" : "Tampilkan password"}
+                      title={showRegPassword ? "Sembunyikan password" : "Tampilkan password"}
+                    >
+                      {showRegPassword ? (
+                        <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="m3 3 18 18M10.6 10.6a2 2 0 0 0 2.8 2.8" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9.9 5.2A10.8 10.8 0 0 1 12 5c5 0 8.5 4.5 9.5 7-.4 1-1.3 2.2-2.5 3.3M6.2 6.2C3.9 7.7 2.7 9.8 2.5 12c.7 1.8 3.9 7 9.5 7 1 0 2-.2 2.9-.6" />
+                        </svg>
+                      ) : (
+                        <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M2.5 12s3.5-7 9.5-7 9.5 7 9.5 7-3.5 7-9.5 7-9.5-7-9.5-7Z" />
+                          <circle cx="12" cy="12" r="3" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
                   <p className="mt-1 text-xs text-gray-500">
                     Gunakan kombinasi huruf dan angka.
                   </p>
