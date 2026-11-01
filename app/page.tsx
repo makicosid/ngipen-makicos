@@ -2153,13 +2153,13 @@ useEffect(() => {
       onClick={() => openEvent(event)}
       className="w-full min-w-full shrink-0 snap-start overflow-hidden rounded-2xl border border-gray-200 bg-white text-left shadow-sm dark:border-gray-800 dark:bg-gray-900"
     >
-      <div className="relative aspect-[16/7] bg-gray-100 dark:bg-gray-800 sm:aspect-[16/6]">
+     <div className="relative w-full bg-gray-100 dark:bg-gray-800">
         {event.poster_url ? (
           <img
             src={event.poster_url}
             alt={`Poster ${event.title}`}
             loading="lazy"
-            className="h-full w-full object-contain sm:object-cover"
+            className="block h-auto w-full object-contain"
           />
         ) : (
           <div className="flex h-full items-center justify-center text-sm text-gray-500">
