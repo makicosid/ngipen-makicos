@@ -1452,7 +1452,7 @@ useEffect(() => {
         behavior: "smooth",
       });
     }
-  }, 15000);
+ }, 8000);
 
   return () => window.clearInterval(interval);
 }, [sponsoredEvents.length]);
