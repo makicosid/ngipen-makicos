@@ -535,20 +535,7 @@ const sponsorCarouselPausedRef = useRef(false);
       URL.revokeObjectURL(objectUrl);
       return;
     }
-
-    setPosterFile(file);
-    setter(objectUrl);
-  };
-
-  img.onerror = () => {
-    setPosterError("Gambar tidak dapat dibaca.");
-    setPosterFile(null);
-    URL.revokeObjectURL(objectUrl);
-  };
-
-  img.src = objectUrl;
-};
-
+   
       setPosterFile(file);
       setter(objectUrl);
     };
