@@ -4140,13 +4140,15 @@ accept="image/jpeg,image/png,image/webp"
                         type="file"
                         accept="image/jpeg,image/png,image/webp"
                         required
-                        onChange={(event) => {
-                          const file = event.target.files?.[0];
+                       onChange={(event) => {
+  const file = event.target.files?.[0];
 
-                          if (file) {
-                            handlePosterUpload(file, setPosterPreview);
-                          }
-                        }}
+  if (file) {
+    setPosterFile(null);
+    setPosterPreview("");
+    handlePosterUpload(file, setPosterPreview);
+  }
+}}
                         className="block w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-red-50 file:px-4 file:py-2 file:font-bold file:text-red-700 dark:file:bg-red-950 dark:file:text-red-300"
                       />
 
