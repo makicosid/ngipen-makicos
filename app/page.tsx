@@ -2355,6 +2355,18 @@ useEffect(() => {
                   >
                     + Upload Poster Event
                   </button>
+                  <button
+  onClick={() => {
+    setSelectedEvent(null);
+    setShowCalendar(true);
+    setCalendarMonth(new Date());
+    setSelectedCalendarDate("");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }}
+  className="shrink-0 rounded-xl border border-red-600 px-5 py-3 text-sm font-bold text-red-600 hover:bg-red-50 dark:hover:bg-gray-800"
+>
+  📅 Buka Kalender Event
+</button>
                 </div>
               </section>
             )}
