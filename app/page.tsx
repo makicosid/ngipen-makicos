@@ -9,6 +9,11 @@ type Category =
   | "Gratis"
   | "Berbayar"
   | "Cosplay"
+  | "Performance"
+  | "Pefomance"
+  | "Market"
+  | "Game"
+  | "Comic"
   | "Idol"
   | "Toys Event"
   | "Market Event";
@@ -34,6 +39,7 @@ interface Event {
   ticket_type: TicketType;
   ticket_url?: string;
   registration_url?: string;
+  social_link?: string;
   moderation_status: ModStatus;
   is_sponsored: boolean;
   sponsored_priority: number;
@@ -122,9 +128,10 @@ const ALL_PROVINCES = [
 
 const eventCategoryOptions: Category[] = [
   "Cosplay",
-  "Idol",
-  "Toys Event",
-  "Market Event",
+  "Pefomance",
+  "Market",
+  "Game",
+  "Comic",
 ];
 
 
@@ -226,7 +233,6 @@ const [eventStatusTab, setEventStatusTab] = useState<
   const [docs, setDocs] = useState<Doc[]>([]);
 
   const [eventFormOpen, setEventFormOpen] = useState(false);
-  const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [posterPreview, setPosterPreview] = useState("");
   const [posterError, setPosterError] = useState("");
   const [posterFile, setPosterFile] = useState<File | null>(null);
@@ -706,7 +712,7 @@ const [eventStatusTab, setEventStatusTab] = useState<
     setTimeout(() => setToast(""), 2000);
   };
 
-  // Membuat atau memperbarui event
+  // Membuat event baru; pengguna tidak memiliki fitur edit event
   const handleCreateEvent = async () => {
     const title = (
       document.getElementById("new-title") as HTMLInputElement
@@ -736,6 +742,10 @@ const [eventStatusTab, setEventStatusTab] = useState<
       document.getElementById("new-lomba-url") as HTMLInputElement
     )?.value?.trim();
 
+    const socialLink = (
+      document.getElementById("new-social-link") as HTMLInputElement
+    )?.value?.trim();
+
     const startDate = (
       document.getElementById("new-start") as HTMLInputElement
     )?.value;
@@ -762,7 +772,7 @@ const [eventStatusTab, setEventStatusTab] = useState<
       return;
     }
 
-    if (!posterFile && !editingEvent) {
+    if (!posterFile) {
       setToast("Poster event wajib diunggah.");
       return;
     }
@@ -774,6 +784,12 @@ const [eventStatusTab, setEventStatusTab] = useState<
 
     if (newTicketType === "Berbayar" && !ticketUrl) {
       setToast("Link tiket wajib untuk event berbayar.");
+      return;
+    }
+
+    const optionalUrls = [registrationUrl, socialLink].filter(Boolean) as string[];
+    if (optionalUrls.some((value) => !/^https?:\/\//i.test(value))) {
+      setToast("Link opsional harus diawali http:// atau https://.");
       return;
     }
 
@@ -789,11 +805,7 @@ const [eventStatusTab, setEventStatusTab] = useState<
     }
 
     try {
-      let posterUrl = editingEvent?.poster_url || "";
-
-      if (posterFile) {
-        posterUrl = await uploadToBucket(posterFile, "posters");
-      }
+      const posterUrl = await uploadToBucket(posterFile!, "posters");
 
       const payload = {
         organizer_id: currentUserId,
@@ -812,6 +824,7 @@ const [eventStatusTab, setEventStatusTab] = useState<
         ticket_type: newTicketType,
         ticket_url: ticketUrl || null,
         registration_url: registrationUrl || null,
+        social_link: socialLink || null,
         moderation_status: "Pending",
         is_sponsored: false,
         sponsored_priority: 0,
@@ -822,39 +835,18 @@ const [eventStatusTab, setEventStatusTab] = useState<
         organizer_name: currentUser,
       };
 
-      if (editingEvent) {
-        const { data, error } = await supabase
-          .from("events")
-          .update(payload)
-          .eq("id", editingEvent.id)
-          .eq("organizer_id", currentUserId)
-          .select()
-          .single();
+      const { data, error } = await supabase
+        .from("events")
+        .insert(payload)
+        .select()
+        .single();
 
-        if (error) throw error;
+      if (error) throw error;
 
-        setEvents((prev) =>
-          prev.map((event) =>
-            event.id === editingEvent.id ? (data as Event) : event
-          )
-        );
-
-        setToast("Event diperbarui dan menunggu persetujuan.");
-      } else {
-        const { data, error } = await supabase
-          .from("events")
-          .insert(payload)
-          .select()
-          .single();
-
-        if (error) throw error;
-
-        setEvents((prev) => [data as Event, ...prev]);
-        setToast("Event dikirim dan menunggu persetujuan admin.");
-      }
+      setEvents((prev) => [data as Event, ...prev]);
+      setToast("Event dikirim dan menunggu persetujuan admin.");
 
       setEventFormOpen(false);
-      setEditingEvent(null);
       setPosterFile(null);
       setPosterPreview("");
       setPosterError("");
@@ -1390,6 +1382,12 @@ if (!allowedImageTypes.includes(docFile.type)) {
   const filteredEvents = useMemo(() => {
     let result = [...approvedEvents];
 
+    // Tab Semua dan Minggu Ini hanya menampilkan event yang belum selesai.
+    // Tab Selesai tetap dapat digunakan secara eksplisit.
+    if (eventStatusTab === "Semua" || showThisWeekOnly) {
+      result = result.filter((event) => getTimeStatus(event) !== "Completed");
+    }
+
     if (eventStatusTab !== "Semua") {
       result = result.filter(
         (event) => getTimeStatus(event) === eventStatusTab
@@ -1720,8 +1718,7 @@ if (!allowedImageTypes.includes(docFile.type)) {
               {currentRole === "user" && (
                 <button
                   onClick={() => {
-                    setEditingEvent(null);
-                    setPosterFile(null);
+                                  setPosterFile(null);
                     setPosterPreview("");
                     setPosterError("");
                     setEventFormOpen(true);
@@ -1868,8 +1865,7 @@ if (!allowedImageTypes.includes(docFile.type)) {
                   <button
                     onClick={() => {
                       setMobileOpen(false);
-                      setEditingEvent(null);
-                      setPosterFile(null);
+                                      setPosterFile(null);
                       setPosterPreview("");
                       setPosterError("");
                       setEventFormOpen(true);
@@ -1938,6 +1934,15 @@ if (!allowedImageTypes.includes(docFile.type)) {
                   >
                     Jelajahi Event ↓
                   </button>
+
+                  <a
+                    href="https://trakteer.id/makicos.id"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-3 inline-flex rounded-full border border-white/80 px-5 py-3 text-sm font-bold text-white hover:bg-white/10 sm:ml-3"
+                  >
+                    JOIN COMMUNITY ↗
+                  </a>
                 </div>
               </div>
             </section>
@@ -1956,8 +1961,7 @@ if (!allowedImageTypes.includes(docFile.type)) {
 
                   <button
                     onClick={() => {
-                      setEditingEvent(null);
-                      setPosterFile(null);
+                                      setPosterFile(null);
                       setPosterPreview("");
                       setPosterError("");
                       setEventFormOpen(true);
@@ -2594,6 +2598,17 @@ if (!allowedImageTypes.includes(docFile.type)) {
                       className="rounded-xl border border-gray-300 px-5 py-3 text-sm font-bold hover:border-red-500 dark:border-gray-700"
                     >
                       Link Pendaftaran ↗
+                    </a>
+                  )}
+
+                  {selectedEvent.social_link && (
+                    <a
+                      href={selectedEvent.social_link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="rounded-xl border border-gray-300 px-5 py-3 text-sm font-bold hover:border-red-500 dark:border-gray-700"
+                    >
+                      Media Sosial / Info Event ↗
                     </a>
                   )}
                 </div>
@@ -3269,98 +3284,98 @@ accept="image/jpeg,image/png,image/webp"
                   </div>
 
                   {adminTab === "moderation" ? (
-                    <div className="mt-4 max-h-[55vh] space-y-3 overflow-y-auto">
-                      <h3 className="sticky top-0 z-10 rounded-lg bg-white py-2 text-sm font-black dark:bg-gray-900">Daftar event — event Pending ditampilkan lebih dahulu</h3>
-                      {events.length === 0 ? (
-                        <p className="py-8 text-center text-sm text-gray-500">
-                          Belum ada event yang dikirim.
-                        </p>
-                      ) : (
-                        [...events]
-                          .sort((a, b) => {
-                            if (a.moderation_status === "Pending" && b.moderation_status !== "Pending") return -1;
-                            if (a.moderation_status !== "Pending" && b.moderation_status === "Pending") return 1;
-                            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-                          })
-                          .map((event) => (
-                          <article
-                            key={event.id}
-                            className="rounded-xl border border-gray-200 p-3 dark:border-gray-700"
-                          >
-                            <div className="flex gap-3">
-                              {event.poster_url && (
-                                <img
-                                  src={event.poster_url}
-                                  alt=""
-                                  className="h-24 w-16 shrink-0 rounded-lg object-cover"
-                                />
-                              )}
+                    <div className="mt-4 max-h-[65vh] space-y-5 overflow-y-auto pr-1">
+                      {/* Antrean pending tetap ditampilkan agar admin bisa memutuskan status. */}
+                      <section className="rounded-2xl border border-amber-200 bg-amber-50/70 p-3 dark:border-amber-900 dark:bg-amber-950/20">
+                        <h3 className="mb-3 font-black text-amber-900 dark:text-amber-200">
+                          Menunggu Persetujuan ({events.filter((event) => event.moderation_status === "Pending").length})
+                        </h3>
+                        {events.filter((event) => event.moderation_status === "Pending").length === 0 ? (
+                          <p className="text-sm text-gray-500">Tidak ada event yang menunggu persetujuan.</p>
+                        ) : (
+                          <div className="grid gap-3 md:grid-cols-2">
+                            {events.filter((event) => event.moderation_status === "Pending").map((event) => (
+                              <article key={event.id} className="rounded-xl border border-amber-200 bg-white p-3 dark:border-amber-900 dark:bg-gray-900">
+                                <div className="flex gap-3">
+                                  {event.poster_url && <img src={event.poster_url} alt={`Poster ${event.title}`} className="h-20 w-14 shrink-0 rounded-lg object-cover" />}
+                                  <div className="min-w-0 flex-1">
+                                    <h4 className="font-bold">{event.title}</h4>
+                                    <p className="mt-1 text-xs text-gray-500">{event.organizer_name} · {event.city}</p>
+                                    <p className="mt-1 text-xs">Menunggu keputusan admin</p>
+                                  </div>
+                                </div>
+                                <div className="mt-3 flex flex-wrap gap-2">
+                                  <button onClick={() => void handleModeration(event.id, "Approved")} className="rounded-lg bg-green-600 px-3 py-2 text-xs font-bold text-white">Setujui</button>
+                                  <button onClick={() => void handleModeration(event.id, "Rejected")} className="rounded-lg bg-red-600 px-3 py-2 text-xs font-bold text-white">Tolak</button>
+                                  <button onClick={() => void handleModeration(event.id, "Approved", true, 1)} className="rounded-lg bg-amber-400 px-3 py-2 text-xs font-bold text-gray-950">Setujui & Sponsor</button>
+                                </div>
+                              </article>
+                            ))}
+                          </div>
+                        )}
+                      </section>
 
-                              <div className="min-w-0 flex-1">
-                                <h3 className="font-bold">{event.title}</h3>
-                                <p className="mt-1 text-xs text-gray-500">
-                                  {event.organizer_name} · {event.city}
-                                </p>
-                                <p className="mt-1 text-xs">
-                                  Status:{" "}
-                                  <span className="font-bold">
-                                    {event.moderation_status}
-                                  </span>
-                                </p>
-                                <p className="mt-1 text-xs">
-                                  {event.is_sponsored
-                                    ? "★ Promote aktif"
-                                    : "Belum dipromosikan"}
-                                </p>
-                              </div>
-                            </div>
+                      <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-3">
+                        {/* Kolom event disetujui dan belum disponsori */}
+                        <section className="min-w-0 rounded-2xl border border-green-200 p-3 dark:border-green-900">
+                          <h3 className="mb-3 font-black text-green-700 dark:text-green-300">Disetujui ({events.filter((event) => event.moderation_status === "Approved" && !event.is_sponsored).length})</h3>
+                          <div className="space-y-3">
+                            {events.filter((event) => event.moderation_status === "Approved" && !event.is_sponsored).map((event) => (
+                              <article key={event.id} className="rounded-xl border border-gray-200 p-3 dark:border-gray-700">
+                                <div className="flex gap-3">{event.poster_url && <img src={event.poster_url} alt={`Poster ${event.title}`} className="h-20 w-14 shrink-0 rounded-lg object-cover" />}<div className="min-w-0"><h4 className="font-bold">{event.title}</h4><p className="mt-1 text-xs text-gray-500">{event.organizer_name} · {event.city}</p></div></div>
+                                <div className="mt-3 flex flex-wrap gap-2">
+                                  <button onClick={() => void handleModeration(event.id, "Rejected", false, 0)} className="rounded-lg bg-red-600 px-3 py-2 text-xs font-bold text-white">Tolak</button>
+                                  <button onClick={() => void handleModeration(event.id, "Approved", true, 1)} className="rounded-lg bg-amber-400 px-3 py-2 text-xs font-bold text-gray-950">Jadikan Sponsor</button>
+                                  <button onClick={() => void handleModeration(event.id, "Hidden")} className="rounded-lg bg-gray-200 px-3 py-2 text-xs font-bold text-gray-800 dark:bg-gray-700 dark:text-white">Sembunyikan</button>
+                                </div>
+                              </article>
+                            ))}
+                            {events.filter((event) => event.moderation_status === "Approved" && !event.is_sponsored).length === 0 && <p className="text-sm text-gray-500">Belum ada event di kolom ini.</p>}
+                          </div>
+                        </section>
 
-                            <div className="mt-3 flex flex-wrap gap-2">
-                              <button
-                                onClick={() =>
-                                  void handleModeration(event.id, "Approved")
-                                }
-                                className="rounded-lg bg-green-600 px-3 py-2 text-xs font-bold text-white"
-                              >
-                                Setujui
-                              </button>
+                        {/* Kolom event ditolak */}
+                        <section className="min-w-0 rounded-2xl border border-red-200 p-3 dark:border-red-900">
+                          <h3 className="mb-3 font-black text-red-700 dark:text-red-300">Ditolak ({events.filter((event) => event.moderation_status === "Rejected").length})</h3>
+                          <div className="space-y-3">
+                            {events.filter((event) => event.moderation_status === "Rejected").map((event) => (
+                              <article key={event.id} className="rounded-xl border border-gray-200 p-3 dark:border-gray-700">
+                                <h4 className="font-bold">{event.title}</h4><p className="mt-1 text-xs text-gray-500">{event.organizer_name} · {event.city}</p>
+                                <div className="mt-3 flex flex-wrap gap-2"><button onClick={() => void handleModeration(event.id, "Approved", false, 0)} className="rounded-lg bg-green-600 px-3 py-2 text-xs font-bold text-white">Setujui</button><button onClick={() => void handleModeration(event.id, "Pending", false, 0)} className="rounded-lg border border-gray-300 px-3 py-2 text-xs font-bold dark:border-gray-700">Kembalikan ke antrean</button></div>
+                              </article>
+                            ))}
+                            {events.filter((event) => event.moderation_status === "Rejected").length === 0 && <p className="text-sm text-gray-500">Belum ada event yang ditolak.</p>}
+                          </div>
+                        </section>
 
-                              <button
-                                onClick={() =>
-                                  void handleModeration(event.id, "Rejected")
-                                }
-                                className="rounded-lg bg-red-600 px-3 py-2 text-xs font-bold text-white"
-                              >
-                                Tolak
-                              </button>
+                        {/* Kolom event sponsor */}
+                        <section className="min-w-0 rounded-2xl border border-amber-300 p-3 dark:border-amber-800">
+                          <h3 className="mb-3 font-black text-amber-700 dark:text-amber-300">Disponsori ({events.filter((event) => event.moderation_status === "Approved" && event.is_sponsored).length})</h3>
+                          <div className="space-y-3">
+                            {events.filter((event) => event.moderation_status === "Approved" && event.is_sponsored).map((event) => (
+                              <article key={event.id} className="rounded-xl border border-gray-200 p-3 dark:border-gray-700">
+                                <div className="flex gap-3">{event.poster_url && <img src={event.poster_url} alt={`Poster ${event.title}`} className="h-20 w-14 shrink-0 rounded-lg object-cover" />}<div className="min-w-0"><h4 className="font-bold">{event.title}</h4><p className="mt-1 text-xs text-gray-500">{event.organizer_name} · {event.city}</p><p className="mt-1 text-xs font-semibold text-amber-600">★ Promote aktif</p></div></div>
+                                <div className="mt-3 flex flex-wrap gap-2"><button onClick={() => void handleModeration(event.id, "Approved", false, 0)} className="rounded-lg border border-gray-300 px-3 py-2 text-xs font-bold dark:border-gray-700">Hapus Sponsor</button><button onClick={() => void handleModeration(event.id, "Rejected", false, 0)} className="rounded-lg bg-red-600 px-3 py-2 text-xs font-bold text-white">Tolak Event</button></div>
+                              </article>
+                            ))}
+                            {events.filter((event) => event.moderation_status === "Approved" && event.is_sponsored).length === 0 && <p className="text-sm text-gray-500">Belum ada event sponsor.</p>}
+                          </div>
+                        </section>
+                      </div>
 
-                              <button
-                                onClick={() =>
-                                  void handleModeration(event.id, "Hidden")
-                                }
-                                className="rounded-lg bg-gray-200 px-3 py-2 text-xs font-bold text-gray-800 dark:bg-gray-700 dark:text-white"
-                              >
-                                Sembunyikan
-                              </button>
-
-                              <button
-                                onClick={() =>
-                                  void handleModeration(
-                                    event.id,
-                                    "Approved",
-                                    !event.is_sponsored,
-                                    event.is_sponsored ? 0 : 1
-                                  )
-                                }
-                                className="rounded-lg bg-amber-400 px-3 py-2 text-xs font-bold text-gray-950"
-                              >
-                                {event.is_sponsored
-                                  ? "Hapus Promote"
-                                  : "Jadikan Promote"}
-                              </button>
-                            </div>
-                          </article>
-                        ))
+                      {/* Event tersembunyi tetap bisa dipulihkan oleh admin. */}
+                      {events.some((event) => event.moderation_status === "Hidden") && (
+                        <section className="rounded-2xl border border-gray-300 p-3 dark:border-gray-700">
+                          <h3 className="mb-3 font-black">Event Tersembunyi ({events.filter((event) => event.moderation_status === "Hidden").length})</h3>
+                          <div className="space-y-2">
+                            {events.filter((event) => event.moderation_status === "Hidden").map((event) => (
+                              <article key={event.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gray-200 p-3 dark:border-gray-700">
+                                <div><h4 className="font-bold">{event.title}</h4><p className="text-xs text-gray-500">{event.organizer_name} · {event.city}</p></div>
+                                <button onClick={() => void handleModeration(event.id, "Approved")} className="rounded-lg bg-green-600 px-3 py-2 text-xs font-bold text-white">Tampilkan Kembali</button>
+                              </article>
+                            ))}
+                          </div>
+                        </section>
                       )}
                     </div>
                   ) : (
@@ -3602,7 +3617,7 @@ accept="image/jpeg,image/png,image/webp"
           </div>
         )}
 
-        {/* MODAL UPLOAD / EDIT EVENT */}
+        {/* MODAL UPLOAD EVENT */}
         {eventFormOpen && currentRole === "user" && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-black/60 p-3 sm:p-5">
             <section className="my-auto max-h-[95vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-5 shadow-2xl dark:bg-gray-900 sm:p-7">
@@ -3612,7 +3627,7 @@ accept="image/jpeg,image/png,image/webp"
                     Publikasikan kegiatan
                   </p>
                   <h2 className="mt-2 text-2xl font-black">
-                    {editingEvent ? "Edit Event" : "Upload Poster Event"}
+                    Upload Poster Event
                   </h2>
                   <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                     Event akan ditinjau admin sebelum tampil di halaman publik.
@@ -3623,8 +3638,7 @@ accept="image/jpeg,image/png,image/webp"
                   type="button"
                   onClick={() => {
                     setEventFormOpen(false);
-                    setEditingEvent(null);
-                    setPosterFile(null);
+                                  setPosterFile(null);
                     setPosterPreview("");
                     setPosterError("");
                   }}
@@ -3675,7 +3689,7 @@ accept="image/jpeg,image/png,image/webp"
                         id="new-poster"
                         type="file"
                         accept="image/jpeg,image/png,image/webp"
-                        required={!editingEvent}
+                        required
                         onChange={(event) => {
                           const file = event.target.files?.[0];
 
@@ -3730,7 +3744,7 @@ accept="image/jpeg,image/png,image/webp"
                   </label>
                   <input
                     id="new-title"
-                    defaultValue={editingEvent?.title || ""}
+                    defaultValue=""
                     required
                     minLength={3}
                     maxLength={150}
@@ -3748,7 +3762,7 @@ accept="image/jpeg,image/png,image/webp"
                   </label>
                   <textarea
                     id="new-desc"
-                    defaultValue={editingEvent?.description || ""}
+                    defaultValue=""
                     required
                     minLength={20}
                     maxLength={5000}
@@ -3799,7 +3813,7 @@ accept="image/jpeg,image/png,image/webp"
                     </label>
                     <select
                       id="new-prov"
-                      defaultValue={editingEvent?.province || "DKI Jakarta"}
+                      defaultValue={"DKI Jakarta"}
                       required
                       className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-3 dark:border-gray-700 dark:bg-gray-950"
                     >
@@ -3820,7 +3834,7 @@ accept="image/jpeg,image/png,image/webp"
                     </label>
                     <input
                       id="new-city"
-                      defaultValue={editingEvent?.city || ""}
+                      defaultValue=""
                       required
                       maxLength={100}
                       placeholder="Contoh: Jakarta Selatan"
@@ -3838,7 +3852,7 @@ accept="image/jpeg,image/png,image/webp"
                   </label>
                   <input
                     id="new-venue"
-                    defaultValue={editingEvent?.venue_address || ""}
+                    defaultValue=""
                     required
                     maxLength={300}
                     placeholder="Nama gedung, alamat, atau lokasi acara"
@@ -3858,7 +3872,7 @@ accept="image/jpeg,image/png,image/webp"
                     <input
                       id="new-start"
                       type="date"
-                      defaultValue={editingEvent?.start_date || ""}
+                      defaultValue=""
                       required
                       className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-3 dark:border-gray-700 dark:bg-gray-950"
                     />
@@ -3874,7 +3888,7 @@ accept="image/jpeg,image/png,image/webp"
                     <input
                       id="new-end"
                       type="date"
-                      defaultValue={editingEvent?.end_date || ""}
+                      defaultValue=""
                       required
                       className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-3 dark:border-gray-700 dark:bg-gray-950"
                     />
@@ -3890,7 +3904,7 @@ accept="image/jpeg,image/png,image/webp"
                     <input
                       id="new-start-time"
                       type="time"
-                      defaultValue={editingEvent?.start_time || "09:00"}
+                      defaultValue={"09:00"}
                       className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-3 dark:border-gray-700 dark:bg-gray-950"
                     />
                   </div>
@@ -3905,7 +3919,7 @@ accept="image/jpeg,image/png,image/webp"
                     <input
                       id="new-end-time"
                       type="time"
-                      defaultValue={editingEvent?.end_time || "18:00"}
+                      defaultValue={"18:00"}
                       className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-3 dark:border-gray-700 dark:bg-gray-950"
                     />
                   </div>
@@ -3948,7 +3962,7 @@ accept="image/jpeg,image/png,image/webp"
                     <input
                       id="new-ticket-url"
                       type="url"
-                      defaultValue={editingEvent?.ticket_url || ""}
+                      defaultValue=""
                       required
                       placeholder="https://..."
                       className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-950"
@@ -3966,10 +3980,26 @@ accept="image/jpeg,image/png,image/webp"
                   <input
                     id="new-lomba-url"
                     type="url"
-                    defaultValue={editingEvent?.registration_url || ""}
+                    defaultValue=""
                     placeholder="https://..."
                     className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-950"
                   />
+                </div>
+
+                <div>
+                  <label htmlFor="new-social-link" className="mb-1 block text-sm font-bold">
+                    Link media sosial / informasi event (opsional)
+                  </label>
+                  <input
+                    id="new-social-link"
+                    type="url"
+                    inputMode="url"
+                    placeholder="https://instagram.com/... atau tautan lainnya"
+                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-950"
+                  />
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    Bisa berupa Instagram, TikTok, X, website, atau link informasi event.
+                  </p>
                 </div>
 
                 <div className="rounded-xl bg-amber-50 p-3 text-xs leading-5 text-amber-900 dark:bg-amber-950/50 dark:text-amber-200">
@@ -3983,8 +4013,7 @@ accept="image/jpeg,image/png,image/webp"
                     type="button"
                     onClick={() => {
                       setEventFormOpen(false);
-                      setEditingEvent(null);
-                      setPosterFile(null);
+                                      setPosterFile(null);
                       setPosterPreview("");
                       setPosterError("");
                     }}
@@ -3997,7 +4026,7 @@ accept="image/jpeg,image/png,image/webp"
                     type="submit"
                     className="rounded-xl bg-red-600 px-5 py-3 text-sm font-bold text-white hover:bg-red-700"
                   >
-                    {editingEvent ? "Simpan Perubahan" : "Kirim Event"}
+                    Kirim Event
                   </button>
                 </div>
               </form>
@@ -4173,8 +4202,7 @@ accept="image/jpeg,image/png,image/webp"
                       return;
                     }
 
-                    setEditingEvent(null);
-                    setPosterFile(null);
+                                  setPosterFile(null);
                     setPosterPreview("");
                     setPosterError("");
                     setNewCategories([]);
