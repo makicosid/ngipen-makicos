@@ -190,7 +190,9 @@ export default function Page() {
     useState<"Terbaru" | "Terpopuler">("Terbaru");
   const [userTab, setUserTab] =
     useState<"Semua" | "Tersimpan">("Semua");
-
+const [showCalendar, setShowCalendar] = useState(false);
+const [calendarMonth, setCalendarMonth] = useState(new Date());
+const [selectedCalendarDate, setSelectedCalendarDate] = useState("");
 const [eventStatusTab, setEventStatusTab] = useState<
   "Semua" | "Upcoming" | "Ongoing" | "Completed"
 >("Semua");
@@ -1402,7 +1404,20 @@ if (!allowedImageTypes.includes(docFile.type)) {
       events.filter((event) => event.moderation_status === "Approved"),
     [events]
   );
+const calendarEvents = useMemo(() => {
+  if (!selectedCalendarDate) return [];
 
+  return approvedEvents.filter((event) => {
+    const startDate = event.start_date;
+    const endDate = event.end_date || event.start_date;
+
+    return (
+      startDate <= selectedCalendarDate &&
+      endDate >= selectedCalendarDate &&
+      getTimeStatus(event) !== "Completed"
+    );
+  });
+}, [approvedEvents, selectedCalendarDate]);
   // Event sponsor hanya dari event yang telah disetujui admin
   const sponsoredEvents = useMemo(
     () =>
@@ -1817,7 +1832,19 @@ useEffect(() => {
               >
                 Jelajahi Event
               </button>
-
+{currentRole === "user" && (
+  <button
+    onClick={() => {
+      setSelectedEvent(null);
+      setShowCalendar(true);
+      setCalendarMonth(new Date());
+      setSelectedCalendarDate("");
+    }}
+    className="text-sm font-semibold hover:text-red-600"
+  >
+    Kalender
+  </button>
+)}
               {currentRole === "user" && (
                 <button
                   onClick={() => {
@@ -1963,7 +1990,21 @@ useEffect(() => {
                 >
                   Jelajahi Event
                 </button>
-
+{currentRole === "user" && (
+  <button
+    onClick={() => {
+      setMobileOpen(false);
+      setSelectedEvent(null);
+      setShowCalendar(true);
+      setCalendarMonth(new Date());
+      setSelectedCalendarDate("");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }}
+    className="rounded-xl px-3 py-3 text-left font-semibold hover:bg-gray-100 dark:hover:bg-gray-900"
+  >
+    Kalender
+  </button>
+)}
                 {currentRole === "user" && (
                   <button
                     onClick={() => {
@@ -2049,6 +2090,247 @@ useEffect(() => {
                 </div>
               </div>
             </section>
+
+{showCalendar && currentRole === "user" && (
+  <section className="mx-auto max-w-[1400px] px-4 pb-8">
+    <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900 sm:p-7">
+
+      {/* HEADER KALENDER */}
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-2xl font-black">Kalender Event</h2>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            Temukan event jejepangan berdasarkan tanggal.
+          </p>
+        </div>
+
+        <button
+          onClick={() => {
+            setShowCalendar(false);
+            setSelectedCalendarDate("");
+          }}
+          className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-800"
+        >
+          Tutup Kalender
+        </button>
+      </div>
+
+      {/* NAVIGASI BULAN */}
+      <div className="mb-5 flex items-center justify-between gap-3">
+        <button
+          onClick={() =>
+            setCalendarMonth((prev) =>
+              new Date(prev.getFullYear(), prev.getMonth() - 1, 1)
+            )
+          }
+          className="rounded-xl border border-gray-200 px-4 py-2 font-bold hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-800"
+        >
+          ←
+        </button>
+
+        <h3 className="text-lg font-bold capitalize">
+          {calendarMonth.toLocaleDateString("id-ID", {
+            month: "long",
+            year: "numeric",
+          })}
+        </h3>
+
+        <button
+          onClick={() =>
+            setCalendarMonth((prev) =>
+              new Date(prev.getFullYear(), prev.getMonth() + 1, 1)
+            )
+          }
+          className="rounded-xl border border-gray-200 px-4 py-2 font-bold hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-800"
+        >
+          →
+        </button>
+      </div>
+
+      {/* ISI KALENDER */}
+      {(() => {
+        const year = calendarMonth.getFullYear();
+        const month = calendarMonth.getMonth();
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const toDateKey = (date: Date) => {
+          const y = date.getFullYear();
+          const m = String(date.getMonth() + 1).padStart(2, "0");
+          const d = String(date.getDate()).padStart(2, "0");
+          return `${y}-${m}-${d}`;
+        };
+
+        const todayKey = toDateKey(today);
+
+        const firstDay = new Date(year, month, 1);
+        const offset = (firstDay.getDay() + 6) % 7;
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+        const calendarCells = [
+          ...Array(offset).fill(null),
+          ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
+        ];
+
+        return (
+          <>
+            <div className="grid grid-cols-7 gap-1 sm:gap-2">
+              {["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"].map(
+                (day) => (
+                  <div
+                    key={day}
+                    className="py-2 text-center text-xs font-bold text-gray-500 sm:text-sm"
+                  >
+                    {day}
+                  </div>
+                )
+              )}
+
+              {calendarCells.map((day, index) => {
+                if (day === null) {
+                  return <div key={`empty-${index}`} />;
+                }
+
+                const date = new Date(year, month, day);
+                const dateKey = toDateKey(date);
+                const isPast = dateKey < todayKey;
+                const isSelected = selectedCalendarDate === dateKey;
+
+                const hasEvents = !isPast && approvedEvents.some((event) => {
+                  const startDate = event.start_date;
+                  const endDate = event.end_date || event.start_date;
+
+                  return (
+                    startDate <= dateKey &&
+                    endDate >= dateKey &&
+                    getTimeStatus(event) !== "Completed"
+                  );
+                });
+
+                return (
+                  <button
+                    key={dateKey}
+                    disabled={isPast}
+                    onClick={() => setSelectedCalendarDate(dateKey)}
+                    className={`relative flex min-h-[48px] flex-col items-center justify-center rounded-xl border text-sm font-semibold transition sm:min-h-[65px] sm:text-base
+                      ${
+                        isSelected
+                          ? "border-red-600 bg-red-600 text-white"
+                          : isPast
+                            ? "cursor-not-allowed border-transparent text-gray-300 dark:text-gray-700"
+                            : "border-gray-100 hover:border-red-400 hover:bg-red-50 dark:border-gray-800 dark:hover:bg-red-950"
+                      }`}
+                  >
+                    {day}
+
+                    {hasEvents && (
+                      <span
+                        className={`mt-1 h-1.5 w-1.5 rounded-full ${
+                          isSelected ? "bg-white" : "bg-red-600"
+                        }`}
+                      />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="mt-4 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+              <span className="h-2.5 w-2.5 rounded-full bg-red-600" />
+              Tanggal dengan event
+            </div>
+          </>
+        );
+      })()}
+
+      {/* DAFTAR EVENT BERDASARKAN TANGGAL */}
+      <div className="mt-8 border-t border-gray-200 pt-6 dark:border-gray-800">
+        {!selectedCalendarDate ? (
+          <div className="rounded-xl bg-gray-50 p-6 text-center text-sm text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+            Pilih tanggal pada kalender untuk melihat event.
+          </div>
+        ) : (
+          <>
+            <h3 className="mb-4 text-lg font-bold">
+              Event tanggal{" "}
+              {new Date(
+                selectedCalendarDate + "T00:00:00"
+              ).toLocaleDateString("id-ID", {
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+              })}
+            </h3>
+
+            {calendarEvents.length === 0 ? (
+              <div className="rounded-xl bg-gray-50 p-6 text-center dark:bg-gray-800">
+                <p className="font-semibold">
+                  Belum ada event pada tanggal ini.
+                </p>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  Coba pilih tanggal lainnya.
+                </p>
+              </div>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {calendarEvents.map((event) => (
+                  <button
+                    key={event.id}
+                    onClick={() => {
+                      setSelectedEvent(event);
+                      setShowCalendar(false);
+                    }}
+                    className="overflow-hidden rounded-2xl border border-gray-200 text-left transition hover:border-red-500 hover:shadow-md dark:border-gray-700"
+                  >
+                    {event.poster_url && (
+                      <img
+                        src={event.poster_url}
+                        alt={event.title}
+                        className="max-h-56 w-full bg-gray-100 object-contain dark:bg-gray-800"
+                      />
+                    )}
+
+                    <div className="p-4">
+                      <h4 className="font-bold">{event.title}</h4>
+
+                      <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                        📍 {event.city}, {event.province}
+                      </p>
+
+                      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                        📅 {new Date(
+                          event.start_date + "T00:00:00"
+                        ).toLocaleDateString("id-ID", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                        {event.end_date &&
+                          event.end_date !== event.start_date &&
+                          ` - ${new Date(
+                            event.end_date + "T00:00:00"
+                          ).toLocaleDateString("id-ID", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          })}`}
+                      </p>
+
+                      <p className="mt-3 text-xs font-bold text-red-600">
+                        Lihat Detail Event →
+                      </p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  </section>
+)}
 
             {/* UPLOAD EVENT UNTUK USER — TANPA DASHBOARD EVENT MILIK USER */}
             {currentRole === "user" && (
