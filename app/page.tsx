@@ -2287,7 +2287,7 @@ useEffect(() => {
                       <img
                         src={event.poster_url}
                         alt={event.title}
-                        className="max-h-56 w-full bg-gray-100 object-contain dark:bg-gray-800"
+                       className="block h-auto w-full object-contain"
                       />
                     )}
 
