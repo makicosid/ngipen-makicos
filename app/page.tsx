@@ -197,7 +197,9 @@ const [eventStatusTab, setEventStatusTab] = useState<
 
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const sharedEventOpenedRef = useRef<string | null>(null);
-
+  
+const sponsorCarouselRef = useRef<HTMLDivElement>(null);
+const sponsorCarouselPausedRef = useRef(false);
   // Setiap kali detail event dibuka, mulai dari bagian paling atas halaman.
   useEffect(() => {
     if (!selectedEvent) return;
@@ -286,7 +288,48 @@ const [eventStatusTab, setEventStatusTab] = useState<
 
     return () => window.clearInterval(interval);
   }, []);
+// Auto-slide carousel sponsor setiap 15 detik.
+useEffect(() => {
+  if (sponsoredEvents.length <= 1) return;
 
+  const interval = window.setInterval(() => {
+    const carousel = sponsorCarouselRef.current;
+
+    if (
+      !carousel ||
+      sponsorCarouselPausedRef.current ||
+      document.hidden
+    ) {
+      return;
+    }
+
+    const firstCard = carousel.firstElementChild as HTMLElement | null;
+    if (!firstCard) return;
+
+    const cardWidth = firstCard.getBoundingClientRect().width;
+    const styles = window.getComputedStyle(carousel);
+    const gap = parseFloat(styles.columnGap) || 0;
+    const distance = cardWidth + gap;
+
+    const atEnd =
+      carousel.scrollLeft + carousel.clientWidth >=
+      carousel.scrollWidth - 8;
+
+    if (atEnd) {
+      carousel.scrollTo({
+        left: 0,
+        behavior: "smooth",
+      });
+    } else {
+      carousel.scrollBy({
+        left: distance,
+        behavior: "smooth",
+      });
+    }
+  }, 15000);
+
+  return () => window.clearInterval(interval);
+}, [sponsoredEvents.length]);
   // Jumlah event per halaman mengikuti ukuran layar: HP = 8, desktop = 12.
   useEffect(() => {
     const desktopQuery = window.matchMedia("(min-width: 768px)");
@@ -2078,7 +2121,28 @@ if (!allowedImageTypes.includes(docFile.type)) {
                   </span>
                 </div>
 
-                <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-3">
+                <div
+  ref={sponsorCarouselRef}
+  onMouseEnter={() => {
+    sponsorCarouselPausedRef.current = true;
+  }}
+  onMouseLeave={() => {
+    sponsorCarouselPausedRef.current = false;
+  }}
+  onTouchStart={() => {
+    sponsorCarouselPausedRef.current = true;
+  }}
+  onTouchEnd={() => {
+    sponsorCarouselPausedRef.current = false;
+  }}
+  onFocusCapture={() => {
+    sponsorCarouselPausedRef.current = true;
+  }}
+  onBlurCapture={() => {
+    sponsorCarouselPausedRef.current = false;
+  }}
+  className="flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth pb-3"
+>
                   {sponsoredEvents.map((event) => (
                     <button
                       key={event.id}
