@@ -508,30 +508,46 @@ const sponsorCarouselPausedRef = useRef(false);
 
   // Validasi poster: maksimal 3 MB, rasio 3:4
   const handlePosterUpload = (
-    file: File,
-    setter: (value: string) => void
-  ) => {
-    setPosterError("");
+  file: File,
+  setter: (value: string) => void
+) => {
+  setPosterError("");
+  setPosterFile(null);
+  setter("");
 
-    if (!file.type.startsWith("image/")) {
-      setPosterError("File harus berupa gambar.");
+  if (!file.type.startsWith("image/")) {
+    setPosterError("File harus berupa gambar.");
+    return;
+  }
+
+  if (file.size > 3 * 1024 * 1024) {
+    setPosterError("Ukuran poster maksimal 3 MB.");
+    return;
+  }
+
+  const objectUrl = URL.createObjectURL(file);
+  const img = new Image();
+
+  img.onload = () => {
+    if (Math.abs(img.width / img.height - 0.75) > 0.1) {
+      setPosterError("Rasio poster harus 3:4.");
+      setPosterFile(null);
+      URL.revokeObjectURL(objectUrl);
       return;
     }
 
-    if (file.size > 3 * 1024 * 1024) {
-      setPosterError("Ukuran poster maksimal 3 MB.");
-      return;
-    }
+    setPosterFile(file);
+    setter(objectUrl);
+  };
 
-    const objectUrl = URL.createObjectURL(file);
-    const img = new Image();
+  img.onerror = () => {
+    setPosterError("Gambar tidak dapat dibaca.");
+    setPosterFile(null);
+    URL.revokeObjectURL(objectUrl);
+  };
 
-    img.onload = () => {
-      if (Math.abs(img.width / img.height - 0.75) > 0.1) {
-        setPosterError("Rasio poster harus 3:4.");
-        URL.revokeObjectURL(objectUrl);
-        return;
-      }
+  img.src = objectUrl;
+};
 
       setPosterFile(file);
       setter(objectUrl);
