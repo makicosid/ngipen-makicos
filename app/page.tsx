@@ -2744,6 +2744,22 @@ useEffect(() => {
                             </span>
                           )}
 
+{(() => {
+  const start = new Date(event.start_date + "T00:00:00");
+  const end = new Date((event.end_date || event.start_date) + "T00:00:00");
+  const duration = Math.round(
+    (end.getTime() - start.getTime()) / 86400000
+  ) + 1;
+
+  if (duration < 1 || duration > 3) return null;
+
+  return (
+    <span className="absolute right-2 bottom-10 rounded-full bg-red-600 px-2.5 py-1 text-[11px] font-black text-white shadow-md">
+      {duration}D
+    </span>
+  );
+})()}
+
 {getTimeStatus(event) === "Completed" && (
   <span className="absolute right-2 top-2 rounded-full bg-gray-800 px-2 py-1 text-[10px] font-black text-white">
     COMPLETED
