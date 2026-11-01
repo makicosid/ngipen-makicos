@@ -1709,10 +1709,10 @@ if (!allowedImageTypes.includes(docFile.type)) {
 
   return (
     <div className={dark ? "dark" : ""}>
-      <div className="min-h-screen bg-gray-50 text-gray-900 transition-colors dark:bg-gray-950 dark:text-white">
+      <div className="min-h-screen bg-[#fafafa] text-[#202020] transition-colors dark:bg-[#151515] dark:text-white">
         {/* HEADER */}
-        <header className="sticky top-0 z-40 border-b border-gray-200 bg-white/95 backdrop-blur dark:border-gray-800 dark:bg-gray-950/95">
-          <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-3 px-4 py-3">
+        <header className="sticky top-0 z-40 border-b border-gray-200 bg-white/95 backdrop-blur dark:border-gray-800 dark:bg-[#151515]/95">
+          <div className="mx-auto flex max-w-[1280px] items-center justify-between gap-3 px-4 py-3 sm:px-6">
             {/* LOGO */}
             <button
               type="button"
@@ -1727,7 +1727,7 @@ if (!allowedImageTypes.includes(docFile.type)) {
 
                 setTimeout(() => setLogoClicks(0), 4000);
               }}
-              className="flex min-w-0 items-center gap-2 text-left"
+              className="flex min-w-0 items-center gap-3 text-left"
               aria-label="NGIPEN"
               title="NGIPEN"
             >
@@ -1737,11 +1737,11 @@ if (!allowedImageTypes.includes(docFile.type)) {
                 onError={(event) => {
                   event.currentTarget.style.display = "none";
                 }}
-                className="h-10 w-10 shrink-0 object-contain sm:h-12 sm:w-12"
+                className="h-10 w-10 shrink-0 object-contain sm:h-11 sm:w-11"
               />
 
               <span className="min-w-0">
-                <span className="block text-xl font-black tracking-wide text-red-600 sm:text-2xl">
+                <span className="block text-xl font-black tracking-tight text-red-600 sm:text-2xl">
                   NGIPEN
                 </span>
                 <span className="hidden text-xs text-gray-500 dark:text-gray-400 sm:block">
@@ -1751,7 +1751,7 @@ if (!allowedImageTypes.includes(docFile.type)) {
             </button>
 
             {/* NAVIGASI DESKTOP */}
-            <nav className="hidden items-center gap-4 md:flex">
+            <nav className="hidden items-center gap-6 md:flex">
               <button
                 onClick={() => {
                   setSelectedEvent(null);
@@ -1802,7 +1802,7 @@ if (!allowedImageTypes.includes(docFile.type)) {
               <button
                 type="button"
                 onClick={toggleTheme}
-                className="rounded-full border border-gray-200 px-3 py-2 text-sm dark:border-gray-700"
+                className="rounded-full border border-gray-200 px-3 py-2 text-sm transition hover:border-red-300 hover:text-red-600 dark:border-gray-700"
                 aria-label="Ganti tema"
                 title="Ganti tema"
               >
@@ -1966,18 +1966,18 @@ if (!allowedImageTypes.includes(docFile.type)) {
         {!selectedEvent && (
           <main>
             {/* HERO */}
-            <section className="mx-auto max-w-[1400px] px-4 pb-6 pt-8 sm:pt-12">
-              <div className="overflow-hidden rounded-3xl bg-gradient-to-br from-red-700 via-red-600 to-red-500 p-6 text-white sm:p-10">
+            <section className="mx-auto max-w-[1280px] px-4 pb-7 pt-7 sm:px-6 sm:pt-10">
+              <div className="overflow-hidden rounded-3xl border border-gray-200 bg-white p-6 text-[#202020] shadow-sm dark:border-gray-800 dark:bg-[#1d1d1d] dark:text-white sm:p-10">
                 <div className="max-w-3xl">
-                  <p className="mb-3 text-xs font-bold uppercase tracking-[0.25em] text-red-100">
+                  <p className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-red-600 dark:text-red-400">
                     Event Jejepangan Indonesia
                   </p>
 
-                  <h1 className="text-3xl font-black leading-tight sm:text-5xl">
+                  <h1 className="text-3xl font-black leading-tight tracking-tight sm:text-5xl">
                     Temukan Keseruan Event Favoritmu!
                   </h1>
 
-                  <p className="mt-4 max-w-2xl text-sm leading-6 text-red-50 sm:text-base">
+                  <p className="mt-4 max-w-2xl text-sm leading-6 text-gray-600 dark:text-gray-300 sm:text-base">
                     Cari event cosplay, idol, toys, dan berbagai kegiatan
                     komunitas di seluruh Indonesia dalam satu tempat.
                   </p>
@@ -1988,7 +1988,7 @@ if (!allowedImageTypes.includes(docFile.type)) {
                         .getElementById("daftar-event")
                         ?.scrollIntoView({ behavior: "smooth" })
                     }
-                    className="mt-6 rounded-full bg-white px-5 py-3 text-sm font-bold text-red-700 hover:bg-red-50"
+                    className="mt-6 rounded-full bg-red-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-red-700"
                   >
                     Jelajahi Event ↓
                   </button>
@@ -1997,7 +1997,7 @@ if (!allowedImageTypes.includes(docFile.type)) {
                     href="https://teer.id/makicos.id"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="mt-3 inline-flex rounded-full border border-white/80 px-5 py-3 text-sm font-bold text-white hover:bg-white/10 sm:ml-3"
+                    className="mt-3 inline-flex rounded-full border border-red-200 px-5 py-3 text-sm font-bold text-red-700 transition hover:bg-red-50 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950/40 sm:ml-3"
                   >
                     JOIN COMMUNITY ↗
                   </a>
@@ -2007,8 +2007,8 @@ if (!allowedImageTypes.includes(docFile.type)) {
 
             {/* UPLOAD EVENT UNTUK USER — TANPA DASHBOARD EVENT MILIK USER */}
             {currentRole === "user" && (
-              <section className="mx-auto max-w-[1400px] px-4 pb-6">
-                <div className="flex flex-col justify-between gap-4 rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900 sm:flex-row sm:items-center">
+              <section className="mx-auto max-w-[1280px] px-4 pb-6 sm:px-6">
+                <div className="flex flex-col justify-between gap-4 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-[#1d1d1d] sm:flex-row sm:items-center">
                   <div>
                     <h2 className="font-bold">Punya event untuk dibagikan?</h2>
                     <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
@@ -2034,8 +2034,8 @@ if (!allowedImageTypes.includes(docFile.type)) {
 
             {/* PROMOSIKAN EVENT — KONTAK WHATSAPP */}
             {currentRole === "user" && (
-              <section className="mx-auto max-w-[1400px] px-4 pb-8">
-                <div className="flex flex-col justify-between gap-4 rounded-2xl border border-red-200 bg-red-50 p-5 dark:border-red-900 dark:bg-red-950/30 sm:flex-row sm:items-center sm:p-6">
+              <section className="mx-auto max-w-[1280px] px-4 pb-8 sm:px-6">
+                <div className="flex flex-col justify-between gap-4 rounded-2xl border border-red-100 bg-white p-5 shadow-sm dark:border-red-950 dark:bg-[#1d1d1d] sm:flex-row sm:items-center sm:p-6">
                   <div className="max-w-3xl">
                     <p className="text-xs font-black uppercase tracking-wider text-red-600 dark:text-red-300">
                       Promosi NGIPEN
@@ -2062,7 +2062,7 @@ if (!allowedImageTypes.includes(docFile.type)) {
 
             {/* CAROUSEL SPONSOR / PROMOTE */}
             {sponsoredEvents.length > 0 && (
-              <section className="mx-auto max-w-[1400px] px-4 pb-8">
+              <section className="mx-auto max-w-[1280px] px-4 pb-8 sm:px-6">
                 <div className="mb-4 flex items-end justify-between gap-3">
                   <div>
                     <p className="text-xs font-bold uppercase tracking-wider text-red-600">
@@ -2084,7 +2084,7 @@ if (!allowedImageTypes.includes(docFile.type)) {
                       key={event.id}
                       type="button"
                       onClick={() => openEvent(event)}
-                      className="w-40 shrink-0 snap-start overflow-hidden rounded-2xl border border-gray-200 bg-white text-left shadow-sm transition hover:-translate-y-1 hover:shadow-md dark:border-gray-800 dark:bg-gray-900 sm:w-52"
+                      className="w-40 shrink-0 snap-start overflow-hidden rounded-2xl border border-gray-200 bg-white text-left transition hover:-translate-y-0.5 hover:border-red-200 hover:shadow-md dark:border-gray-800 dark:bg-[#1d1d1d] sm:w-52"
                     >
                       <div className="relative aspect-[3/4] bg-gray-100 dark:bg-gray-800">
                         {event.poster_url ? (
@@ -2126,8 +2126,8 @@ if (!allowedImageTypes.includes(docFile.type)) {
 
             {/* PANEL ADMIN */}
             {currentRole === "admin" && (
-              <section className="mx-auto max-w-[1400px] px-4 pb-8">
-                <div className="rounded-2xl border border-red-200 bg-red-50 p-5 dark:border-red-900 dark:bg-red-950/30">
+              <section className="mx-auto max-w-[1280px] px-4 pb-8 sm:px-6">
+                <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-[#1d1d1d]">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
                       <h2 className="text-lg font-black text-red-700 dark:text-red-300">
@@ -2168,7 +2168,7 @@ if (!allowedImageTypes.includes(docFile.type)) {
             {/* FILTER DAN DAFTAR EVENT */}
             <section
               id="daftar-event"
-              className="mx-auto max-w-[1400px] scroll-mt-24 px-4 pb-12"
+              className="mx-auto max-w-[1280px] scroll-mt-24 px-4 pb-12 sm:px-6"
             >
               <div className="mb-5">
                 <h2 className="text-2xl font-black sm:text-3xl">
@@ -2330,11 +2330,11 @@ if (!allowedImageTypes.includes(docFile.type)) {
                 </div>
               ) : (
                 <>
-                <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-5">
                   {paginatedEvents.map((event) => (
                     <article
                       key={event.id}
-                      className="group overflow-hidden rounded-2xl border border-gray-200 bg-white transition hover:-translate-y-1 hover:shadow-lg dark:border-gray-800 dark:bg-gray-900"
+                      className="group overflow-hidden rounded-2xl border border-gray-200 bg-white transition duration-200 hover:-translate-y-0.5 hover:border-red-200 hover:shadow-md dark:border-gray-800 dark:bg-[#1d1d1d]"
                     >
                       <button
                         type="button"
@@ -2493,7 +2493,7 @@ if (!allowedImageTypes.includes(docFile.type)) {
 
         {/* HALAMAN DETAIL EVENT */}
         {selectedEvent && (
-          <main className="mx-auto min-h-screen max-w-[1200px] px-4 py-6 sm:py-10">
+          <main className="mx-auto min-h-screen max-w-[1120px] px-4 py-6 sm:px-6 sm:py-10">
             <button
               type="button"
               onClick={() => {
@@ -2511,7 +2511,7 @@ if (!allowedImageTypes.includes(docFile.type)) {
             <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] md:gap-10">
               {/* POSTER EVENT */}
               <div className="mx-auto w-full max-w-[520px]">
-                <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-[#1d1d1d]">
                   {selectedEvent.poster_url ? (
                     <img
                       src={selectedEvent.poster_url}
@@ -2553,7 +2553,7 @@ if (!allowedImageTypes.includes(docFile.type)) {
                   {selectedEvent.title}
                 </h1>
 
-                <div className="mt-5 space-y-3 rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
+                <div className="mt-5 space-y-3 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-[#1d1d1d]">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
                       Tanggal
@@ -2672,7 +2672,7 @@ if (!allowedImageTypes.includes(docFile.type)) {
                 </div>
 
                 {/* RATING */}
-                <div className="mt-8 rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
+                <div className="mt-8 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-[#1d1d1d]">
                   <h2 className="text-lg font-black">Rating Event</h2>
 
                   <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -2716,7 +2716,7 @@ if (!allowedImageTypes.includes(docFile.type)) {
               </h2>
 
               {currentRole === "user" ? (
-                <div className="mt-4 rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
+                <div className="mt-4 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-[#1d1d1d]">
                   <label
                     htmlFor="event-comment"
                     className="text-sm font-bold"
@@ -2809,7 +2809,7 @@ if (!allowedImageTypes.includes(docFile.type)) {
                     .map((review) => (
                       <article
                         key={review.id}
-                        className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900"
+                        className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-[#1d1d1d]"
                       >
                         <div className="flex items-start gap-3">
                           {review.avatar_url ? (
@@ -2877,7 +2877,7 @@ if (!allowedImageTypes.includes(docFile.type)) {
 
               {currentRole === "user" &&
                 getTimeStatus(selectedEvent) === "Completed" && (
-                  <div className="mt-4 rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
+                  <div className="mt-4 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-[#1d1d1d]">
                     <label
                       htmlFor="documentation-file"
                       className="text-sm font-bold"
@@ -2971,7 +2971,7 @@ accept="image/jpeg,image/png,image/webp"
               }
             }}
           >
-            <section className="my-auto w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl dark:bg-gray-900 sm:p-8">
+            <section className="my-auto w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6 shadow-xl dark:border-gray-800 dark:bg-[#1d1d1d] sm:p-8">
               <div className="mb-6 flex items-start justify-between gap-4">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-widest text-red-600">
@@ -3091,7 +3091,7 @@ accept="image/jpeg,image/png,image/webp"
               }
             }}
           >
-            <section className="my-auto w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl dark:bg-gray-900 sm:p-8">
+            <section className="my-auto w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6 shadow-xl dark:border-gray-800 dark:bg-[#1d1d1d] sm:p-8">
               <div className="mb-6 flex items-start justify-between gap-4">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-widest text-red-600">
@@ -3225,7 +3225,7 @@ accept="image/jpeg,image/png,image/webp"
         {/* MODAL LOGIN ADMIN */}
         {showAdmin && (
           <div className="fixed inset-0 z-[110] flex items-center justify-center overflow-y-auto bg-black/70 p-4">
-            <section className={`my-auto max-h-[95vh] w-full overflow-y-auto rounded-3xl bg-white p-5 shadow-2xl dark:bg-gray-900 sm:p-7 ${currentRole === "admin" ? "max-w-7xl" : "max-w-lg"}`}>
+            <section className={`my-auto max-h-[95vh] w-full overflow-y-auto rounded-2xl border border-gray-200 bg-white p-5 shadow-xl dark:border-gray-800 dark:bg-[#1d1d1d] sm:p-7 ${currentRole === "admin" ? "max-w-7xl" : "max-w-lg"}`}>
               <div className="mb-6 flex items-start justify-between gap-3">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-widest text-red-600">
@@ -3323,7 +3323,7 @@ accept="image/jpeg,image/png,image/webp"
                   </div>
 
                   <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-                    <div className="rounded-xl border border-gray-200 bg-gray-50 p-3 dark:border-gray-800 dark:bg-gray-950">
+                    <div className="rounded-xl border border-gray-200 bg-white p-3 dark:border-gray-800 dark:bg-[#151515]">
                       <p className="text-xs text-gray-500">Total pengguna</p>
                       <p className="mt-1 text-2xl font-black">{registeredUsers.length}</p>
                     </div>
@@ -3335,7 +3335,7 @@ accept="image/jpeg,image/png,image/webp"
                       <p className="text-xs text-green-800 dark:text-green-300">Disetujui</p>
                       <p className="mt-1 text-2xl font-black">{events.filter((event) => event.moderation_status === "Approved").length}</p>
                     </div>
-                    <div className="rounded-xl border border-gray-200 bg-gray-50 p-3 dark:border-gray-800 dark:bg-gray-950">
+                    <div className="rounded-xl border border-gray-200 bg-white p-3 dark:border-gray-800 dark:bg-[#151515]">
                       <p className="text-xs text-gray-500">Total event</p>
                       <p className="mt-1 text-2xl font-black">{events.length}</p>
                     </div>
@@ -3521,7 +3521,7 @@ accept="image/jpeg,image/png,image/webp"
         {/* MODAL PROFIL USER */}
         {showUserProfile && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-black/60 p-4">
-            <section className="my-auto w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl dark:bg-gray-900 sm:p-8">
+            <section className="my-auto w-full max-w-lg rounded-2xl border border-gray-200 bg-white p-6 shadow-xl dark:border-gray-800 dark:bg-[#1d1d1d] sm:p-8">
               <div className="mb-6 flex items-start justify-between gap-3">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-widest text-red-600">
@@ -3708,7 +3708,7 @@ accept="image/jpeg,image/png,image/webp"
         {/* MODAL UPLOAD EVENT */}
         {eventFormOpen && currentRole === "user" && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-black/60 p-3 sm:p-5">
-            <section className="my-auto max-h-[95vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-5 shadow-2xl dark:bg-gray-900 sm:p-7">
+            <section className="my-auto max-h-[95vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-gray-200 bg-white p-5 shadow-xl dark:border-gray-800 dark:bg-[#1d1d1d] sm:p-7">
               <div className="mb-6 flex items-start justify-between gap-3">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-widest text-red-600">
@@ -4125,7 +4125,7 @@ accept="image/jpeg,image/png,image/webp"
         {/* MODAL CROP AVATAR */}
         {showAvatarCrop && (
           <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/70 p-4">
-            <section className="w-full max-w-md rounded-3xl bg-white p-5 shadow-2xl dark:bg-gray-900 sm:p-7">
+            <section className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-5 shadow-xl dark:border-gray-800 dark:bg-[#1d1d1d] sm:p-7">
               <div className="mb-4 flex items-center justify-between">
                 <h2 className="text-xl font-black">Atur Foto Profil</h2>
                 <button
