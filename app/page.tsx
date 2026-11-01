@@ -1936,7 +1936,7 @@ if (!allowedImageTypes.includes(docFile.type)) {
                   </button>
 
                   <a
-                    href="https://trakteer.id/makicos.id"
+                   href="https://teer.id/makicos.id"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="mt-3 inline-flex rounded-full border border-white/80 px-5 py-3 text-sm font-bold text-white hover:bg-white/10 sm:ml-3"
