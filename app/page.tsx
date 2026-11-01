@@ -2123,7 +2123,8 @@ useEffect(() => {
                   </span>
                 </div>
 
-                <div
+                
+<div
   ref={sponsorCarouselRef}
   onMouseEnter={() => {
     sponsorCarouselPausedRef.current = true;
@@ -2145,48 +2146,49 @@ useEffect(() => {
   }}
   className="flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth pb-3"
 >
-                  {sponsoredEvents.map((event) => (
-                    <button
-                      key={event.id}
-                      type="button"
-                      onClick={() => openEvent(event)}
-                      className="w-40 shrink-0 snap-start overflow-hidden rounded-2xl border border-gray-200 bg-white text-left shadow-sm transition hover:-translate-y-1 hover:shadow-md dark:border-gray-800 dark:bg-gray-900 sm:w-52"
-                    >
-                      <div className="relative aspect-[3/4] bg-gray-100 dark:bg-gray-800">
-                        {event.poster_url ? (
-                          <img
-                            src={event.poster_url}
-                            alt={`Poster ${event.title}`}
-                            loading="lazy"
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          <div className="flex h-full items-center justify-center p-3 text-center text-xs text-gray-500">
-                            Poster tidak tersedia
-                          </div>
-                        )}
+  {sponsoredEvents.map((event) => (
+    <button
+      key={event.id}
+      type="button"
+      onClick={() => openEvent(event)}
+      className="w-full min-w-full shrink-0 snap-start overflow-hidden rounded-2xl border border-gray-200 bg-white text-left shadow-sm dark:border-gray-800 dark:bg-gray-900"
+    >
+      <div className="relative aspect-[16/7] bg-gray-100 dark:bg-gray-800 sm:aspect-[16/6]">
+        {event.poster_url ? (
+          <img
+            src={event.poster_url}
+            alt={`Poster ${event.title}`}
+            loading="lazy"
+            className="h-full w-full object-contain sm:object-cover"
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center text-sm text-gray-500">
+            Poster tidak tersedia
+          </div>
+        )}
 
-                        <span className="absolute left-2 top-2 rounded-full bg-amber-400 px-2 py-1 text-[10px] font-black text-gray-950">
-                          ★ SPONSOR
-                        </span>
-                      </div>
+        <span className="absolute left-3 top-3 rounded-full bg-amber-400 px-3 py-1 text-xs font-black text-gray-950">
+          ★ SPONSOR
+        </span>
+      </div>
 
-                      <div className="p-3">
-                        <h3 className="line-clamp-2 min-h-10 text-sm font-bold">
-                          {event.title}
-                        </h3>
+      <div className="p-4">
+        <h3 className="text-base font-bold sm:text-lg">
+          {event.title}
+        </h3>
 
-                        <p className="mt-2 truncate text-xs text-gray-500 dark:text-gray-400">
-                          {event.city}, {event.province}
-                        </p>
+        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          {event.city}, {event.province}
+        </p>
 
-                        <p className="mt-1 text-xs font-semibold text-red-600">
-                          {event.start_date}
-                        </p>
-                      </div>
-                    </button>
-                  ))}
-                </div>
+        <p className="mt-2 text-sm font-semibold text-red-600">
+          {event.start_date}
+        </p>
+      </div>
+    </button>
+  ))}
+</div>
+
               </section>
             )}
 
