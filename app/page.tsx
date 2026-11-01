@@ -289,47 +289,7 @@ const sponsorCarouselPausedRef = useRef(false);
     return () => window.clearInterval(interval);
   }, []);
 // Auto-slide carousel sponsor setiap 15 detik.
-useEffect(() => {
-  if (sponsoredEvents.length <= 1) return;
 
-  const interval = window.setInterval(() => {
-    const carousel = sponsorCarouselRef.current;
-
-    if (
-      !carousel ||
-      sponsorCarouselPausedRef.current ||
-      document.hidden
-    ) {
-      return;
-    }
-
-    const firstCard = carousel.firstElementChild as HTMLElement | null;
-    if (!firstCard) return;
-
-    const cardWidth = firstCard.getBoundingClientRect().width;
-    const styles = window.getComputedStyle(carousel);
-    const gap = parseFloat(styles.columnGap) || 0;
-    const distance = cardWidth + gap;
-
-    const atEnd =
-      carousel.scrollLeft + carousel.clientWidth >=
-      carousel.scrollWidth - 8;
-
-    if (atEnd) {
-      carousel.scrollTo({
-        left: 0,
-        behavior: "smooth",
-      });
-    } else {
-      carousel.scrollBy({
-        left: distance,
-        behavior: "smooth",
-      });
-    }
-  }, 15000);
-
-  return () => window.clearInterval(interval);
-}, [sponsoredEvents.length]);
   // Jumlah event per halaman mengikuti ukuran layar: HP = 8, desktop = 12.
   useEffect(() => {
     const desktopQuery = window.matchMedia("(min-width: 768px)");
@@ -1455,7 +1415,49 @@ if (!allowedImageTypes.includes(docFile.type)) {
         .slice(0, 10),
     [approvedEvents]
   );
+useEffect(() => {
+  if (sponsoredEvents.length <= 1) return;
 
+  const interval = window.setInterval(() => {
+    const carousel = sponsorCarouselRef.current;
+
+    if (
+      !carousel ||
+      sponsorCarouselPausedRef.current ||
+      document.hidden
+    ) {
+      return;
+    }
+
+    const firstCard = carousel.firstElementChild as HTMLElement | null;
+    if (!firstCard) return;
+
+    const cardWidth = firstCard.getBoundingClientRect().width;
+    const styles = window.getComputedStyle(carousel);
+    const gap = parseFloat(styles.columnGap) || 0;
+    const distance = cardWidth + gap;
+
+    const atEnd =
+      carousel.scrollLeft + carousel.clientWidth >=
+      carousel.scrollWidth - 8;
+
+    if (atEnd) {
+      carousel.scrollTo({
+        left: 0,
+        behavior: "smooth",
+      });
+    } else {
+      carousel.scrollBy({
+        left: distance,
+        behavior: "smooth",
+      });
+    }
+  }, 15000);
+
+  return () => window.clearInterval(interval);
+}, [sponsoredEvents.length]);
+
+  
   const filteredEvents = useMemo(() => {
     let result = [...approvedEvents];
 
