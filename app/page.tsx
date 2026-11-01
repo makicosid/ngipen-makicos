@@ -242,6 +242,9 @@ const [eventStatusTab, setEventStatusTab] = useState<
 
   const [adminTab, setAdminTab] =
     useState<"moderation" | "users">("moderation");
+  const [adminEventTab, setAdminEventTab] = useState<
+    "Pending" | "Approved" | "Rejected" | "Sponsored" | "Completed" | "Hidden"
+  >("Pending");
   const [sponsoredCount, setSponsoredCount] = useState(0);
 
   const [commentText, setCommentText] = useState("");
@@ -897,6 +900,37 @@ const [eventStatusTab, setEventStatusTab] = useState<
     setTimeout(() => setToast(""), 2000);
   };
 
+  // Hapus event yang sudah selesai secara permanen setelah konfirmasi admin.
+  const handleDeleteCompletedEvent = async (event: Event) => {
+    if (getTimeStatus(event) !== "Completed") {
+      setToast("Event belum selesai dan tidak dapat dihapus dari daftar ini.");
+      setTimeout(() => setToast(""), 2500);
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Hapus event "${event.title}" secara permanen? Tindakan ini tidak dapat dibatalkan.`
+    );
+    if (!confirmed) return;
+
+    const { error } = await supabase
+      .from("events")
+      .delete()
+      .eq("id", event.id);
+
+    if (error) {
+      setToast(`Gagal menghapus event: ${error.message}`);
+      setTimeout(() => setToast(""), 4000);
+      return;
+    }
+
+    setEvents((prev) => prev.filter((item) => item.id !== event.id));
+    setSavedIds((prev) => prev.filter((id) => id !== event.id));
+    if (selectedEvent?.id === event.id) setSelectedEvent(null);
+    setToast("Event selesai berhasil dihapus.");
+    setTimeout(() => setToast(""), 2500);
+  };
+
   // Simpan atau hapus event dari daftar tersimpan
   const toggleSave = async (eventId: string) => {
     if (currentRole !== "user") {
@@ -1511,6 +1545,30 @@ if (!allowedImageTypes.includes(docFile.type)) {
     sortMode,
   ]);
 
+  const adminFilteredEvents = useMemo(() => {
+    return events.filter((event) => {
+      const completed = getTimeStatus(event) === "Completed";
+
+      if (adminEventTab === "Completed") return completed;
+      if (completed) return false;
+
+      switch (adminEventTab) {
+        case "Pending":
+          return event.moderation_status === "Pending";
+        case "Approved":
+          return event.moderation_status === "Approved" && !event.is_sponsored;
+        case "Rejected":
+          return event.moderation_status === "Rejected";
+        case "Sponsored":
+          return event.moderation_status === "Approved" && event.is_sponsored;
+        case "Hidden":
+          return event.moderation_status === "Hidden";
+        default:
+          return false;
+      }
+    });
+  }, [events, adminEventTab, realTimeTick]);
+
   const totalEventPages = Math.max(
     1,
     Math.ceil(filteredEvents.length / eventsPerPage)
@@ -1936,7 +1994,7 @@ if (!allowedImageTypes.includes(docFile.type)) {
                   </button>
 
                   <a
-                   href="https://teer.id/makicos.id"
+                    href="https://teer.id/makicos.id"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="mt-3 inline-flex rounded-full border border-white/80 px-5 py-3 text-sm font-bold text-white hover:bg-white/10 sm:ml-3"
@@ -3167,7 +3225,7 @@ accept="image/jpeg,image/png,image/webp"
         {/* MODAL LOGIN ADMIN */}
         {showAdmin && (
           <div className="fixed inset-0 z-[110] flex items-center justify-center overflow-y-auto bg-black/70 p-4">
-            <section className="my-auto w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl dark:bg-gray-900 sm:p-8">
+            <section className={`my-auto max-h-[95vh] w-full overflow-y-auto rounded-3xl bg-white p-5 shadow-2xl dark:bg-gray-900 sm:p-7 ${currentRole === "admin" ? "max-w-7xl" : "max-w-lg"}`}>
               <div className="mb-6 flex items-start justify-between gap-3">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-widest text-red-600">
@@ -3284,98 +3342,128 @@ accept="image/jpeg,image/png,image/webp"
                   </div>
 
                   {adminTab === "moderation" ? (
-                    <div className="mt-4 max-h-[65vh] space-y-5 overflow-y-auto pr-1">
-                      {/* Antrean pending tetap ditampilkan agar admin bisa memutuskan status. */}
-                      <section className="rounded-2xl border border-amber-200 bg-amber-50/70 p-3 dark:border-amber-900 dark:bg-amber-950/20">
-                        <h3 className="mb-3 font-black text-amber-900 dark:text-amber-200">
-                          Menunggu Persetujuan ({events.filter((event) => event.moderation_status === "Pending").length})
-                        </h3>
-                        {events.filter((event) => event.moderation_status === "Pending").length === 0 ? (
-                          <p className="text-sm text-gray-500">Tidak ada event yang menunggu persetujuan.</p>
-                        ) : (
-                          <div className="grid gap-3 md:grid-cols-2">
-                            {events.filter((event) => event.moderation_status === "Pending").map((event) => (
-                              <article key={event.id} className="rounded-xl border border-amber-200 bg-white p-3 dark:border-amber-900 dark:bg-gray-900">
-                                <div className="flex gap-3">
-                                  {event.poster_url && <img src={event.poster_url} alt={`Poster ${event.title}`} className="h-20 w-14 shrink-0 rounded-lg object-cover" />}
-                                  <div className="min-w-0 flex-1">
-                                    <h4 className="font-bold">{event.title}</h4>
-                                    <p className="mt-1 text-xs text-gray-500">{event.organizer_name} · {event.city}</p>
-                                    <p className="mt-1 text-xs">Menunggu keputusan admin</p>
-                                  </div>
-                                </div>
-                                <div className="mt-3 flex flex-wrap gap-2">
-                                  <button onClick={() => void handleModeration(event.id, "Approved")} className="rounded-lg bg-green-600 px-3 py-2 text-xs font-bold text-white">Setujui</button>
-                                  <button onClick={() => void handleModeration(event.id, "Rejected")} className="rounded-lg bg-red-600 px-3 py-2 text-xs font-bold text-white">Tolak</button>
-                                  <button onClick={() => void handleModeration(event.id, "Approved", true, 1)} className="rounded-lg bg-amber-400 px-3 py-2 text-xs font-bold text-gray-950">Setujui & Sponsor</button>
-                                </div>
-                              </article>
-                            ))}
-                          </div>
-                        )}
-                      </section>
+                    <div className="mt-5 space-y-4">
+                      <div className="flex flex-wrap gap-2 border-b border-gray-200 pb-3 dark:border-gray-800">
+                        {([
+                          ["Pending", "Menunggu", "amber"],
+                          ["Approved", "Disetujui", "green"],
+                          ["Rejected", "Ditolak", "red"],
+                          ["Sponsored", "Disponsori", "orange"],
+                          ["Completed", "Event Selesai", "gray"],
+                          ["Hidden", "Disembunyikan", "gray"],
+                        ] as const).map(([tab, label]) => {
+                          const count = events.filter((event) => {
+                            const completed = getTimeStatus(event) === "Completed";
+                            if (tab === "Completed") return completed;
+                            if (completed) return false;
+                            if (tab === "Pending") return event.moderation_status === "Pending";
+                            if (tab === "Approved") return event.moderation_status === "Approved" && !event.is_sponsored;
+                            if (tab === "Rejected") return event.moderation_status === "Rejected";
+                            if (tab === "Sponsored") return event.moderation_status === "Approved" && event.is_sponsored;
+                            return event.moderation_status === "Hidden";
+                          }).length;
 
-                      <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-3">
-                        {/* Kolom event disetujui dan belum disponsori */}
-                        <section className="min-w-0 rounded-2xl border border-green-200 p-3 dark:border-green-900">
-                          <h3 className="mb-3 font-black text-green-700 dark:text-green-300">Disetujui ({events.filter((event) => event.moderation_status === "Approved" && !event.is_sponsored).length})</h3>
-                          <div className="space-y-3">
-                            {events.filter((event) => event.moderation_status === "Approved" && !event.is_sponsored).map((event) => (
-                              <article key={event.id} className="rounded-xl border border-gray-200 p-3 dark:border-gray-700">
-                                <div className="flex gap-3">{event.poster_url && <img src={event.poster_url} alt={`Poster ${event.title}`} className="h-20 w-14 shrink-0 rounded-lg object-cover" />}<div className="min-w-0"><h4 className="font-bold">{event.title}</h4><p className="mt-1 text-xs text-gray-500">{event.organizer_name} · {event.city}</p></div></div>
-                                <div className="mt-3 flex flex-wrap gap-2">
-                                  <button onClick={() => void handleModeration(event.id, "Rejected", false, 0)} className="rounded-lg bg-red-600 px-3 py-2 text-xs font-bold text-white">Tolak</button>
-                                  <button onClick={() => void handleModeration(event.id, "Approved", true, 1)} className="rounded-lg bg-amber-400 px-3 py-2 text-xs font-bold text-gray-950">Jadikan Sponsor</button>
-                                  <button onClick={() => void handleModeration(event.id, "Hidden")} className="rounded-lg bg-gray-200 px-3 py-2 text-xs font-bold text-gray-800 dark:bg-gray-700 dark:text-white">Sembunyikan</button>
-                                </div>
-                              </article>
-                            ))}
-                            {events.filter((event) => event.moderation_status === "Approved" && !event.is_sponsored).length === 0 && <p className="text-sm text-gray-500">Belum ada event di kolom ini.</p>}
-                          </div>
-                        </section>
-
-                        {/* Kolom event ditolak */}
-                        <section className="min-w-0 rounded-2xl border border-red-200 p-3 dark:border-red-900">
-                          <h3 className="mb-3 font-black text-red-700 dark:text-red-300">Ditolak ({events.filter((event) => event.moderation_status === "Rejected").length})</h3>
-                          <div className="space-y-3">
-                            {events.filter((event) => event.moderation_status === "Rejected").map((event) => (
-                              <article key={event.id} className="rounded-xl border border-gray-200 p-3 dark:border-gray-700">
-                                <h4 className="font-bold">{event.title}</h4><p className="mt-1 text-xs text-gray-500">{event.organizer_name} · {event.city}</p>
-                                <div className="mt-3 flex flex-wrap gap-2"><button onClick={() => void handleModeration(event.id, "Approved", false, 0)} className="rounded-lg bg-green-600 px-3 py-2 text-xs font-bold text-white">Setujui</button><button onClick={() => void handleModeration(event.id, "Pending", false, 0)} className="rounded-lg border border-gray-300 px-3 py-2 text-xs font-bold dark:border-gray-700">Kembalikan ke antrean</button></div>
-                              </article>
-                            ))}
-                            {events.filter((event) => event.moderation_status === "Rejected").length === 0 && <p className="text-sm text-gray-500">Belum ada event yang ditolak.</p>}
-                          </div>
-                        </section>
-
-                        {/* Kolom event sponsor */}
-                        <section className="min-w-0 rounded-2xl border border-amber-300 p-3 dark:border-amber-800">
-                          <h3 className="mb-3 font-black text-amber-700 dark:text-amber-300">Disponsori ({events.filter((event) => event.moderation_status === "Approved" && event.is_sponsored).length})</h3>
-                          <div className="space-y-3">
-                            {events.filter((event) => event.moderation_status === "Approved" && event.is_sponsored).map((event) => (
-                              <article key={event.id} className="rounded-xl border border-gray-200 p-3 dark:border-gray-700">
-                                <div className="flex gap-3">{event.poster_url && <img src={event.poster_url} alt={`Poster ${event.title}`} className="h-20 w-14 shrink-0 rounded-lg object-cover" />}<div className="min-w-0"><h4 className="font-bold">{event.title}</h4><p className="mt-1 text-xs text-gray-500">{event.organizer_name} · {event.city}</p><p className="mt-1 text-xs font-semibold text-amber-600">★ Promote aktif</p></div></div>
-                                <div className="mt-3 flex flex-wrap gap-2"><button onClick={() => void handleModeration(event.id, "Approved", false, 0)} className="rounded-lg border border-gray-300 px-3 py-2 text-xs font-bold dark:border-gray-700">Hapus Sponsor</button><button onClick={() => void handleModeration(event.id, "Rejected", false, 0)} className="rounded-lg bg-red-600 px-3 py-2 text-xs font-bold text-white">Tolak Event</button></div>
-                              </article>
-                            ))}
-                            {events.filter((event) => event.moderation_status === "Approved" && event.is_sponsored).length === 0 && <p className="text-sm text-gray-500">Belum ada event sponsor.</p>}
-                          </div>
-                        </section>
+                          return (
+                            <button
+                              key={tab}
+                              type="button"
+                              onClick={() => setAdminEventTab(tab)}
+                              className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-bold transition ${
+                                adminEventTab === tab
+                                  ? "bg-red-600 text-white shadow-sm"
+                                  : "border border-gray-200 bg-white text-gray-600 hover:border-red-300 hover:text-red-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                              }`}
+                            >
+                              {label}
+                              <span className={`rounded-full px-2 py-0.5 text-xs ${adminEventTab === tab ? "bg-white/20 text-white" : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300"}`}>
+                                {count}
+                              </span>
+                            </button>
+                          );
+                        })}
                       </div>
 
-                      {/* Event tersembunyi tetap bisa dipulihkan oleh admin. */}
-                      {events.some((event) => event.moderation_status === "Hidden") && (
-                        <section className="rounded-2xl border border-gray-300 p-3 dark:border-gray-700">
-                          <h3 className="mb-3 font-black">Event Tersembunyi ({events.filter((event) => event.moderation_status === "Hidden").length})</h3>
-                          <div className="space-y-2">
-                            {events.filter((event) => event.moderation_status === "Hidden").map((event) => (
-                              <article key={event.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gray-200 p-3 dark:border-gray-700">
-                                <div><h4 className="font-bold">{event.title}</h4><p className="text-xs text-gray-500">{event.organizer_name} · {event.city}</p></div>
-                                <button onClick={() => void handleModeration(event.id, "Approved")} className="rounded-lg bg-green-600 px-3 py-2 text-xs font-bold text-white">Tampilkan Kembali</button>
-                              </article>
-                            ))}
-                          </div>
-                        </section>
+                      {adminEventTab === "Completed" && (
+                        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
+                          Event pada daftar ini sudah melewati tanggal dan waktu selesai. Penghapusan bersifat permanen dan memerlukan konfirmasi.
+                        </div>
+                      )}
+
+                      {adminFilteredEvents.length === 0 ? (
+                        <div className="rounded-2xl border border-dashed border-gray-300 px-5 py-12 text-center dark:border-gray-700">
+                          <p className="font-bold">Belum ada event di kategori ini.</p>
+                          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Event yang sesuai akan muncul di sini.</p>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+                          {adminFilteredEvents.map((event) => (
+                            <article key={event.id} className="flex min-w-0 flex-col rounded-2xl border border-gray-200 bg-white p-3 shadow-sm dark:border-gray-700 dark:bg-gray-900 sm:p-4">
+                              <div className="flex min-w-0 gap-3">
+                                {event.poster_url ? (
+                                  <img src={event.poster_url} alt={`Poster ${event.title}`} className="h-24 w-16 shrink-0 rounded-xl border border-gray-100 object-cover dark:border-gray-700 sm:h-28 sm:w-[76px]" />
+                                ) : (
+                                  <div className="flex h-24 w-16 shrink-0 items-center justify-center rounded-xl bg-gray-100 text-xs text-gray-400 dark:bg-gray-800 sm:h-28 sm:w-[76px]">No poster</div>
+                                )}
+                                <div className="min-w-0 flex-1">
+                                  <h4 className="break-words font-bold leading-snug text-gray-900 dark:text-white">{event.title}</h4>
+                                  <p className="mt-1 break-words text-xs text-gray-500 dark:text-gray-400">{event.organizer_name || "Penyelenggara"}</p>
+                                  <p className="mt-1 break-words text-xs text-gray-500 dark:text-gray-400">{event.city}{event.province ? `, ${event.province}` : ""}</p>
+                                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{event.start_date} – {event.end_date}</p>
+                                  {adminEventTab === "Completed" ? (
+                                    <span className="mt-2 inline-flex rounded-full bg-gray-100 px-2.5 py-1 text-xs font-bold text-gray-700 dark:bg-gray-800 dark:text-gray-200">Selesai</span>
+                                  ) : adminEventTab === "Pending" ? (
+                                    <span className="mt-2 inline-flex rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-800 dark:bg-amber-950 dark:text-amber-200">Menunggu</span>
+                                  ) : adminEventTab === "Approved" ? (
+                                    <span className="mt-2 inline-flex rounded-full bg-green-100 px-2.5 py-1 text-xs font-bold text-green-800 dark:bg-green-950 dark:text-green-200">Disetujui</span>
+                                  ) : adminEventTab === "Rejected" ? (
+                                    <span className="mt-2 inline-flex rounded-full bg-red-100 px-2.5 py-1 text-xs font-bold text-red-800 dark:bg-red-950 dark:text-red-200">Ditolak</span>
+                                  ) : adminEventTab === "Sponsored" ? (
+                                    <span className="mt-2 inline-flex rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-800 dark:bg-amber-950 dark:text-amber-200">★ Sponsor aktif</span>
+                                  ) : (
+                                    <span className="mt-2 inline-flex rounded-full bg-gray-100 px-2.5 py-1 text-xs font-bold text-gray-700 dark:bg-gray-800 dark:text-gray-200">Disembunyikan</span>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="mt-4 flex flex-wrap gap-2 border-t border-gray-100 pt-3 dark:border-gray-800">
+                                {adminEventTab === "Pending" && (
+                                  <>
+                                    <button type="button" onClick={() => void handleModeration(event.id, "Approved")} className="rounded-lg bg-green-600 px-3 py-2 text-xs font-bold text-white hover:bg-green-700">Setujui</button>
+                                    <button type="button" onClick={() => void handleModeration(event.id, "Rejected")} className="rounded-lg bg-red-600 px-3 py-2 text-xs font-bold text-white hover:bg-red-700">Tolak</button>
+                                    <button type="button" onClick={() => void handleModeration(event.id, "Approved", true, 1)} className="rounded-lg bg-amber-400 px-3 py-2 text-xs font-bold text-gray-950 hover:bg-amber-500">Setujui & Sponsor</button>
+                                  </>
+                                )}
+                                {adminEventTab === "Approved" && (
+                                  <>
+                                    <button type="button" onClick={() => void handleModeration(event.id, "Rejected", false, 0)} className="rounded-lg bg-red-600 px-3 py-2 text-xs font-bold text-white hover:bg-red-700">Tolak</button>
+                                    <button type="button" onClick={() => void handleModeration(event.id, "Approved", true, 1)} className="rounded-lg bg-amber-400 px-3 py-2 text-xs font-bold text-gray-950 hover:bg-amber-500">Jadikan Sponsor</button>
+                                    <button type="button" onClick={() => void handleModeration(event.id, "Hidden")} className="rounded-lg bg-gray-100 px-3 py-2 text-xs font-bold text-gray-800 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700">Sembunyikan</button>
+                                  </>
+                                )}
+                                {adminEventTab === "Rejected" && (
+                                  <>
+                                    <button type="button" onClick={() => void handleModeration(event.id, "Approved", false, 0)} className="rounded-lg bg-green-600 px-3 py-2 text-xs font-bold text-white hover:bg-green-700">Setujui</button>
+                                    <button type="button" onClick={() => void handleModeration(event.id, "Pending", false, 0)} className="rounded-lg border border-gray-300 px-3 py-2 text-xs font-bold dark:border-gray-700">Kembalikan ke antrean</button>
+                                  </>
+                                )}
+                                {adminEventTab === "Sponsored" && (
+                                  <>
+                                    <button type="button" onClick={() => void handleModeration(event.id, "Approved", false, 0)} className="rounded-lg border border-gray-300 px-3 py-2 text-xs font-bold dark:border-gray-700">Hapus Sponsor</button>
+                                    <button type="button" onClick={() => void handleModeration(event.id, "Rejected", false, 0)} className="rounded-lg bg-red-600 px-3 py-2 text-xs font-bold text-white hover:bg-red-700">Tolak Event</button>
+                                  </>
+                                )}
+                                {adminEventTab === "Hidden" && (
+                                  <button type="button" onClick={() => void handleModeration(event.id, "Approved")} className="rounded-lg bg-green-600 px-3 py-2 text-xs font-bold text-white hover:bg-green-700">Tampilkan Kembali</button>
+                                )}
+                                {adminEventTab === "Completed" && (
+                                  <button type="button" onClick={() => void handleDeleteCompletedEvent(event)} className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-3 py-2 text-xs font-bold text-white hover:bg-red-700">
+                                    <span aria-hidden="true">🗑</span> Hapus Event
+                                  </button>
+                                )}
+                              </div>
+                            </article>
+                          ))}
+                        </div>
                       )}
                     </div>
                   ) : (
