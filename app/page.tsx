@@ -1731,14 +1731,14 @@ if (!allowedImageTypes.includes(docFile.type)) {
               aria-label="NGIPEN"
               title="NGIPEN"
             >
-              <img
-                src="/logo.png"
-                alt="Logo NGIPEN"
-                onError={(event) => {
-                  event.currentTarget.style.display = "none";
-                }}
-                className="h-10 w-10 shrink-0 object-contain sm:h-12 sm:w-12"
-              />
+             <img
+  src="/ngipen-logo.png"
+  alt="Logo NGIPEN"
+  onError={(event) => {
+    event.currentTarget.style.display = "none";
+  }}
+  className="h-14 w-14 shrink-0 object-contain sm:h-16 sm:w-16"
+/>
 
               <span className="min-w-0">
                 <span className="block text-xl font-black tracking-wide text-red-600 sm:text-2xl">
@@ -4311,9 +4311,19 @@ accept="image/jpeg,image/png,image/webp"
                 </button>
               </div>
 
-              <p className="text-xs text-gray-400">
-                © {new Date().getFullYear()} NGIPEN
-              </p>
+             <div className="flex flex-col items-center gap-1 text-center">
+  <p className="text-xs text-gray-400">
+    © {new Date().getFullYear()} NGIPEN
+  </p>
+
+  <p className="mt-2 text-xs font-semibold tracking-wide text-gray-600 dark:text-gray-300">
+    MARI KITA COSPLAY
+  </p>
+
+  <p className="text-[11px] font-medium tracking-wider text-gray-400">
+    MAKICOS ID
+  </p>
+</div>
             </div>
           </footer>
         )}
