@@ -168,6 +168,36 @@ function slugify(value: string) {
 }
 
 export default function Page() {
+    const formatEventDate = (startDate: string, endDate?: string) => {
+    const formatDate = (dateString: string) => {
+      const date = new Date(dateString + "T00:00:00");
+
+      return date.toLocaleDateString("id-ID", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      });
+    };
+
+    if (!endDate || startDate === endDate) {
+      return formatDate(startDate);
+    }
+
+    const start = new Date(startDate + "T00:00:00");
+    const end = new Date(endDate + "T00:00:00");
+
+    if (
+      start.getMonth() === end.getMonth() &&
+      start.getFullYear() === end.getFullYear()
+    ) {
+      return `${start.getDate()}–${end.getDate()} ${end.toLocaleDateString(
+        "id-ID",
+        { month: "long", year: "numeric" }
+      )}`;
+    }
+
+    return `${formatDate(startDate)} – ${formatDate(endDate)}`;
+  };
   const [dark, setDark] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -2892,7 +2922,7 @@ const openEvent = async (event: Event) => {
                           </p>
 
                           <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                            📅 {event.start_date}
+                            📅 {formatEventDate(event.start_date, event.end_date)}
                           </p>
 <div className="mt-2 flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
   <svg
