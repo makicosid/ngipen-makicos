@@ -217,16 +217,19 @@ export async function POST(request: NextRequest) {
 
       const { data: user, error: insertError } = await supabaseAdmin
         .from("users")
-        .insert({
-          username,
-          normalized_username: username,
-          password_hash: passwordHash,
-          display_name: displayName,
-          bio: "",
-          avatar_url: "",
-        })
-        .select("id, username, display_name")
-        .single();
+       const { data: user, error: insertError } = await supabaseAdmin
+  .from("users")
+  .insert({
+    username,
+    instagram_username: username,
+    normalized_username: username,
+    password_hash: passwordHash,
+    display_name: displayName,
+    bio: "",
+    avatar_url: "",
+  })
+  .select("id, username, display_name")
+  .single();
 
       if (insertError || !user) {
         return json({ error: "Pendaftaran gagal." }, 500);
