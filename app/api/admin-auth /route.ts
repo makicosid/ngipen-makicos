@@ -135,7 +135,7 @@ export async function POST(request: NextRequest) {
         ? body.pin.trim()
         : "";
 
-    if (!username || !/^\d{6}$/.test(pin)) {
+   if (!username || !/^\d{4}$/.test(pin)) {
       return json(
         { error: "Username atau format PIN tidak valid." },
         400
