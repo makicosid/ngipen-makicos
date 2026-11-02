@@ -3116,11 +3116,8 @@ const openEvent = async (event: Event) => {
                       Tanggal
                     </p>
                     <p className="mt-1 font-semibold">
-                      📅 {selectedEvent.start_date}
-                      {selectedEvent.end_date !== selectedEvent.start_date
-                        ? ` — ${selectedEvent.end_date}`
-                        : ""}
-                    </p>
+  📅 {formatEventDate(selectedEvent.start_date, selectedEvent.end_date)}
+</p>
                   </div>
 
                   <div>
