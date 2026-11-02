@@ -1764,36 +1764,81 @@ useEffect(() => {
     [approvedEvents, selectedProv]
   );
 
-  const openEvent = async (event: Event) => {
-    setSelectedEvent(event);
-    setCommentText("");
+const openEvent = async (event: Event) => {
+  setSelectedEvent(event);
+  setCommentText("");
 
-    const { data } = await supabase
-      .from("event_reviews")
-      .select("*")
-      .eq("event_id", event.id)
-      .order("created_at", { ascending: false });
-
-    if (data) {
-      const userMap = new Map(
-        registeredUsers.map((user) => [String(user.id), user])
-      );
-      const mapped = data.map((review: any) => {
-        const user = userMap.get(String(review.user_id));
-        return {
-          ...review,
-          username: user?.username || review.username || "user",
-          display_name: user?.display_name || user?.username || review.display_name || "Pengguna",
-          avatar_url: user?.avatar_url || review.avatar_url || "",
-        };
+  // Catat view hanya untuk pengguna yang sudah login.
+  if (currentRole === "user" && currentUserId) {
+    try {
+      const response = await fetch("/api/events/view", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          eventId: event.id,
+        }),
       });
-      setReviews((prev) => [
-        ...mapped,
-        ...prev.filter((review) => review.event_id !== event.id),
-      ]);
-    }
-  };
 
+      const result = await response.json();
+
+      if (response.ok && typeof result.views === "number") {
+        setEvents((prev) =>
+          prev.map((item) =>
+            item.id === event.id
+              ? { ...item, views: result.views }
+              : item
+          )
+        );
+
+        setSelectedEvent((prev) =>
+          prev?.id === event.id
+            ? { ...prev, views: result.views }
+            : prev
+        );
+      } else if (!response.ok) {
+        console.error("Gagal mencatat views:", result.error);
+      }
+    } catch (error) {
+      console.error("Gagal mengirim pencatatan views:", error);
+    }
+  }
+
+  // Ambil ulasan event seperti sebelumnya.
+  const { data } = await supabase
+    .from("event_reviews")
+    .select("*")
+    .eq("event_id", event.id)
+    .order("created_at", { ascending: false });
+
+  if (data) {
+    const userMap = new Map(
+      registeredUsers.map((user) => [String(user.id), user])
+    );
+
+    const mapped = data.map((review: any) => {
+      const user = userMap.get(String(review.user_id));
+
+      return {
+        ...review,
+        username: user?.username || review.username || "user",
+        display_name:
+          user?.display_name ||
+          user?.username ||
+          review.display_name ||
+          "Pengguna",
+        avatar_url: user?.avatar_url || review.avatar_url || "",
+      };
+    });
+
+    setReviews((prev) => [
+      ...mapped,
+      ...prev.filter((review) => review.event_id !== event.id),
+    ]);
+  }
+};
   // Buka detail event otomatis ketika halaman diakses melalui link ?event=<id>.
   useEffect(() => {
     if (typeof window === "undefined" || events.length === 0) return;
