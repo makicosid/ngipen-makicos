@@ -8,6 +8,53 @@ export const runtime = "nodejs";
 const COOKIE_NAME = "ngipen_admin_session";
 const SESSION_DAYS = 30;
 
+
+function getAttemptKey(request: NextRequest, username: string) {
+  const forwardedFor = request.headers.get("x-forwarded-for");
+  const ip = forwardedFor?.split(",")[0]?.trim() || "unknown";
+
+  return createHash("sha256")
+    .update(`${ip}:${username.toLowerCase()}`)
+    .digest("hex");
+}
+
+
+
+async function checkAndRecordLoginAttempt(
+  request: NextRequest,
+  username: string
+) {
+  const attemptKey = getAttemptKey(request, username);
+
+  const { data, error } = await getSupabaseAdmin()
+    .rpc("check_admin_login_limit", {
+      p_attempt_key: attemptKey,
+    });
+
+  if (error) {
+    console.error("Login rate limit error:", error);
+    throw new Error("Gagal memeriksa batas percobaan login.");
+  }
+
+  return data === true;
+}
+
+async function clearLoginAttempts(
+  request: NextRequest,
+  username: string
+) {
+  const attemptKey = getAttemptKey(request, username);
+
+  const { error } = await getSupabaseAdmin()
+    .from("admin_login_attempts")
+    .delete()
+    .eq("attempt_key", attemptKey);
+
+  if (error) {
+    console.error("Login attempt cleanup error:", error);
+    throw new Error("Gagal menghapus catatan percobaan login.");
+  }
+}
 function getSupabaseAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -98,17 +145,22 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const supabase = getSupabaseAdmin();
 
-    if (body.action === "logout") {
-      const token = request.cookies.get(COOKIE_NAME)?.value;
+   if (body.action === "logout") {
+  const token = request.cookies.get(COOKIE_NAME)?.value;
 
-      if (token) {
-        await supabase
-          .from("admin_sessions")
-          .delete()
-          .eq("token_hash", hashToken(token));
-      }
+  if (token) {
+    const { error } = await supabase
+      .from("admin_sessions")
+      .delete()
+      .eq("token_hash", hashToken(token));
 
-      const response = json({ success: true });
+    if (error) {
+      console.error("Admin logout error:", error);
+
+      const response = json(
+        { error: "Gagal menghapus sesi admin." },
+        500
+      );
 
       response.cookies.set(COOKIE_NAME, "", {
         httpOnly: true,
@@ -120,6 +172,20 @@ export async function POST(request: NextRequest) {
 
       return response;
     }
+  }
+
+  const response = json({ success: true });
+
+  response.cookies.set(COOKIE_NAME, "", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 0,
+  });
+
+  return response;
+}
 
     if (body.action !== "login") {
       return json({ error: "Aksi tidak dikenal." }, 400);
@@ -141,7 +207,17 @@ export async function POST(request: NextRequest) {
         400
       );
     }
+   const loginAllowed = await checkAndRecordLoginAttempt(request, username);
 
+if (!loginAllowed) {
+  return json(
+    {
+      error:
+        "Terlalu banyak percobaan login. Coba lagi setelah 15 menit.",
+    },
+    429
+  );
+}
     const { data, error } = await supabase
       .from("admin_settings")
       .select("username, pin_hash")
@@ -159,7 +235,9 @@ export async function POST(request: NextRequest) {
         401
       );
     }
-
+    
+    await clearLoginAttempts(request, username);
+    
     const response = json({
       success: true,
       authenticated: true,
