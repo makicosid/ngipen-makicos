@@ -4748,25 +4748,25 @@ accept="image/jpeg,image/png,image/webp"
                 </button>
 
                 <button
-                  type="button"
-                  onClick={() => {
-                    if (currentRole !== "user") {
-                      setToast("Silakan login sebagai user terlebih dahulu.");
-                      setShowLoginUser(true);
-                      return;
-                    }
+  type="button"
+  onClick={() => {
+    if (currentRole !== "user") {
+      setToast("Silakan login sebagai user terlebih dahulu.");
+      setShowLoginUser(true);
+      return;
+    }
 
-                                  setPosterFile(null);
-                    setPosterPreview("");
-                    setPosterError("");
-                    setNewCategories([]);
-                    setNewTicketType("Gratis");
-                    setEventFormOpen(true);
-                  }}
-                  className="hover:text-red-600"
-                >
-                  Publikasikan Event
-                </button>
+    setPosterFile(null);
+    setPosterPreview("");
+    setPosterError("");
+    setNewCategories([]);
+    setNewTicketType("Gratis");
+    setEventFormOpen(true);
+  }}
+  className="hover:text-red-600"
+>
+  Publikasikan Event
+</button>
 
                 <button
                   type="button"
