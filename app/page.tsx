@@ -273,14 +273,57 @@ const sponsorCarouselPausedRef = useRef(false);
       document.documentElement.classList.add("dark");
     }
 
-    const role = localStorage.getItem("ngipen_role") as Role;
-    const user = localStorage.getItem("ngipen_user");
-    const userId = localStorage.getItem("ngipen_user_id");
+    // Pulihkan sesi login user melalui verifikasi cookie server
+useEffect(() => {
+  let active = true;
 
-    if (role) setCurrentRole(role);
-    if (user) setCurrentUser(user);
-    if (userId) setCurrentUserId(userId);
-  }, []);
+  const restoreSession = async () => {
+    try {
+      const response = await fetch("/api/auth", {
+        method: "GET",
+        credentials: "include",
+        cache: "no-store",
+      });
+
+      const result = await response.json();
+
+      if (!active) return;
+
+      if (response.ok && result.user) {
+        const user = result.user;
+
+        localStorage.setItem("ngipen_role", "user");
+        localStorage.setItem(
+          "ngipen_user",
+          user.display_name || user.username
+        );
+        localStorage.setItem("ngipen_username", user.username);
+        localStorage.setItem("ngipen_user_id", String(user.id));
+
+        setCurrentRole("user");
+        setCurrentUser(user.display_name || user.username);
+        setCurrentUserId(user.id);
+      } else {
+        localStorage.removeItem("ngipen_role");
+        localStorage.removeItem("ngipen_user");
+        localStorage.removeItem("ngipen_username");
+        localStorage.removeItem("ngipen_user_id");
+
+        setCurrentRole(null);
+        setCurrentUser("");
+        setCurrentUserId("");
+      }
+    } catch (error) {
+      console.error("Gagal memulihkan sesi:", error);
+    }
+  };
+
+  restoreSession();
+
+  return () => {
+    active = false;
+  };
+}, []);
 
   // Perbarui acuan tanggal secara berkala agar filter Minggu Ini tetap akurat.
   useEffect(() => {
