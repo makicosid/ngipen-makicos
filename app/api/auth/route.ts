@@ -13,19 +13,21 @@ export const runtime = "nodejs";
 
 const scrypt = promisify(scryptCallback);
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+function getSupabaseAdmin() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-if (!supabaseUrl || !serviceRoleKey) {
-  throw new Error("Konfigurasi Supabase server belum lengkap.");
+  if (!supabaseUrl || !serviceRoleKey) {
+    throw new Error("Konfigurasi Supabase server belum lengkap.");
+  }
+
+  return createClient(supabaseUrl, serviceRoleKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  });
 }
-
-const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false,
-  },
-});
 
 const COOKIE_NAME = "ngipen_session";
 const SESSION_DAYS = 30;
@@ -141,7 +143,7 @@ async function createSession(
     Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000
   ).toISOString();
 
-  const { error } = await supabaseAdmin
+  const { error } = await getSupabaseAdmin()
     .from("ngipen_sessions")
     .insert({
       user_id: userId,
@@ -172,7 +174,7 @@ async function getSession(request: NextRequest) {
 
   const tokenHash = hashToken(token);
 
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await getSupabaseAdmin()
     .from("ngipen_sessions")
     .select("user_id, expires_at")
     .eq("token_hash", tokenHash)
@@ -198,7 +200,7 @@ export async function GET(request: NextRequest) {
       return json({ authenticated: false }, 401);
     }
 
-    const { data: user, error } = await supabaseAdmin
+    const { data: user, error } = await getSupabaseAdmin()
       .from("users")
       .select("id, username, display_name")
       .eq("id", session.user_id)
@@ -252,7 +254,7 @@ export async function POST(request: NextRequest) {
       const token = request.cookies.get(COOKIE_NAME)?.value;
 
       if (token) {
-        await supabaseAdmin
+        await getSupabaseAdmin()
           .from("ngipen_sessions")
           .delete()
           .eq("token_hash", hashToken(token));
@@ -308,7 +310,7 @@ export async function POST(request: NextRequest) {
       }
 
       const { data: existing, error: checkError } =
-        await supabaseAdmin
+        await getSupabaseAdmin()
           .from("users")
           .select("id")
           .eq("normalized_username", username)
@@ -339,7 +341,7 @@ export async function POST(request: NextRequest) {
           : username;
 
       const { data: user, error: insertError } =
-        await supabaseAdmin
+        await getSupabaseAdmin()
           .from("users")
           .insert({
             username,
@@ -404,7 +406,7 @@ export async function POST(request: NextRequest) {
       const {
         data: ipLockData,
         error: ipLockError,
-      } = await supabaseAdmin.rpc(
+      } = await getSupabaseAdmin().rpc(
         "ngipen_check_ip_login_lock",
         {
           p_ip_hash: ipHash,
@@ -457,7 +459,7 @@ export async function POST(request: NextRequest) {
       const {
         data: lockData,
         error: lockError,
-      } = await supabaseAdmin.rpc(
+      } = await getSupabaseAdmin().rpc(
         "ngipen_check_login_lock",
         {
           p_username: username,
@@ -496,7 +498,7 @@ export async function POST(request: NextRequest) {
       /* FIND USER */
 
       const { data: user, error: loginError } =
-        await supabaseAdmin
+        await getSupabaseAdmin()
           .from("users")
           .select(
             "id, username, display_name, password_hash"
@@ -542,7 +544,7 @@ export async function POST(request: NextRequest) {
         const {
           data: ipFailureData,
           error: ipFailureError,
-        } = await supabaseAdmin.rpc(
+        } = await getSupabaseAdmin().rpc(
           "ngipen_record_ip_login_failure",
           {
             p_ip_hash: ipHash,
@@ -582,7 +584,7 @@ export async function POST(request: NextRequest) {
         const {
           data: failureData,
           error: failureError,
-        } = await supabaseAdmin.rpc(
+        } = await getSupabaseAdmin().rpc(
           "ngipen_record_login_failure",
           {
             p_username: username,
@@ -628,7 +630,7 @@ export async function POST(request: NextRequest) {
       if (!storedPassword.startsWith("scrypt$")) {
         const newHash = await hashPassword(password);
 
-        const { error: updateError } = await supabaseAdmin
+        const { error: updateError } = await getSupabaseAdmin()
           .from("users")
           .update({
             password_hash: newHash,
@@ -654,7 +656,7 @@ export async function POST(request: NextRequest) {
       /* RESET USERNAME LOGIN ATTEMPTS */
 
       const { error: resetError } =
-        await supabaseAdmin.rpc(
+        await getSupabaseAdmin().rpc(
           "ngipen_reset_login_attempts",
           {
             p_username: username,
@@ -679,7 +681,7 @@ export async function POST(request: NextRequest) {
       /* RESET IP LOGIN ATTEMPTS */
 
       const { error: ipResetError } =
-        await supabaseAdmin.rpc(
+        await getSupabaseAdmin().rpc(
           "ngipen_reset_ip_login_attempts",
           {
             p_ip_hash: ipHash,
