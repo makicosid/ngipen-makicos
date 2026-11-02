@@ -2894,7 +2894,24 @@ const openEvent = async (event: Event) => {
                           <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                             📅 {event.start_date}
                           </p>
-
+<div className="mt-2 flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+  <svg
+    viewBox="0 0 24 24"
+    className="h-4 w-4"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    aria-hidden="true"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M2.5 12s3.5-7 9.5-7 9.5 7 9.5 7-3.5 7-9.5 7-9.5-7-9.5-7Z"
+    />
+    <circle cx="12" cy="12" r="3" />
+  </svg>
+  <span>{(event.views || 0).toLocaleString("id-ID")} views</span>
+</div>
                           <div className="mt-3 flex flex-wrap gap-1">
                             {(event.categories || []).slice(0, 2).map((cat) => (
                               <span
