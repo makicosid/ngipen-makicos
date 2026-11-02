@@ -430,7 +430,18 @@ useEffect(() => {
           );
         }
 
-        const savedUserId = localStorage.getItem("ngipen_user_id");
+        const sessionResponse = await fetch("/api/auth", {
+  method: "GET",
+  credentials: "include",
+  cache: "no-store",
+});
+
+const sessionResult = await sessionResponse.json();
+
+const savedUserId =
+  sessionResponse.ok && sessionResult.user
+    ? String(sessionResult.user.id)
+    : null;
 
         if (savedUserId) {
           const { data: saves } = await supabase
@@ -767,8 +778,18 @@ const handlePosterUpload = (
     setTimeout(() => setToast(""), 2000);
   };
 
-  // Logout
-  const logout = () => {
+ // Logout
+const logout = async () => {
+  try {
+    await fetch("/api/auth", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ action: "logout" }),
+    });
+  } catch (error) {
+    console.error("Logout error:", error);
+  } finally {
     localStorage.removeItem("ngipen_role");
     localStorage.removeItem("ngipen_user");
     localStorage.removeItem("ngipen_username");
@@ -783,8 +804,8 @@ const handlePosterUpload = (
 
     setToast("Kamu telah keluar.");
     setTimeout(() => setToast(""), 2000);
-  };
-
+  }
+};
   // Membuat event baru; pengguna tidak memiliki fitur edit event
   const handleCreateEvent = async () => {
     const title = (
