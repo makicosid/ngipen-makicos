@@ -566,6 +566,7 @@ const handlePosterUpload = (
   img.src = objectUrl;
 };
 
+  
   // Login user
   const handleLoginUser = async () => {
     const username = (
@@ -581,37 +582,47 @@ const handlePosterUpload = (
       return;
     }
 
-    const { data, error } = await supabase
-      .from("users")
-      .select("*")
-      .eq("username", username)
-      .maybeSingle();
+    try {
+      const response = await fetch("/api/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ action: "login", username, password }),
+      });
 
-    if (error || !data || data.password_hash !== password) {
-      setToast("Username atau password salah.");
+      const result = await response.json();
+
+      if (!response.ok || !result.user) {
+        setToast(result.error || "Username atau password salah.");
+        setTimeout(() => setToast(""), 2000);
+        return;
+      }
+
+      const user = result.user;
+
+      localStorage.setItem("ngipen_role", "user");
+      localStorage.setItem("ngipen_user", user.display_name || user.username);
+      localStorage.setItem("ngipen_username", user.username);
+      localStorage.setItem("ngipen_user_id", String(user.id));
+
+      setCurrentRole("user");
+      setCurrentUser(user.display_name || user.username);
+      setCurrentUserId(user.id);
+
+      const { data: saves } = await supabase
+        .from("event_saves")
+        .select("*")
+        .eq("user_id", user.id);
+
+      if (saves) setSavedIds(saves.map((save: any) => save.event_id));
+
+      setShowLoginUser(false);
+      setToast(`Halo, ${user.display_name || user.username}!`);
       setTimeout(() => setToast(""), 2000);
-      return;
+    } catch (error) {
+      console.error("Login error:", error);
+      setToast("Gagal menghubungi server. Coba lagi.");
     }
-
-    localStorage.setItem("ngipen_role", "user");
-    localStorage.setItem("ngipen_user", data.display_name);
-    localStorage.setItem("ngipen_username", data.username);
-    localStorage.setItem("ngipen_user_id", String(data.id));
-
-    setCurrentRole("user");
-    setCurrentUser(data.display_name);
-    setCurrentUserId(data.id);
-
-    const { data: saves } = await supabase
-      .from("event_saves")
-      .select("*")
-      .eq("user_id", data.id);
-
-    if (saves) setSavedIds(saves.map((save: any) => save.event_id));
-
-    setShowLoginUser(false);
-    setToast(`Halo, ${data.display_name}!`);
-    setTimeout(() => setToast(""), 2000);
   };
 
   // Pendaftaran user
@@ -648,48 +659,38 @@ const handlePosterUpload = (
       return;
     }
 
-    const { data: existing, error: checkError } = await supabase
-      .from("users")
-      .select("id")
-      .eq("username", username)
-      .maybeSingle();
+    try {
+      const response = await fetch("/api/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          action: "register",
+          username,
+          displayName: displayName || username,
+          password,
+        }),
+      });
 
-    if (checkError) {
-      setToast("Gagal memeriksa username.");
-      return;
+      const result = await response.json();
+
+      if (!response.ok) {
+        setToast(result.error || "Pendaftaran gagal.");
+        setTimeout(() => setToast(""), 2500);
+        return;
+      }
+
+      setShowRegUser(false);
+      setToast("Pendaftaran berhasil. Silakan masuk.");
+      setTimeout(() => setToast(""), 2500);
+    } catch (error) {
+      console.error("Registration error:", error);
+      setToast("Gagal menghubungi server. Coba lagi.");
     }
-
-    if (existing) {
-      setToast("Username sudah digunakan.");
-      return;
-    }
-
-    const { data, error } = await supabase
-      .from("users")
-      .insert({
-        username,
-        normalized_username: username,
-        password_hash: password,
-        display_name: displayName || username,
-        bio: "",
-        avatar_url: "",
-      })
-      .select()
-      .single();
-
-    if (error) {
-      setToast(`Gagal mendaftar: ${error.message}`);
-      setTimeout(() => setToast(""), 3000);
-      return;
-    }
-
-    setRegisteredUsers((prev) => [data as RegUser, ...prev]);
-    setShowRegUser(false);
-    setToast("Pendaftaran berhasil. Silakan masuk.");
-    setTimeout(() => setToast(""), 2500);
   };
 
   // Login admin
+
   const handleLoginAdmin = async () => {
     const username = (
       document.getElementById("admin-user") as HTMLInputElement
