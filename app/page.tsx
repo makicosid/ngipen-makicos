@@ -272,9 +272,10 @@ const sponsorCarouselPausedRef = useRef(false);
       setDark(true);
       document.documentElement.classList.add("dark");
     }
+  }, []);
 
-    // Pulihkan sesi login user melalui verifikasi cookie server
-useEffect(() => {
+  // Pulihkan sesi login user melalui verifikasi cookie server
+  useEffect(() => {
   let active = true;
 
   const restoreSession = async () => {
@@ -309,7 +310,7 @@ useEffect(() => {
         localStorage.removeItem("ngipen_username");
         localStorage.removeItem("ngipen_user_id");
 
-        setCurrentRole(null);
+        setCurrentRole("guest");
         setCurrentUser("");
         setCurrentUserId("");
       }
