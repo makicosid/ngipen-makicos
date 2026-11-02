@@ -3125,7 +3125,7 @@ const openEvent = async (event: Event) => {
                       Waktu
                     </p>
                     <p className="mt-1 font-semibold">
-                      🕒 {selectedEvent.start_time} – {selectedEvent.end_time}
+                      🕒 {selectedEvent.start_time?.slice(0, 5).replace(":", ".")} – {selectedEvent.end_time?.slice(0, 5).replace(":", ".")}
                     </p>
                   </div>
 
