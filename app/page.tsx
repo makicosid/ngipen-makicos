@@ -228,8 +228,14 @@ const [eventStatusTab, setEventStatusTab] = useState<
 >("Semua");
 
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
-  const sharedEventOpenedRef = useRef<string | null>(null);
-  
+const [descriptionExpanded, setDescriptionExpanded] = useState(false);
+
+useEffect(() => {
+  setDescriptionExpanded(false);
+}, [selectedEvent?.id]);
+
+const sharedEventOpenedRef = useRef<string | null>(null);
+
 const sponsorCarouselRef = useRef<HTMLDivElement>(null);
 const sponsorCarouselPausedRef = useRef(false);
   // Setiap kali detail event dibuka, mulai dari bagian paling atas halaman.
@@ -3154,11 +3160,26 @@ const openEvent = async (event: Event) => {
                 </div>
 
                 <div className="mt-6">
-                  <h2 className="text-lg font-black">Tentang Event</h2>
-                  <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-gray-700 dark:text-gray-300">
-                    {selectedEvent.description}
-                  </p>
-                </div>
+  <h2 className="text-lg font-black">Tentang Event</h2>
+
+  <p
+    className={`mt-3 whitespace-pre-wrap text-sm leading-7 text-gray-700 dark:text-gray-300 ${
+      descriptionExpanded ? "" : "line-clamp-4"
+    }`}
+  >
+    {selectedEvent.description}
+  </p>
+
+  {(selectedEvent.description || "").length > 180 && (
+    <button
+      type="button"
+      onClick={() => setDescriptionExpanded((prev) => !prev)}
+      className="mt-2 text-sm font-bold text-red-600 hover:text-red-700"
+    >
+      {descriptionExpanded ? "Sembunyikan" : "Lihat selengkapnya"}
+    </button>
+  )}
+</div>
 
                 {/* TOMBOL AKSI */}
                 <div className="mt-6 flex flex-wrap gap-3">
