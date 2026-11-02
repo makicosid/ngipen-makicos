@@ -30,11 +30,20 @@ const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
 const COOKIE_NAME = "ngipen_session";
 const SESSION_DAYS = 30;
 
+/* =========================================================
+   RESPONSE
+========================================================= */
+
 function json(data: object, status = 200) {
   const response = NextResponse.json(data, { status });
   response.headers.set("Cache-Control", "no-store");
+
   return response;
 }
+
+/* =========================================================
+   VALIDATION
+========================================================= */
 
 function normalizeUsername(value: string) {
   return value.trim().toLowerCase();
@@ -56,6 +65,10 @@ function validLoginPassword(value: string) {
   return value.length >= 1 && value.length <= 128;
 }
 
+/* =========================================================
+   PASSWORD SECURITY
+========================================================= */
+
 async function hashPassword(password: string) {
   const salt = randomBytes(16).toString("hex");
   const derivedKey = (await scrypt(password, salt, 64)) as Buffer;
@@ -69,7 +82,10 @@ async function verifyPassword(password: string, stored: string) {
   }
 
   const parts = stored.split("$");
-  if (parts.length !== 3) return false;
+
+  if (parts.length !== 3) {
+    return false;
+  }
 
   const [, salt, savedKey] = parts;
 
@@ -86,11 +102,38 @@ async function verifyPassword(password: string, stored: string) {
   }
 }
 
+/* =========================================================
+   TOKEN & IP HASH
+========================================================= */
+
 function hashToken(token: string) {
   return createHash("sha256").update(token).digest("hex");
 }
 
-async function createSession(userId: string, response: NextResponse) {
+function getClientIpHash(request: NextRequest) {
+  const forwardedFor = request.headers.get("x-forwarded-for");
+
+  const clientIp = forwardedFor
+    ?.split(",")[0]
+    ?.trim();
+
+  if (!clientIp) {
+    return null;
+  }
+
+  return createHash("sha256")
+    .update(clientIp)
+    .digest("hex");
+}
+
+/* =========================================================
+   SESSION MANAGEMENT
+========================================================= */
+
+async function createSession(
+  userId: string,
+  response: NextResponse
+) {
   const token = randomBytes(32).toString("hex");
   const tokenHash = hashToken(token);
 
@@ -123,7 +166,9 @@ async function createSession(userId: string, response: NextResponse) {
 async function getSession(request: NextRequest) {
   const token = request.cookies.get(COOKIE_NAME)?.value;
 
-  if (!token) return null;
+  if (!token) {
+    return null;
+  }
 
   const tokenHash = hashToken(token);
 
@@ -134,10 +179,16 @@ async function getSession(request: NextRequest) {
     .gt("expires_at", new Date().toISOString())
     .maybeSingle();
 
-  if (error || !data) return null;
+  if (error || !data) {
+    return null;
+  }
 
   return data;
 }
+
+/* =========================================================
+   GET - CHECK AUTHENTICATION
+========================================================= */
 
 export async function GET(request: NextRequest) {
   try {
@@ -163,16 +214,40 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error("Auth session error:", error);
-    return json({ error: "Gagal memeriksa sesi." }, 500);
+
+    return json(
+      { error: "Gagal memeriksa sesi." },
+      500
+    );
   }
 }
 
+/* =========================================================
+   POST - AUTHENTICATION ACTIONS
+========================================================= */
+
 export async function POST(request: NextRequest) {
   try {
+    /* -----------------------------------------------------
+       CSRF PROTECTION
+    ----------------------------------------------------- */
+
+    const origin = request.headers.get("origin");
+
+    if (!origin || origin !== request.nextUrl.origin) {
+      return json(
+        { error: "Permintaan tidak diizinkan." },
+        403
+      );
+    }
+
     const body = await request.json();
     const action = body.action;
 
-    // LOGOUT
+    /* -----------------------------------------------------
+       LOGOUT
+    ----------------------------------------------------- */
+
     if (action === "logout") {
       const token = request.cookies.get(COOKIE_NAME)?.value;
 
@@ -196,7 +271,10 @@ export async function POST(request: NextRequest) {
       return response;
     }
 
-    // USERNAME DAN PASSWORD
+    /* -----------------------------------------------------
+       USERNAME & PASSWORD
+    ----------------------------------------------------- */
+
     const username =
       typeof body.username === "string"
         ? normalizeUsername(body.username)
@@ -208,31 +286,48 @@ export async function POST(request: NextRequest) {
         : "";
 
     if (!validUsername(username)) {
-      return json({ error: "Username tidak valid." }, 400);
+      return json(
+        { error: "Username tidak valid." },
+        400
+      );
     }
 
-    // REGISTER
+    /* -----------------------------------------------------
+       REGISTER
+    ----------------------------------------------------- */
+
     if (action === "register") {
       if (!validNewPassword(password)) {
         return json(
-          { error: "Password harus terdiri dari 8–128 karakter." },
+          {
+            error:
+              "Password harus terdiri dari 8–128 karakter.",
+          },
           400
         );
       }
 
-      const { data: existing, error: checkError } = await supabaseAdmin
-        .from("users")
-        .select("id")
-        .eq("normalized_username", username)
-        .maybeSingle();
+      const { data: existing, error: checkError } =
+        await supabaseAdmin
+          .from("users")
+          .select("id")
+          .eq("normalized_username", username)
+          .maybeSingle();
 
       if (checkError) {
         console.error("Username check error:", checkError);
-        return json({ error: "Gagal memeriksa username." }, 500);
+
+        return json(
+          { error: "Gagal memeriksa username." },
+          500
+        );
       }
 
       if (existing) {
-        return json({ error: "Username sudah digunakan." }, 409);
+        return json(
+          { error: "Username sudah digunakan." },
+          409
+        );
       }
 
       const passwordHash = await hashPassword(password);
@@ -243,28 +338,35 @@ export async function POST(request: NextRequest) {
           ? body.displayName.trim().slice(0, 50)
           : username;
 
-      const { data: user, error: insertError } = await supabaseAdmin
-        .from("users")
-        .insert({
-          username,
-          instagram_username: username,
-          normalized_username: username,
-          password_hash: passwordHash,
-          display_name: displayName,
-          bio: "",
-          avatar_url: "",
-        })
-        .select("id, username, display_name")
-        .single();
+      const { data: user, error: insertError } =
+        await supabaseAdmin
+          .from("users")
+          .insert({
+            username,
+            instagram_username: username,
+            normalized_username: username,
+            password_hash: passwordHash,
+            display_name: displayName,
+            bio: "",
+            avatar_url: "",
+          })
+          .select("id, username, display_name")
+          .single();
 
       if (insertError || !user) {
         console.error("Registration error:", insertError);
 
         if (insertError?.code === "23505") {
-          return json({ error: "Username sudah digunakan." }, 409);
+          return json(
+            { error: "Username sudah digunakan." },
+            409
+          );
         }
 
-        return json({ error: "Pendaftaran gagal." }, 500);
+        return json(
+          { error: "Pendaftaran gagal." },
+          500
+        );
       }
 
       const response = json(
@@ -280,8 +382,69 @@ export async function POST(request: NextRequest) {
       return response;
     }
 
-    // LOGIN
+    /* -----------------------------------------------------
+       LOGIN
+    ----------------------------------------------------- */
+
     if (action === "login") {
+      /* IP LOCK CHECK */
+
+      const ipHash = getClientIpHash(request);
+
+      if (!ipHash) {
+        return json(
+          {
+            error:
+              "Tidak dapat memverifikasi koneksi login.",
+          },
+          400
+        );
+      }
+
+      const {
+        data: ipLockData,
+        error: ipLockError,
+      } = await supabaseAdmin.rpc(
+        "ngipen_check_ip_login_lock",
+        {
+          p_ip_hash: ipHash,
+        }
+      );
+
+      if (ipLockError) {
+        console.error(
+          "IP login lock check error:",
+          ipLockError
+        );
+
+        return json(
+          {
+            error:
+              "Gagal memeriksa keamanan koneksi login.",
+          },
+          500
+        );
+      }
+
+      const ipLockStatus = Array.isArray(ipLockData)
+        ? ipLockData[0]
+        : ipLockData;
+
+      if (ipLockStatus?.is_locked) {
+        const minutes = Math.ceil(
+          Number(ipLockStatus.remaining_seconds || 0) / 60
+        );
+
+        return json(
+          {
+            error: `Terlalu banyak percobaan login dari koneksi ini. Coba lagi sekitar ${minutes} menit.`,
+          },
+          429
+        );
+      }
+
+      /* PASSWORD VALIDATION */
+
       if (!validLoginPassword(password)) {
         return json(
           { error: "Password tidak valid." },
@@ -289,58 +452,256 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const { data: user, error: loginError } = await supabaseAdmin
-        .from("users")
-        .select("id, username, display_name, password_hash")
-        .eq("normalized_username", username)
-        .maybeSingle();
+      /* USERNAME LOCK CHECK */
 
-      if (loginError || !user) {
+      const {
+        data: lockData,
+        error: lockError,
+      } = await supabaseAdmin.rpc(
+        "ngipen_check_login_lock",
+        {
+          p_username: username,
+        }
+      );
+
+      if (lockError) {
+        console.error(
+          "Login lock check error:",
+          lockError
+        );
+
         return json(
-          { error: "Username atau password salah." },
-          401
+          { error: "Gagal memeriksa keamanan login." },
+          500
         );
       }
 
-      const storedPassword = String(user.password_hash || "");
-      let passwordMatches = false;
+      const lockStatus = Array.isArray(lockData)
+        ? lockData[0]
+        : lockData;
 
-      if (storedPassword.startsWith("scrypt$")) {
-        passwordMatches = await verifyPassword(
-          password,
-          storedPassword
+      if (lockStatus?.is_locked) {
+        const minutes = Math.ceil(
+          Number(lockStatus.remaining_seconds || 0) / 60
         );
-      } else {
-        // Migrasi password lama setelah login berhasil.
-        passwordMatches = storedPassword === password;
 
-        if (passwordMatches) {
-          const newHash = await hashPassword(password);
+        return json(
+          {
+            error: `Terlalu banyak percobaan login. Coba lagi sekitar ${minutes} menit.`,
+          },
+          429
+        );
+      }
 
-          const { error: updateError } = await supabaseAdmin
-            .from("users")
-            .update({
-              password_hash: newHash,
-            })
-            .eq("id", user.id);
+      /* FIND USER */
 
-          if (updateError) {
-            console.error("Password migration error:", updateError);
+      const { data: user, error: loginError } =
+        await supabaseAdmin
+          .from("users")
+          .select(
+            "id, username, display_name, password_hash"
+          )
+          .eq("normalized_username", username)
+          .maybeSingle();
 
-            return json(
-              { error: "Gagal memperbarui keamanan password." },
-              500
-            );
-          }
+      if (loginError) {
+        console.error(
+          "Login database error:",
+          loginError
+        );
+
+        return json(
+          { error: "Terjadi kesalahan saat login." },
+          500
+        );
+      }
+
+      /* VERIFY PASSWORD */
+
+      let passwordMatches = false;
+      let storedPassword = "";
+
+      if (user) {
+        storedPassword = String(user.password_hash || "");
+
+        if (storedPassword.startsWith("scrypt$")) {
+          passwordMatches = await verifyPassword(
+            password,
+            storedPassword
+          );
+        } else {
+          // Mendukung password lama sebelum migrasi.
+          passwordMatches = storedPassword === password;
         }
       }
 
-      if (!passwordMatches) {
+      /* FAILED LOGIN */
+
+      if (!user || !passwordMatches) {
+        // Catat kegagalan login berdasarkan IP.
+        const {
+          data: ipFailureData,
+          error: ipFailureError,
+        } = await supabaseAdmin.rpc(
+          "ngipen_record_ip_login_failure",
+          {
+            p_ip_hash: ipHash,
+          }
+        );
+
+        if (ipFailureError) {
+          console.error(
+            "IP login failure recording error:",
+            ipFailureError
+          );
+
+          return json(
+            {
+              error:
+                "Gagal memproses keamanan koneksi login.",
+            },
+            500
+          );
+        }
+
+        const ipFailureStatus = Array.isArray(ipFailureData)
+          ? ipFailureData[0]
+          : ipFailureData;
+
+        if (ipFailureStatus?.is_locked) {
+          return json(
+            {
+              error:
+                "Terlalu banyak percobaan login dari koneksi ini. Coba lagi dalam 15 menit.",
+            },
+            429
+          );
+        }
+
+        // Catat kegagalan login berdasarkan username.
+        const {
+          data: failureData,
+          error: failureError,
+        } = await supabaseAdmin.rpc(
+          "ngipen_record_login_failure",
+          {
+            p_username: username,
+          }
+        );
+
+        if (failureError) {
+          console.error(
+            "Login failure recording error:",
+            failureError
+          );
+
+          return json(
+            { error: "Gagal memproses percobaan login." },
+            500
+          );
+        }
+
+        const failureStatus = Array.isArray(failureData)
+          ? failureData[0]
+          : failureData;
+
+        if (failureStatus?.is_locked) {
+          return json(
+            {
+              error:
+                "Terlalu banyak percobaan login. Akun dikunci selama 15 menit.",
+            },
+            429
+          );
+        }
+
         return json(
-          { error: "Username atau password salah." },
+          {
+            error: "Username atau password salah.",
+          },
           401
         );
       }
+
+      /* LEGACY PASSWORD MIGRATION */
+
+      if (!storedPassword.startsWith("scrypt$")) {
+        const newHash = await hashPassword(password);
+
+        const { error: updateError } = await supabaseAdmin
+          .from("users")
+          .update({
+            password_hash: newHash,
+          })
+          .eq("id", user.id);
+
+        if (updateError) {
+          console.error(
+            "Password migration error:",
+            updateError
+          );
+
+          return json(
+            {
+              error:
+                "Gagal memperbarui keamanan password.",
+            },
+            500
+          );
+        }
+      }
+
+      /* RESET USERNAME LOGIN ATTEMPTS */
+
+      const { error: resetError } =
+        await supabaseAdmin.rpc(
+          "ngipen_reset_login_attempts",
+          {
+            p_username: username,
+          }
+        );
+
+      if (resetError) {
+        console.error(
+          "Login attempts reset error:",
+          resetError
+        );
+
+        return json(
+          {
+            error:
+              "Gagal memperbarui keamanan login.",
+          },
+          500
+        );
+      }
+
+      /* RESET IP LOGIN ATTEMPTS */
+
+      const { error: ipResetError } =
+        await supabaseAdmin.rpc(
+          "ngipen_reset_ip_login_attempts",
+          {
+            p_ip_hash: ipHash,
+          }
+        );
+
+      if (ipResetError) {
+        console.error(
+          "IP login attempts reset error:",
+          ipResetError
+        );
+
+        return json(
+          {
+            error:
+              "Gagal memperbarui keamanan koneksi login.",
+          },
+          500
+        );
+      }
+
+      /* CREATE LOGIN SESSION */
 
       const response = json({
         success: true,
@@ -356,7 +717,12 @@ export async function POST(request: NextRequest) {
       return response;
     }
 
-    return json({ error: "Aksi tidak dikenal." }, 400);
+    /* UNKNOWN ACTION */
+
+    return json(
+      { error: "Aksi tidak dikenal." },
+      400
+    );
   } catch (error) {
     console.error("NGIPEN auth error:", error);
 
