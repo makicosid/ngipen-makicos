@@ -314,46 +314,70 @@ const sponsorCarouselPausedRef = useRef(false);
   useEffect(() => {
   let active = true;
 
-  const restoreSession = async () => {
-    try {
-      const response = await fetch("/api/auth", {
-        method: "GET",
-        credentials: "include",
-        cache: "no-store",
-      });
+ const restoreSession = async () => {
+  try {
+    // Periksa sesi admin terlebih dahulu
+    const adminResponse = await fetch("/api/admin-auth", {
+      method: "GET",
+      credentials: "include",
+      cache: "no-store",
+    });
 
-      const result = await response.json();
+    const adminResult = await adminResponse.json();
 
-      if (!active) return;
+    if (!active) return;
 
-      if (response.ok && result.user) {
-        const user = result.user;
+    if (adminResponse.ok && adminResult.authenticated) {
+      localStorage.setItem("ngipen_role", "admin");
+      localStorage.removeItem("ngipen_user");
+      localStorage.removeItem("ngipen_username");
+      localStorage.removeItem("ngipen_user_id");
 
-        localStorage.setItem("ngipen_role", "user");
-        localStorage.setItem(
-          "ngipen_user",
-          user.display_name || user.username
-        );
-        localStorage.setItem("ngipen_username", user.username);
-        localStorage.setItem("ngipen_user_id", String(user.id));
-
-        setCurrentRole("user");
-        setCurrentUser(user.display_name || user.username);
-        setCurrentUserId(user.id);
-      } else {
-        localStorage.removeItem("ngipen_role");
-        localStorage.removeItem("ngipen_user");
-        localStorage.removeItem("ngipen_username");
-        localStorage.removeItem("ngipen_user_id");
-
-        setCurrentRole("guest");
-        setCurrentUser("");
-        setCurrentUserId("");
-      }
-    } catch (error) {
-      console.error("Gagal memulihkan sesi:", error);
+      setCurrentRole("admin");
+      setCurrentUser("");
+      setCurrentUserId("");
+      return;
     }
-  };
+
+    // Jika bukan admin, periksa sesi user
+    const response = await fetch("/api/auth", {
+      method: "GET",
+      credentials: "include",
+      cache: "no-store",
+    });
+
+    const result = await response.json();
+
+    if (!active) return;
+
+    if (response.ok && result.user) {
+      const user = result.user;
+
+      localStorage.setItem("ngipen_role", "user");
+      localStorage.setItem(
+        "ngipen_user",
+        user.display_name || user.username
+      );
+      localStorage.setItem("ngipen_username", user.username);
+      localStorage.setItem("ngipen_user_id", String(user.id));
+
+      setCurrentRole("user");
+      setCurrentUser(user.display_name || user.username);
+      setCurrentUserId(user.id);
+    } else {
+      localStorage.removeItem("ngipen_role");
+      localStorage.removeItem("ngipen_user");
+      localStorage.removeItem("ngipen_username");
+      localStorage.removeItem("ngipen_user_id");
+
+      setCurrentRole("guest");
+      setCurrentUser("");
+      setCurrentUserId("");
+    }
+  } catch (error) {
+    console.error("Gagal memulihkan sesi:", error);
+  }
+};
 
   restoreSession();
 
@@ -782,42 +806,64 @@ const handlePosterUpload = (
 
   // Login admin
 
-  const handleLoginAdmin = async () => {
-    const username = (
-      document.getElementById("admin-user") as HTMLInputElement
-    )?.value?.trim();
+ const handleLoginAdmin = async () => {
+  const username = (
+    document.getElementById("admin-user") as HTMLInputElement
+  )?.value?.trim();
 
-    const pin = (
-      document.getElementById("admin-pin") as HTMLInputElement
-    )?.value?.trim();
+  const pin = (
+    document.getElementById("admin-pin") as HTMLInputElement
+  )?.value?.trim();
 
-    if (!username || !pin) {
-      setToast("Isi username dan PIN admin.");
-      return;
-    }
+  if (!username || !pin) {
+    setToast("Isi username dan PIN admin.");
+    return;
+  }
 
-    const { data, error } = await supabase
-      .from("admin_settings")
-      .select("username, pin_hash")
-      .eq("username", username)
-      .maybeSingle();
+  try {
+    const response = await fetch("/api/admin-auth", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        action: "login",
+        username,
+        pin,
+      }),
+    });
 
-    if (!error && data && data.pin_hash === pin) {
-      localStorage.setItem("ngipen_role", "admin");
-      setCurrentRole("admin");
-      setShowAdmin(false);
-      setToast("Login admin berhasil.");
+    const result = await response.json();
+
+    if (!response.ok || !result.authenticated) {
+      setToast(result.error || "Username atau PIN admin salah.");
       setTimeout(() => setToast(""), 2000);
       return;
     }
 
-    setToast("Username atau PIN admin salah.");
+    localStorage.setItem("ngipen_role", "admin");
+    setCurrentRole("admin");
+    setShowAdmin(false);
+    setToast("Login admin berhasil.");
     setTimeout(() => setToast(""), 2000);
-  };
+  } catch (error) {
+    console.error("Admin login error:", error);
+    setToast("Gagal menghubungi server.");
+    setTimeout(() => setToast(""), 2000);
+  }
+};
 
  // Logout
 const logout = async () => {
   try {
+    // Hapus sesi admin
+    await fetch("/api/admin-auth", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ action: "logout" }),
+    });
+
+    // Hapus sesi user
     await fetch("/api/auth", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
