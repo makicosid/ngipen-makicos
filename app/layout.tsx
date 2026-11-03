@@ -15,6 +15,14 @@ export const metadata: Metadata = {
     siteName: 'NGIPEN',
     locale: 'id_ID',
     type: 'website',
+    images: [
+      {
+        url: `${BASE_URL}/opengraph-image`,
+        width: 1200,
+        height: 630,
+        alt: 'NGIPEN - Satu Hobby Satu Keseruan',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',

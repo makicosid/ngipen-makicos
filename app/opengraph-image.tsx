@@ -16,57 +16,56 @@ export default async function Image() {
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          background: 'linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 40%, #2a1a0a 100%)',
+          backgroundColor: '#111111',
           fontFamily: 'sans-serif',
           position: 'relative',
           overflow: 'hidden',
         }}
       >
-        {/* Background decorative circles */}
+        {/* Background accent kiri bawah */}
         <div
           style={{
             position: 'absolute',
-            top: '-100px',
-            right: '-100px',
-            width: '400px',
-            height: '400px',
+            bottom: '-120px',
+            left: '-120px',
+            width: '420px',
+            height: '420px',
             borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(200,120,0,0.15) 0%, transparent 70%)',
+            backgroundColor: 'rgba(160,30,30,0.18)',
             display: 'flex',
           }}
         />
+        {/* Background accent kanan atas */}
         <div
           style={{
             position: 'absolute',
-            bottom: '-80px',
-            left: '-80px',
-            width: '350px',
-            height: '350px',
+            top: '-120px',
+            right: '-120px',
+            width: '420px',
+            height: '420px',
             borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(180,30,30,0.12) 0%, transparent 70%)',
+            backgroundColor: 'rgba(180,90,0,0.18)',
             display: 'flex',
           }}
         />
 
-        {/* Logo image */}
+        {/* Logo */}
         <img
           src="https://ngipen-makicos-seven.vercel.app/ngipen-logo.png"
-          width={180}
-          height={180}
-          style={{ objectFit: 'contain', marginBottom: '24px' }}
+          width={160}
+          height={160}
+          style={{ objectFit: 'contain', marginBottom: '20px' }}
         />
 
-        {/* Title */}
+        {/* Judul */}
         <div
           style={{
-            fontSize: '64px',
+            fontSize: '72px',
             fontWeight: '900',
+            color: '#E8A020',
             letterSpacing: '-1px',
-            background: 'linear-gradient(90deg, #c0392b, #e67e22, #f1c40f)',
-            backgroundClip: 'text',
-            color: 'transparent',
+            marginBottom: '10px',
             display: 'flex',
-            marginBottom: '12px',
           }}
         >
           NGIPEN
@@ -75,83 +74,79 @@ export default async function Image() {
         {/* Tagline */}
         <div
           style={{
-            fontSize: '26px',
-            color: '#f0d090',
-            fontWeight: '600',
-            letterSpacing: '2px',
-            marginBottom: '28px',
+            fontSize: '28px',
+            fontWeight: '700',
+            color: '#F5F5F5',
+            letterSpacing: '3px',
+            marginBottom: '24px',
             display: 'flex',
           }}
         >
-          Satu Hobby Satu Keseruan
+          Satu Hobby · Satu Keseruan
         </div>
 
-        {/* Divider */}
+        {/* Garis */}
         <div
           style={{
-            width: '80px',
-            height: '3px',
-            background: 'linear-gradient(90deg, #c0392b, #e67e22)',
-            borderRadius: '2px',
+            width: '100px',
+            height: '4px',
+            backgroundColor: '#E8A020',
+            borderRadius: '4px',
             marginBottom: '24px',
             display: 'flex',
           }}
         />
 
-        {/* Description */}
+        {/* Deskripsi */}
         <div
           style={{
-            fontSize: '20px',
-            color: '#aaaaaa',
+            fontSize: '22px',
+            color: '#CCCCCC',
             textAlign: 'center',
-            maxWidth: '700px',
+            maxWidth: '720px',
             lineHeight: '1.5',
             display: 'flex',
-            flexWrap: 'wrap',
-            justifyContent: 'center',
           }}
         >
-          Platform event jejepangan, cosplay, idol, toys & market Indonesia
+          Platform event jejepangan, cosplay, idol, toys dan market Indonesia
         </div>
 
-        {/* Category tags */}
+        {/* Badge kategori */}
         <div
           style={{
             display: 'flex',
             flexDirection: 'row',
-            gap: '12px',
-            marginTop: '28px',
+            gap: '14px',
+            marginTop: '30px',
           }}
         >
-          {['🎭 Cosplay', '🎤 Idol', '🧸 Toys', '🛒 Market', '🎮 Game'].map(
-            (tag) => (
-              <div
-                key={tag}
-                style={{
-                  background: 'rgba(200,100,0,0.18)',
-                  border: '1px solid rgba(200,120,0,0.35)',
-                  color: '#f0c060',
-                  borderRadius: '20px',
-                  padding: '6px 16px',
-                  fontSize: '15px',
-                  fontWeight: '600',
-                  display: 'flex',
-                }}
-              >
-                {tag}
-              </div>
-            )
-          )}
+          {['Cosplay', 'Idol', 'Toys', 'Market', 'Game'].map((tag) => (
+            <div
+              key={tag}
+              style={{
+                backgroundColor: 'rgba(232,160,32,0.15)',
+                border: '2px solid rgba(232,160,32,0.5)',
+                color: '#E8A020',
+                borderRadius: '24px',
+                padding: '8px 20px',
+                fontSize: '18px',
+                fontWeight: '700',
+                display: 'flex',
+              }}
+            >
+              {tag}
+            </div>
+          ))}
         </div>
 
-        {/* URL badge */}
+        {/* URL pojok kanan bawah */}
         <div
           style={{
             position: 'absolute',
-            bottom: '28px',
+            bottom: '24px',
             right: '32px',
-            color: '#666666',
-            fontSize: '14px',
+            color: '#555555',
+            fontSize: '16px',
             display: 'flex',
           }}
         >
