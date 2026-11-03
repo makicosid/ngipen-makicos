@@ -261,7 +261,6 @@ const sponsorCarouselPausedRef = useRef(false);
   const [currentUserId, setCurrentUserId] = useState("");
 
   const [toast, setToast] = useState("");
-  const [adminPin, setAdminPin] = useState("");
   const [logoClicks, setLogoClicks] = useState(0);
 
   const [registeredUsers, setRegisteredUsers] = useState<RegUser[]>([]);
@@ -452,17 +451,6 @@ const sponsorCarouselPausedRef = useRef(false);
   useEffect(() => {
     async function fetchAll() {
       setLoading(true);
-
-      try {
-        const { data: pinData } = await supabase
-          .from("admin_settings")
-          .select("*")
-          .eq("setting_key", "admin_pin")
-          .maybeSingle();
-
-        if (pinData?.setting_value) {
-          setAdminPin(String(pinData.setting_value).replace(/"/g, ""));
-        }
 
         const { data: usersData, error: usersError } = await supabase
           .from("users")
