@@ -2979,6 +2979,7 @@ const shareEvent = async (event: Event) => {
             )}
 
             {/* FILTER DAN DAFTAR EVENT */}
+{!showCostumeDirectory && (
             <section
               id="daftar-event"
               className="mx-auto max-w-[1400px] scroll-mt-24 px-4 pb-12"
@@ -3333,7 +3334,8 @@ const shareEvent = async (event: Event) => {
                 )}
                 </>
               )}
-            </section>
+                      </section>
+          )}
           </main>
         )}
 
