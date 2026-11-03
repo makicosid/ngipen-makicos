@@ -4519,13 +4519,13 @@ accept="image/jpeg,image/png,image/webp"
                           className="w-full text-sm"
                         />
 
-                        {rentalPreview && (
+                                               {rentalPreview && (
                           <img
                             src={rentalPreview}
                             alt="Preview rental"
                             className="mt-3 h-28 w-28 rounded-xl object-cover"
-                          )}
-                        </div>
+                          />
+                        )}
                       </div>
 
                       <div className="flex flex-wrap gap-2">
@@ -4551,9 +4551,9 @@ accept="image/jpeg,image/png,image/webp"
                             Batal Edit
                           </button>
                         )}
-                      </div>
+                                         </div>
                     </div>
-                 
+                  </div>
 
                   <div>
                     <h3 className="mb-3 font-bold">
