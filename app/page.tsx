@@ -2253,15 +2253,19 @@ const shareEvent = async (event: Event) => {
 
               <button
   onClick={() => {
-    setShowCostumeDirectory(false);
-    setShowCalendar(false);
+  setSelectedEvent(null);
+  setShowCostumeDirectory(false);
+  setShowCalendar(false);
+  setUserTab("Semua");
 
-    setTimeout(() => {
-      document
-        .getElementById("daftar-event")
-        ?.scrollIntoView({ behavior: "smooth" });
-    }, 100);
-  }}
+  window.scrollTo({ top: 0, behavior: "smooth" });
+
+  setTimeout(() => {
+    document
+      .getElementById("daftar-event")
+      ?.scrollIntoView({ behavior: "smooth" });
+  }, 200);
+}}
   className="text-sm font-semibold hover:text-red-600"
 >
   Jelajahi Event
@@ -2269,10 +2273,11 @@ const shareEvent = async (event: Event) => {
                             {currentRole === "user" && (
                 <button
   onClick={() => {
-    setSelectedEvent(null);
-    setShowCostumeDirectory(true);
-    setShowCalendar(false);
-  }}
+  setSelectedEvent(null);
+  setShowCostumeDirectory(true);
+  setShowCalendar(false);
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}}
   className="text-sm font-semibold hover:text-red-600"
 >
   Cari Costume
@@ -2280,13 +2285,14 @@ const shareEvent = async (event: Event) => {
 )}
 {currentRole === "user" && (
   <button
-   onClick={() => {
-  setSelectedEvent(null);
-  setShowCostumeDirectory(false);
-  setShowCalendar(true);
-  setCalendarMonth(new Date());
-  setSelectedCalendarDate("");
-}}
+    onClick={() => {
+      setSelectedEvent(null);
+      setShowCostumeDirectory(false);
+      setShowCalendar(true);
+      setCalendarMonth(new Date());
+      setSelectedCalendarDate("");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }}
     className="text-sm font-semibold hover:text-red-600"
   >
     Kalender
@@ -2443,17 +2449,21 @@ const shareEvent = async (event: Event) => {
                 </button>
 
                <button
-  onClick={() => {
-    setShowCostumeDirectory(false);
-    setShowCalendar(false);
-    setMobileOpen(false);
+ onClick={() => {
+  setSelectedEvent(null);
+  setShowCostumeDirectory(false);
+  setShowCalendar(false);
+  setMobileOpen(false);
+  setUserTab("Semua");
 
-    setTimeout(() => {
-      document
-        .getElementById("daftar-event")
-        ?.scrollIntoView({ behavior: "smooth" });
-    }, 100);
-  }}
+  window.scrollTo({ top: 0, behavior: "smooth" });
+
+  setTimeout(() => {
+    document
+      .getElementById("daftar-event")
+      ?.scrollIntoView({ behavior: "smooth" });
+  }, 200);
+}}
   className="rounded-xl px-3 py-3 text-left font-semibold hover:bg-gray-100 dark:hover:bg-gray-900"
 >
   Jelajahi Event
@@ -2533,7 +2543,7 @@ const shareEvent = async (event: Event) => {
         </header>
 
         {/* BERANDA */}
-        {!selectedEvent && (
+       {!selectedEvent && !showCostumeDirectory && (
           <main>
             {/* HERO */}
             <section className="mx-auto max-w-[1400px] px-4 pb-6 pt-8 sm:pt-12">
@@ -3373,9 +3383,12 @@ const shareEvent = async (event: Event) => {
         )}
         
         {/* HALAMAN CARI COSTUME */}
-        {showCostumeDirectory && !selectedEvent && (
-          <section className="mx-auto min-h-[60vh] max-w-[1100px] px-4 py-8">
-            <div className="mb-6">
+{showCostumeDirectory && !selectedEvent && (
+  <section
+    key="costume-directory"
+    className="mx-auto min-h-[60vh] max-w-[1100px] animate-[fadeIn_0.35s_ease-out] px-4 py-8"
+  >
+    <div className="mb-6">
               <h2 className="text-2xl font-black sm:text-3xl">
                 PARTNER SHIP MAKICOS
               </h2>
@@ -3428,10 +3441,13 @@ const shareEvent = async (event: Event) => {
 
             <button
               type="button"
-              onClick={() => {
-                setShowCostumeDirectory(false);
-                window.scrollTo({ top: 0, behavior: "smooth" });
-              }}
+             onClick={() => {
+  setShowCostumeDirectory(false);
+  setShowCalendar(false);
+  setSelectedEvent(null);
+  setUserTab("Semua");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}}
               className="mt-8 rounded-xl bg-red-600 px-5 py-3 text-sm font-bold text-white"
             >
               ← Kembali ke Beranda
