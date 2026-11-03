@@ -29,7 +29,7 @@ export const metadata: Metadata = {
 
     images: [
       {
-        url: '/ngipen-og-preview.png',
+        url: '/ngipen-og-preview.jpg',
         width: 1200,
         height: 630,
         alt: 'NGIPEN - Satu Hobby Satu Keseruan',
@@ -45,7 +45,7 @@ export const metadata: Metadata = {
     description:
       'Platform event jejepangan, cosplay, idol, toys, market Indonesia.',
 
-    images: ['/ngipen-og-preview.png'],
+   images: ['/ngipen-og-preview.jpg'],
   },
 };
 
