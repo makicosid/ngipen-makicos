@@ -17,10 +17,11 @@ export const metadata: Metadata = {
     type: 'website',
     images: [
       {
-        url: `${BASE_URL}/opengraph-image`,
+        url: `${BASE_URL}/og-image.jpg`,
         width: 1200,
         height: 630,
         alt: 'NGIPEN - Satu Hobby Satu Keseruan',
+        type: 'image/jpeg',
       },
     ],
   },
@@ -28,6 +29,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'NGIPEN - Satu Hobby Satu Keseruan',
     description: 'Platform event jejepangan, cosplay, idol, toys, market Indonesia.',
+    images: [`${BASE_URL}/og-image.jpg`],
   },
 };
 
