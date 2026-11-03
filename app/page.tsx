@@ -232,6 +232,18 @@ export default function Page() {
   const [userTab, setUserTab] =
     useState<"Semua" | "Tersimpan">("Semua");
 const [showCalendar, setShowCalendar] = useState(false);
+  const [isMobileCalendar, setIsMobileCalendar] = useState(false);
+
+useEffect(() => {
+  const checkScreenSize = () => {
+    setIsMobileCalendar(window.innerWidth < 640);
+  };
+
+  checkScreenSize();
+  window.addEventListener("resize", checkScreenSize);
+
+  return () => window.removeEventListener("resize", checkScreenSize);
+}, []);
 const [calendarMonth, setCalendarMonth] = useState(new Date());
 const [selectedCalendarDate, setSelectedCalendarDate] = useState("");
 const [eventStatusTab, setEventStatusTab] = useState<
@@ -1780,16 +1792,26 @@ if (!allowedImageTypes.includes(docFile.type)) {
 const calendarEvents = useMemo(() => {
   if (!selectedCalendarDate) return [];
 
-  return approvedEvents.filter((event) => {
-    const startDate = event.start_date;
-    const endDate = event.end_date || event.start_date;
+  return approvedEvents
+    .filter((event) => {
+      const startDate = event.start_date;
+      const endDate = event.end_date || event.start_date;
 
-    return (
-      startDate <= selectedCalendarDate &&
-      endDate >= selectedCalendarDate &&
-      getTimeStatus(event) !== "Completed"
-    );
-  });
+      return (
+        startDate <= selectedCalendarDate &&
+        endDate >= selectedCalendarDate &&
+        getTimeStatus(event) !== "Completed"
+      );
+    })
+    .sort((a, b) => {
+      const timeCompare = a.created_at.localeCompare(b.created_at);
+
+      if (timeCompare !== 0) return timeCompare;
+
+      return a.title.localeCompare(b.title, "id", {
+        sensitivity: "base",
+      });
+    });
 }, [approvedEvents, selectedCalendarDate]);
   // Event sponsor hanya dari event yang telah disetujui admin
   const sponsoredEvents = useMemo(
@@ -2648,57 +2670,59 @@ const shareEvent = async (event: Event) => {
         </button>
       </div>
 
-      {/* ISI KALENDER */}
-      {(() => {
-        const year = calendarMonth.getFullYear();
-        const month = calendarMonth.getMonth();
+     {/* ISI KALENDER */}
+{(() => {
+  const year = calendarMonth.getFullYear();
+  const month = calendarMonth.getMonth();
 
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
-        const toDateKey = (date: Date) => {
-          const y = date.getFullYear();
-          const m = String(date.getMonth() + 1).padStart(2, "0");
-          const d = String(date.getDate()).padStart(2, "0");
-          return `${y}-${m}-${d}`;
-        };
+  const toDateKey = (date: Date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  };
 
-        const todayKey = toDateKey(today);
+  const todayKey = toDateKey(today);
 
-        const firstDay = new Date(year, month, 1);
-        const offset = (firstDay.getDay() + 6) % 7;
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const firstDay = new Date(year, month, 1);
+  const offset = (firstDay.getDay() + 6) % 7;
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-        const calendarCells = [
-          ...Array(offset).fill(null),
-          ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
-        ];
+  const calendarCells = [
+    ...Array(offset).fill(null),
+    ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
+  ];
 
-        return (
-          <>
-            <div className="grid grid-cols-7 gap-1 sm:gap-2">
-              {["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"].map(
-                (day) => (
-                  <div
-                    key={day}
-                    className="py-2 text-center text-xs font-bold text-gray-500 sm:text-sm"
-                  >
-                    {day}
-                  </div>
-                )
-              )}
+  return (
+    <>
+      <div className="grid grid-cols-7 gap-1 sm:gap-2">
+        {["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"].map(
+          (day) => (
+            <div
+              key={day}
+              className="py-2 text-center text-xs font-bold text-gray-500 sm:text-sm"
+            >
+              {day}
+            </div>
+          )
+        )}
 
-              {calendarCells.map((day, index) => {
-                if (day === null) {
-                  return <div key={`empty-${index}`} />;
-                }
+        {calendarCells.map((day, index) => {
+          if (day === null) {
+            return <div key={`empty-${index}`} />;
+          }
 
-                const date = new Date(year, month, day);
-                const dateKey = toDateKey(date);
-                const isPast = dateKey < todayKey;
-                const isSelected = selectedCalendarDate === dateKey;
+          const date = new Date(year, month, day);
+          const dateKey = toDateKey(date);
+          const isPast = dateKey < todayKey;
+          const isSelected = selectedCalendarDate === dateKey;
 
-                const hasEvents = !isPast && approvedEvents.some((event) => {
+          const dayEvents = !isPast
+            ? approvedEvents
+                .filter((event) => {
                   const startDate = event.start_date;
                   const endDate = event.end_date || event.start_date;
 
@@ -2707,43 +2731,81 @@ const shareEvent = async (event: Event) => {
                     endDate >= dateKey &&
                     getTimeStatus(event) !== "Completed"
                   );
-                });
+                })
+                .sort((a, b) => {
+                  const timeCompare = a.created_at.localeCompare(b.created_at);
 
-                return (
-                  <button
-                    key={dateKey}
-                    disabled={isPast}
-                    onClick={() => setSelectedCalendarDate(dateKey)}
-                    className={`relative flex min-h-[48px] flex-col items-center justify-center rounded-xl border text-sm font-semibold transition sm:min-h-[65px] sm:text-base
+                  if (timeCompare !== 0) return timeCompare;
+
+                  return a.title.localeCompare(b.title, "id", {
+                    sensitivity: "base",
+                  });
+                })
+            : [];
+
+          const maxVisible = isMobileCalendar ? 2 : 3;
+          const visibleEvents = dayEvents.slice(0, maxVisible);
+         const remainingEvents = Math.max(0, dayEvents.length - maxVisible);
+
+          return (
+            <button
+              key={dateKey}
+              disabled={isPast}
+              onClick={() => setSelectedCalendarDate(dateKey)}
+              className={`relative flex min-h-[85px] flex-col items-stretch rounded-xl border p-1 text-left transition sm:min-h-[125px] sm:p-2
+                ${
+                  isSelected
+                    ? "border-red-600 bg-red-600 text-white"
+                    : isPast
+                      ? "cursor-not-allowed border-transparent text-gray-300 dark:text-gray-700"
+                      : "border-gray-100 hover:border-red-400 hover:bg-red-50 dark:border-gray-800 dark:hover:bg-red-950"
+                }`}
+            >
+              <span className="mb-1 text-center text-xs font-bold sm:text-sm">
+                {day}
+              </span>
+
+              <div className="flex flex-col gap-1 overflow-hidden">
+                {visibleEvents.map((event) => (
+                  <span
+                    key={event.id}
+                    title={event.title}
+                    className={`block truncate rounded px-1 py-0.5 text-[9px] font-medium leading-tight sm:text-[10px]
                       ${
                         isSelected
-                          ? "border-red-600 bg-red-600 text-white"
-                          : isPast
-                            ? "cursor-not-allowed border-transparent text-gray-300 dark:text-gray-700"
-                            : "border-gray-100 hover:border-red-400 hover:bg-red-50 dark:border-gray-800 dark:hover:bg-red-950"
+                          ? "bg-white/20 text-white"
+                          : "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300"
                       }`}
                   >
-                    {day}
+                    {event.title}
+                  </span>
+                ))}
 
-                    {hasEvents && (
-                      <span
-                        className={`mt-1 h-1.5 w-1.5 rounded-full ${
-                          isSelected ? "bg-white" : "bg-red-600"
-                        }`}
-                      />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+                {remainingEvents > 0 && (
+                  <span
+                    className={`truncate text-[8px] font-semibold sm:text-[10px]
+                      ${
+                        isSelected
+                          ? "text-white"
+                          : "text-gray-500 dark:text-gray-400"
+                      }`}
+                  >
+                    +{remainingEvents} event lainnya
+                  </span>
+                )}
+              </div>
+            </button>
+          );
+        })}
+      </div>
 
-            <div className="mt-4 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-              <span className="h-2.5 w-2.5 rounded-full bg-red-600" />
-              Tanggal dengan event
-            </div>
-          </>
-        );
-      })()}
+      <div className="mt-4 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+        <span className="h-2.5 w-2.5 rounded-full bg-red-600" />
+        Tanggal dengan event
+      </div>
+    </>
+  );
+})()}
 
       {/* DAFTAR EVENT BERDASARKAN TANGGAL */}
       <div className="mt-8 border-t border-gray-200 pt-6 dark:border-gray-800">
