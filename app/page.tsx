@@ -2259,6 +2259,17 @@ const shareEvent = async (event: Event) => {
               >
                 Jelajahi Event
               </button>
+                            {currentRole === "user" && (
+                <button
+                  onClick={() => {
+                    setSelectedEvent(null);
+                    setShowCostumeDirectory(true);
+                  }}
+                  className="text-sm font-semibold hover:text-red-600"
+                >
+                  Cari Costume
+                </button>
+              )}
 {currentRole === "user" && (
   <button
     onClick={() => {
@@ -2417,6 +2428,19 @@ const shareEvent = async (event: Event) => {
                 >
                   Jelajahi Event
                 </button>
+                                {currentRole === "user" && (
+                  <button
+                    onClick={() => {
+                      setMobileOpen(false);
+                      setSelectedEvent(null);
+                      setShowCostumeDirectory(true);
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                    }}
+                    className="rounded-xl px-3 py-3 text-left font-semibold hover:bg-gray-100 dark:hover:bg-gray-900"
+                  >
+                    Cari Costume
+                  </button>
+                )}
 {currentRole === "user" && (
   <button
     onClick={() => {
