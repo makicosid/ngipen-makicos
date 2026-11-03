@@ -2398,7 +2398,21 @@ const shareEvent = async (event: Event) => {
                   {currentUser || "Akun"}
                 </button>
               )}
-
+{currentRole === "user" && (
+  <button
+    type="button"
+    onClick={() => {
+      setSelectedEvent(null);
+      setShowCostumeDirectory(true);
+      setShowCalendar(false);
+      setMobileOpen(false);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }}
+    className="whitespace-nowrap rounded-full bg-red-600 px-3 py-2 text-xs font-bold text-white"
+  >
+    Cari Costume
+  </button>
+)}
               <button
                 onClick={() => setMobileOpen((open) => !open)}
                 aria-label="Buka navigasi"
