@@ -354,9 +354,14 @@ const handleSaveRental = async () => {
 
   try {
     const formData = new FormData();
-    formData.append("name", rentalName.trim());
-    formData.append("region", rentalRegion.trim());
-    formData.append("instagram_url", rentalInstagram.trim());
+
+if (editingRentalId) {
+  formData.append("id", editingRentalId);
+}
+
+formData.append("name", rentalName.trim());
+formData.append("region", rentalRegion.trim());
+formData.append("instagram_url", rentalInstagram.trim());
 
     if (rentalFile) {
       formData.append("image", rentalFile);
