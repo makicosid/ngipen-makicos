@@ -331,7 +331,14 @@ const [rentalSaving, setRentalSaving] = useState(false);
 useEffect(() => {
   refreshRentals();
 }, []);
-  
+  const resetRentalForm = () => {
+  setRentalName("");
+  setRentalRegion("");
+  setRentalInstagram("");
+  setRentalFile(null);
+  setRentalPreview("");
+  setEditingRentalId(null);
+};
   const [sponsoredCount, setSponsoredCount] = useState(0);
 
   const [commentText, setCommentText] = useState("");
