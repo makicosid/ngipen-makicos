@@ -449,22 +449,22 @@ const sponsorCarouselPausedRef = useRef(false);
 
   // Data Supabase
   useEffect(() => {
-    async function fetchAll() {
-      setLoading(true);
+   async function fetchAll() {
+  setLoading(true);
 
-        const { data: usersData, error: usersError } = await supabase
-          .from("users")
-          .select("id,username,display_name,bio,avatar_url,created_at")
-          .order("created_at", { ascending: false });
+  try {
+    const { data: usersData, error: usersError } = await supabase
+      .from("users")
+      .select("id,username,display_name,bio,avatar_url,created_at")
+      .order("created_at", { ascending: false });
 
-        if (usersError) {
-          setUsersLoadError(usersError.message);
-          console.error("Gagal memuat user:", usersError.message);
-        } else if (usersData) {
-          setRegisteredUsers(usersData as RegUser[]);
-          setUsersLoadError("");
-        }
-
+    if (usersError) {
+      setUsersLoadError(usersError.message);
+      console.error("Gagal memuat user:", usersError.message);
+    } else if (usersData) {
+      setRegisteredUsers(usersData as RegUser[]);
+      setUsersLoadError("");
+    }
         const { data: eventsData, error: eventsError } = await supabase
           .from("events")
           .select("*")
