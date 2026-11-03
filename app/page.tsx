@@ -1968,32 +1968,46 @@ const openEvent = async (event: Event) => {
   };
 
   // Bagikan tautan permanen berbasis ID event; halaman akan membuka detailnya saat link diakses.
-  const shareEvent = async (event: Event) => {
-    const shareUrl = new URL(window.location.origin + window.location.pathname);
-    shareUrl.searchParams.set("event", String(event.id));
+ 
+const shareEvent = async (event: Event) => {
+  const shareUrl = new URL(
+    `/event/${encodeURIComponent(event.id)}`,
+    window.location.origin
+  );
 
-    const shareData = {
-      title: event.title,
-      text: `Lihat event ${event.title} di NGIPEN – MAKICOS`,
-      url: shareUrl.toString(),
-    };
+  const shareData = {
+    title: event.title,
+    text: `Lihat event ${event.title} di NGIPEN – MAKICOS`,
+    url: shareUrl.toString(),
+  };
 
-    if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
-      try {
-        await navigator.share(shareData);
+  if (
+    typeof navigator !== "undefined" &&
+    typeof navigator.share === "function"
+  ) {
+    try {
+      await navigator.share(shareData);
+      return;
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.name === "AbortError"
+      ) {
         return;
-      } catch (error) {
-        if (error instanceof Error && error.name === "AbortError") return;
       }
     }
+  }
 
-    try {
-      await navigator.clipboard.writeText(shareUrl.toString());
-      showToast("Link event berhasil disalin.");
-    } catch {
-      showToast("Link tidak dapat disalin otomatis. Coba buka halaman melalui browser.");
-    }
-  };
+  try {
+    await navigator.clipboard.writeText(shareUrl.toString());
+    showToast("Link event berhasil disalin.");
+  } catch {
+    showToast(
+      "Link tidak dapat disalin otomatis. Coba buka halaman melalui browser."
+    );
+  }
+};
+
 
   return (
     <div className={dark ? "dark" : ""}>
