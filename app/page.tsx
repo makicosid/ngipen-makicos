@@ -63,6 +63,17 @@ interface Doc {
   created_at: string;
 }
 
+interface CostumeRental {
+  id: string;
+  name: string;
+  region: string;
+  instagram_url: string;
+  image_url: string;
+  image_path: string;
+  display_order: number;
+  created_at: string;
+}
+
 interface Review {
   id: string;
   event_id: string;
@@ -279,11 +290,48 @@ const sponsorCarouselPausedRef = useRef(false);
   const [newCategories, setNewCategories] = useState<Category[]>(["Cosplay"]);
   const [newTicketType, setNewTicketType] = useState<TicketType>("Gratis");
 
-  const [adminTab, setAdminTab] =
-    useState<"moderation" | "users">("moderation");
+ const [adminTab, setAdminTab] =
+    useState<"moderation" | "users" | "rentals">("moderation");
   const [adminEventTab, setAdminEventTab] = useState<
     "Pending" | "Approved" | "Rejected" | "Sponsored" | "Completed" | "Hidden"
   >("Pending");
+// Data Cari Costume
+const [showCostumeDirectory, setShowCostumeDirectory] = useState(false);
+const [rentals, setRentals] = useState<CostumeRental[]>([]);
+const [rentalLoading, setRentalLoading] = useState(true);
+
+// Form rental admin
+const [rentalName, setRentalName] = useState("");
+const [rentalRegion, setRentalRegion] = useState("");
+const [rentalInstagram, setRentalInstagram] = useState("");
+const [rentalFile, setRentalFile] = useState<File | null>(null);
+const [rentalPreview, setRentalPreview] = useState("");
+const [editingRentalId, setEditingRentalId] = useState<string | null>(null);
+const [rentalSaving, setRentalSaving] = useState(false);
+  const refreshRentals = async () => {
+  try {
+    const response = await fetch("/api/admin-rentals", {
+      method: "GET",
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      throw new Error("Gagal mengambil data rental.");
+    }
+
+    const data = await response.json();
+    setRentals(Array.isArray(data.rentals) ? data.rentals : []);
+  } catch (error) {
+    console.error("Gagal memuat rental:", error);
+    setRentals([]);
+  } finally {
+    setRentalLoading(false);
+  }
+};
+useEffect(() => {
+  refreshRentals();
+}, []);
+  
   const [sponsoredCount, setSponsoredCount] = useState(0);
 
   const [commentText, setCommentText] = useState("");
