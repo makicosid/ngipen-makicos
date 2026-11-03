@@ -1,10 +1,28 @@
 import './globals.css';
 import type { Metadata } from 'next';
+
+const BASE_URL = 'https://ngipen-makicos-seven.vercel.app';
+
 export const metadata: Metadata = {
   title: 'NGIPEN - Satu Hobby Satu Keseruan',
-  description: 'Platform event jejepangan, cosplay, idol, toys, market Indonesia - Sync Supabase',
-  icons: { icon: '/logo.png' }
+  description: 'Platform event jejepangan, cosplay, idol, toys, market Indonesia. Temukan dan bagikan event jejepangan terlengkap di Indonesia.',
+  metadataBase: new URL(BASE_URL),
+  icons: { icon: '/logo.png' },
+  openGraph: {
+    title: 'NGIPEN - Satu Hobby Satu Keseruan',
+    description: 'Platform event jejepangan, cosplay, idol, toys, market Indonesia. Temukan dan bagikan event jejepangan terlengkap di Indonesia.',
+    url: BASE_URL,
+    siteName: 'NGIPEN',
+    locale: 'id_ID',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'NGIPEN - Satu Hobby Satu Keseruan',
+    description: 'Platform event jejepangan, cosplay, idol, toys, market Indonesia.',
+  },
 };
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="id" suppressHydrationWarning>
