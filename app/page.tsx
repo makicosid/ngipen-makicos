@@ -2241,43 +2241,52 @@ const shareEvent = async (event: Event) => {
             <nav className="hidden items-center gap-4 md:flex">
               <button
                 onClick={() => {
-                  setSelectedEvent(null);
-                  setUserTab("Semua");
-                }}
+  setSelectedEvent(null);
+  setShowCostumeDirectory(false);
+  setShowCalendar(false);
+  setUserTab("Semua");
+}}
                 className="text-sm font-semibold hover:text-red-600"
               >
                 Beranda
               </button>
 
               <button
-                onClick={() =>
-                  document
-                    .getElementById("daftar-event")
-                    ?.scrollIntoView({ behavior: "smooth" })
-                }
-                className="text-sm font-semibold hover:text-red-600"
-              >
-                Jelajahi Event
-              </button>
+  onClick={() => {
+    setShowCostumeDirectory(false);
+    setShowCalendar(false);
+
+    setTimeout(() => {
+      document
+        .getElementById("daftar-event")
+        ?.scrollIntoView({ behavior: "smooth" });
+    }, 100);
+  }}
+  className="text-sm font-semibold hover:text-red-600"
+>
+  Jelajahi Event
+</button>
                             {currentRole === "user" && (
                 <button
-                  onClick={() => {
-                    setSelectedEvent(null);
-                    setShowCostumeDirectory(true);
-                  }}
-                  className="text-sm font-semibold hover:text-red-600"
-                >
-                  Cari Costume
-                </button>
-              )}
+  onClick={() => {
+    setSelectedEvent(null);
+    setShowCostumeDirectory(true);
+    setShowCalendar(false);
+  }}
+  className="text-sm font-semibold hover:text-red-600"
+>
+  Cari Costume
+</button>
+)}
 {currentRole === "user" && (
   <button
-    onClick={() => {
-      setSelectedEvent(null);
-      setShowCalendar(true);
-      setCalendarMonth(new Date());
-      setSelectedCalendarDate("");
-    }}
+   onClick={() => {
+  setSelectedEvent(null);
+  setShowCostumeDirectory(false);
+  setShowCalendar(true);
+  setCalendarMonth(new Date());
+  setSelectedCalendarDate("");
+}}
     className="text-sm font-semibold hover:text-red-600"
   >
     Kalender
@@ -2407,50 +2416,60 @@ const shareEvent = async (event: Event) => {
               <div className="flex flex-col gap-2">
                 <button
                   onClick={() => {
-                    setSelectedEvent(null);
-                    setMobileOpen(false);
-                    setUserTab("Semua");
-                    window.scrollTo({ top: 0, behavior: "smooth" });
-                  }}
+  setSelectedEvent(null);
+  setShowCostumeDirectory(false);
+  setShowCalendar(false);
+  setMobileOpen(false);
+  setUserTab("Semua");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}}
                   className="rounded-xl px-3 py-3 text-left font-semibold hover:bg-gray-100 dark:hover:bg-gray-900"
                 >
                   Beranda
                 </button>
 
-                <button
-                  onClick={() => {
-                    setMobileOpen(false);
-                    document
-                      .getElementById("daftar-event")
-                      ?.scrollIntoView({ behavior: "smooth" });
-                  }}
-                  className="rounded-xl px-3 py-3 text-left font-semibold hover:bg-gray-100 dark:hover:bg-gray-900"
-                >
-                  Jelajahi Event
-                </button>
-                                {currentRole === "user" && (
-                  <button
-                    onClick={() => {
-                      setMobileOpen(false);
-                      setSelectedEvent(null);
-                      setShowCostumeDirectory(true);
-                      window.scrollTo({ top: 0, behavior: "smooth" });
-                    }}
-                    className="rounded-xl px-3 py-3 text-left font-semibold hover:bg-gray-100 dark:hover:bg-gray-900"
-                  >
-                    Cari Costume
-                  </button>
-                )}
-{currentRole === "user" && (
+               <button
+  onClick={() => {
+    setShowCostumeDirectory(false);
+    setShowCalendar(false);
+    setMobileOpen(false);
+
+    setTimeout(() => {
+      document
+        .getElementById("daftar-event")
+        ?.scrollIntoView({ behavior: "smooth" });
+    }, 100);
+  }}
+  className="rounded-xl px-3 py-3 text-left font-semibold hover:bg-gray-100 dark:hover:bg-gray-900"
+>
+  Jelajahi Event
+</button>
+                               {currentRole === "user" && (
   <button
     onClick={() => {
       setMobileOpen(false);
       setSelectedEvent(null);
-      setShowCalendar(true);
-      setCalendarMonth(new Date());
-      setSelectedCalendarDate("");
+      setShowCostumeDirectory(true);
+      setShowCalendar(false);
       window.scrollTo({ top: 0, behavior: "smooth" });
     }}
+    className="rounded-xl px-3 py-3 text-left font-semibold hover:bg-gray-100 dark:hover:bg-gray-900"
+  >
+    Cari Costume
+  </button>
+)}
+                
+{currentRole === "user" && (
+  <button
+    onClick={() => {
+  setMobileOpen(false);
+  setSelectedEvent(null);
+  setShowCostumeDirectory(false);
+  setShowCalendar(true);
+  setCalendarMonth(new Date());
+  setSelectedCalendarDate("");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}}
     className="rounded-xl px-3 py-3 text-left font-semibold hover:bg-gray-100 dark:hover:bg-gray-900"
   >
     Kalender
@@ -3338,7 +3357,74 @@ const shareEvent = async (event: Event) => {
           )}
           </main>
         )}
+        
+        {/* HALAMAN CARI COSTUME */}
+        {showCostumeDirectory && !selectedEvent && (
+          <section className="mx-auto min-h-[60vh] max-w-[1100px] px-4 py-8">
+            <div className="mb-6">
+              <h2 className="text-2xl font-black sm:text-3xl">
+                PARTNER SHIP MAKICOS
+              </h2>
+              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                Temukan partner rental costume untuk kebutuhan cosplay-mu.
+              </p>
+            </div>
 
+            {rentalLoading ? (
+              <div className="rounded-2xl border border-gray-200 p-10 text-center text-sm text-gray-500 dark:border-gray-800">
+                Memuat daftar rental...
+              </div>
+            ) : rentals.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-gray-300 px-5 py-16 text-center dark:border-gray-700">
+                <p className="text-lg font-bold">
+                  Belum ada rental costume tersedia
+                </p>
+                <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                  Daftar partner rental akan ditampilkan di sini.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {rentals.map((rental) => (
+                  <a
+                    key={rental.id}
+                    href={rental.instagram_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-4 rounded-2xl border border-gray-200 bg-white p-3 transition hover:border-red-300 hover:shadow-sm dark:border-gray-800 dark:bg-gray-900"
+                  >
+                    <img
+                      src={rental.image_url}
+                      alt={rental.name}
+                      className="h-20 w-20 shrink-0 rounded-xl object-cover"
+                    />
+                    <div className="min-w-0">
+                      <h3 className="font-bold">{rental.name}</h3>
+                      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                        📍 {rental.region}
+                      </p>
+                      <p className="mt-2 text-xs font-semibold text-red-600">
+                        Kunjungi Instagram →
+                      </p>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={() => {
+                setShowCostumeDirectory(false);
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+              className="mt-8 rounded-xl bg-red-600 px-5 py-3 text-sm font-bold text-white"
+            >
+              ← Kembali ke Beranda
+            </button>
+          </section>
+        )}
+        
         {/* HALAMAN DETAIL EVENT */}
         {selectedEvent && (
           <main className="mx-auto min-h-screen max-w-[1200px] px-4 py-6 sm:py-10">
@@ -4180,6 +4266,16 @@ accept="image/jpeg,image/png,image/webp"
                     >
                       Pengguna
                     </button>
+                                        <button
+                      onClick={() => setAdminTab("rentals")}
+                      className={`rounded-xl px-3 py-2 text-sm font-bold ${
+                        adminTab === "rentals"
+                          ? "bg-red-600 text-white"
+                          : "bg-gray-100 dark:bg-gray-800"
+                      }`}
+                    >
+                      Konfigurasi List Rentalan
+                    </button>
                   </div>
 
                   <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -4342,36 +4438,189 @@ accept="image/jpeg,image/png,image/webp"
                           Belum ada data pengguna.
                         </p>
                       ) : (
-                        registeredUsers.map((user) => (
-                          <div
-                            key={user.id}
-                            className="flex items-center gap-3 border-b border-gray-100 py-3 dark:border-gray-800"
-                          >
-                            {user.avatar_url ? (
-                              <img
-                                src={user.avatar_url}
-                                alt=""
-                                className="h-10 w-10 rounded-full object-cover"
-                              />
-                            ) : (
-                              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 font-bold text-red-700">
-                                {(user.display_name || user.username)[0].toUpperCase()}
-                              </div>
-                            )}
+                                      
+                    registeredUsers.map((user) => (
+                      <div
+                        key={user.id}
+                        className="flex items-center gap-3 border-b border-gray-100 py-3 dark:border-gray-800"
+                      >
+                        {user.avatar_url ? (
+                          <img
+                            src={user.avatar_url}
+                            alt=""
+                            className="h-10 w-10 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 font-bold text-red-700">
+                            {(user.display_name || user.username)[0].toUpperCase()}
+                          </div>
+                        )}
 
-                            <div className="min-w-0">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-bold">
+                            {user.display_name || user.username}
+                          </p>
+                          <p className="truncate text-xs text-gray-500">
+                            @{user.username}
+                          </p>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              ) : (
+                <div className="mt-4 space-y-5">
+                  <div className="rounded-2xl border border-gray-200 p-4 dark:border-gray-800">
+                    <h3 className="font-bold">
+                      {editingRentalId ? "Edit Rental Costume" : "Tambah Rental Costume"}
+                    </h3>
+
+                    <p className="mt-1 text-xs text-gray-500">
+                      Foto wajib berbentuk persegi 1:1, format JPG, PNG, atau WEBP, maksimal 5 MB.
+                    </p>
+
+                    <div className="mt-4 space-y-3">
+                      <input
+                        type="text"
+                        value={rentalName}
+                        onChange={(event) => setRentalName(event.target.value)}
+                        placeholder="Nama rental costume"
+                        className="w-full rounded-xl border border-gray-200 bg-transparent px-4 py-3 text-sm outline-none focus:border-red-500 dark:border-gray-700"
+                      />
+
+                      <input
+                        type="text"
+                        value={rentalRegion}
+                        onChange={(event) => setRentalRegion(event.target.value)}
+                        placeholder="Wilayah / Domisili, contoh: Jawa Barat, Bandung"
+                        className="w-full rounded-xl border border-gray-200 bg-transparent px-4 py-3 text-sm outline-none focus:border-red-500 dark:border-gray-700"
+                      />
+
+                      <input
+                        type="url"
+                        value={rentalInstagram}
+                        onChange={(event) => setRentalInstagram(event.target.value)}
+                        placeholder="Link Instagram rental"
+                        className="w-full rounded-xl border border-gray-200 bg-transparent px-4 py-3 text-sm outline-none focus:border-red-500 dark:border-gray-700"
+                      />
+
+                      <div>
+                        <label className="mb-2 block text-sm font-semibold">
+                          Foto / Logo Rental
+                        </label>
+
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          onChange={(event) =>
+                            handleRentalImage(event.target.files?.[0] || null)
+                          }
+                          className="w-full text-sm"
+                        />
+
+                        {rentalPreview && (
+                          <img
+                            src={rentalPreview}
+                            alt="Preview rental"
+                            className="mt-3 h-28 w-28 rounded-xl object-cover"
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => void handleSaveRental()}
+                          disabled={rentalSaving}
+                          className="rounded-xl bg-red-600 px-5 py-3 text-sm font-bold text-white disabled:opacity-50"
+                        >
+                          {rentalSaving
+                            ? "Menyimpan..."
+                            : editingRentalId
+                              ? "Simpan Perubahan"
+                              : "Tambah Rental"}
+                        </button>
+
+                        {editingRentalId && (
+                          <button
+                            type="button"
+                            onClick={resetRentalForm}
+                            className="rounded-xl bg-gray-100 px-5 py-3 text-sm font-bold dark:bg-gray-800"
+                          >
+                            Batal Edit
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                 
+
+                  <div>
+                    <h3 className="mb-3 font-bold">
+                      Daftar Rental ({rentals.length})
+                    </h3>
+
+                    {rentalLoading ? (
+                      <p className="py-6 text-center text-sm text-gray-500">
+                        Memuat daftar rental...
+                      </p>
+                    ) : rentals.length === 0 ? (
+                      <p className="rounded-xl border border-dashed border-gray-300 py-8 text-center text-sm text-gray-500 dark:border-gray-700">
+                        Belum ada data rental.
+                      </p>
+                    ) : (
+                      <div className="space-y-3">
+                        {rentals.map((rental) => (
+                          <div
+                            key={rental.id}
+                            className="flex items-center gap-3 rounded-xl border border-gray-200 p-3 dark:border-gray-800"
+                          >
+                            <img
+                              src={rental.image_url}
+                              alt={rental.name}
+                              className="h-16 w-16 shrink-0 rounded-xl object-cover"
+                            />
+
+                            <div className="min-w-0 flex-1">
                               <p className="truncate text-sm font-bold">
-                                {user.display_name || user.username}
+                                {rental.name}
                               </p>
                               <p className="truncate text-xs text-gray-500">
-                                @{user.username}
+                                {rental.region}
                               </p>
+                              <a
+                                href={rental.instagram_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs font-semibold text-red-600"
+                              >
+                                Instagram
+                              </a>
+                            </div>
+
+                            <div className="flex shrink-0 flex-col gap-2">
+                              <button
+                                type="button"
+                                onClick={() => handleEditRental(rental)}
+                                className="rounded-lg bg-gray-100 px-3 py-2 text-xs font-bold dark:bg-gray-800"
+                              >
+                                Edit
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => void handleDeleteRental(rental)}
+                                className="rounded-lg bg-red-100 px-3 py-2 text-xs font-bold text-red-700"
+                              >
+                                Hapus
+                              </button>
                             </div>
                           </div>
-                        ))
-                      )}
-                    </div>
-                  )}
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
                 </>
               )}
             </section>
