@@ -339,6 +339,136 @@ useEffect(() => {
   setRentalPreview("");
   setEditingRentalId(null);
 };
+const handleSaveRental = async () => {
+  if (!rentalName.trim() || !rentalRegion.trim() || !rentalInstagram.trim()) {
+    setToast("Nama, wilayah, dan Instagram wajib diisi.");
+    return;
+  }
+
+  if (!editingRentalId && !rentalFile) {
+    setToast("Foto rental wajib diunggah.");
+    return;
+  }
+
+  setRentalSaving(true);
+
+  try {
+    const formData = new FormData();
+    formData.append("name", rentalName.trim());
+    formData.append("region", rentalRegion.trim());
+    formData.append("instagram_url", rentalInstagram.trim());
+
+    if (rentalFile) {
+      formData.append("image", rentalFile);
+    }
+
+    const response = await fetch("/api/admin-rentals", {
+      method: editingRentalId ? "PATCH" : "POST",
+      credentials: "include",
+      body: formData,
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.error || "Gagal menyimpan rental.");
+    }
+
+    await refreshRentals();
+    resetRentalForm();
+    setToast("Data rental berhasil disimpan.");
+  } catch (error) {
+    setToast(
+      error instanceof Error ? error.message : "Terjadi kesalahan."
+    );
+  } finally {
+    setRentalSaving(false);
+  }
+};
+  
+  const handleEditRental = (rental: CostumeRental) => {
+  setRentalName(rental.name);
+  setRentalRegion(rental.region);
+  setRentalInstagram(rental.instagram_url);
+  setRentalFile(null);
+  setRentalPreview(rental.image_url);
+  setEditingRentalId(rental.id);
+
+  window.scrollTo({ top: 0, behavior: "smooth" });
+};
+  const handleDeleteRental = async (rental: CostumeRental) => {
+  const confirmed = window.confirm(
+    `Yakin ingin menghapus rental "${rental.name}"?`
+  );
+
+  if (!confirmed) return;
+
+  try {
+    const response = await fetch("/api/admin-rentals", {
+      method: "DELETE",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ id: rental.id }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.error || "Gagal menghapus rental.");
+    }
+
+    await refreshRentals();
+
+    if (editingRentalId === rental.id) {
+      resetRentalForm();
+    }
+
+    setToast("Rental berhasil dihapus.");
+  } catch (error) {
+    setToast(
+      error instanceof Error ? error.message : "Terjadi kesalahan."
+    );
+  }
+};
+const handleRentalImage = (file: File | null) => {
+  if (!file) return;
+
+  const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+
+  if (!allowedTypes.includes(file.type)) {
+    setToast("Format foto harus JPG, PNG, atau WEBP.");
+    return;
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    setToast("Ukuran foto maksimal 5 MB.");
+    return;
+  }
+
+  const image = new Image();
+  const previewUrl = URL.createObjectURL(file);
+
+  image.onload = () => {
+    if (image.width !== image.height) {
+      URL.revokeObjectURL(previewUrl);
+      setToast("Foto rental harus berbentuk persegi (1:1).");
+      return;
+    }
+
+    setRentalFile(file);
+    setRentalPreview(previewUrl);
+  };
+
+  image.onerror = () => {
+    URL.revokeObjectURL(previewUrl);
+    setToast("Foto tidak dapat dibaca.");
+  };
+
+  image.src = previewUrl;
+};
+  
   const [sponsoredCount, setSponsoredCount] = useState(0);
 
   const [commentText, setCommentText] = useState("");
