@@ -2884,7 +2884,7 @@ const shareEvent = async (event: Event) => {
             )}
 
             {/* CAROUSEL SPONSOR / PROMOTE */}
-            {sponsoredEvents.length > 0 && (
+           {!showCostumeDirectory && sponsoredEvents.length > 0 && (
               <section className="mx-auto max-w-[1400px] px-4 pb-8">
                 <div className="mb-4 flex items-end justify-between gap-3">
                   <div>
