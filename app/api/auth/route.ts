@@ -39,7 +39,6 @@ const SESSION_DAYS = 30;
 function json(data: object, status = 200) {
   const response = NextResponse.json(data, { status });
   response.headers.set("Cache-Control", "no-store");
-
   return response;
 }
 
@@ -60,7 +59,12 @@ function validUsername(value: string) {
 }
 
 function validNewPassword(value: string) {
-  return value.length >= 8 && value.length <= 128;
+  return (
+    value.length >= 8 &&
+    value.length <= 128 &&
+    /[a-zA-Z]/.test(value) &&
+    /[0-9]/.test(value)
+  );
 }
 
 function validLoginPassword(value: string) {
@@ -274,6 +278,96 @@ export async function POST(request: NextRequest) {
     }
 
     /* -----------------------------------------------------
+       CHANGE PASSWORD
+    ----------------------------------------------------- */
+
+    if (action === "change_password") {
+      const session = await getSession(request);
+
+      if (!session) {
+        return json(
+          { error: "Sesi login tidak valid. Silakan login kembali." },
+          401
+        );
+      }
+
+      const oldPassword =
+        typeof body.oldPassword === "string"
+          ? body.oldPassword
+          : "";
+
+      const newPassword =
+        typeof body.newPassword === "string"
+          ? body.newPassword
+          : "";
+
+      if (!validLoginPassword(oldPassword)) {
+        return json(
+          { error: "Password lama tidak valid." },
+          400
+        );
+      }
+
+      if (!validNewPassword(newPassword)) {
+        return json(
+          {
+            error:
+              "Password baru minimal 8 karakter, maksimal 128 karakter, dan harus berisi huruf serta angka.",
+          },
+          400
+        );
+      }
+
+      const { data: user, error: userError } =
+        await getSupabaseAdmin()
+          .from("users")
+          .select("id, password_hash")
+          .eq("id", session.user_id)
+          .maybeSingle();
+
+      if (userError || !user) {
+        console.error("Change password user lookup error:", userError);
+
+        return json(
+          { error: "Data akun tidak ditemukan." },
+          404
+        );
+      }
+
+      const storedPassword = String(user.password_hash || "");
+
+      const passwordMatches = storedPassword.startsWith("scrypt$")
+        ? await verifyPassword(oldPassword, storedPassword)
+        : storedPassword === oldPassword;
+
+      if (!passwordMatches) {
+        return json(
+          { error: "Password lama salah." },
+          401
+        );
+      }
+
+      const newHash = await hashPassword(newPassword);
+
+      const { error: updateError } =
+        await getSupabaseAdmin()
+          .from("users")
+          .update({ password_hash: newHash })
+          .eq("id", session.user_id);
+
+      if (updateError) {
+        console.error("Change password error:", updateError);
+
+        return json(
+          { error: "Gagal mengganti password." },
+          500
+        );
+      }
+
+      return json({ success: true });
+    }
+
+    /* -----------------------------------------------------
        USERNAME & PASSWORD
     ----------------------------------------------------- */
 
@@ -303,7 +397,7 @@ export async function POST(request: NextRequest) {
         return json(
           {
             error:
-              "Password harus terdiri dari 8–128 karakter.",
+              "Password minimal 8 karakter, maksimal 128 karakter, dan harus berisi huruf serta angka.",
           },
           400
         );
@@ -540,7 +634,6 @@ export async function POST(request: NextRequest) {
       /* FAILED LOGIN */
 
       if (!user || !passwordMatches) {
-        // Catat kegagalan login berdasarkan IP.
         const {
           data: ipFailureData,
           error: ipFailureError,
@@ -580,7 +673,6 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        // Catat kegagalan login berdasarkan username.
         const {
           data: failureData,
           error: failureError,
