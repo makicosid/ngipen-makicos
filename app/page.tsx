@@ -2409,21 +2409,7 @@ const shareEvent = async (event: Event) => {
                   {currentUser || "Akun"}
                 </button>
               )}
-{currentRole === "user" && (
-  <button
-    type="button"
-    onClick={() => {
-      setSelectedEvent(null);
-      setShowCostumeDirectory(true);
-      setShowCalendar(false);
-      setMobileOpen(false);
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }}
-    className="whitespace-nowrap rounded-full bg-red-600 px-3 py-2 text-xs font-bold text-white"
-  >
-    Cari Costume
-  </button>
-)}
+
               <button
                 onClick={() => setMobileOpen((open) => !open)}
                 aria-label="Buka navigasi"
@@ -2567,17 +2553,33 @@ const shareEvent = async (event: Event) => {
                     komunitas di seluruh Indonesia dalam satu tempat.
                   </p>
 
-                  <button
-                    onClick={() =>
-                      document
-                        .getElementById("daftar-event")
-                        ?.scrollIntoView({ behavior: "smooth" })
-                    }
-                    className="mt-6 rounded-full bg-white px-5 py-3 text-sm font-bold text-red-700 hover:bg-red-50"
-                  >
-                    Jelajahi Event ↓
-                  </button>
+                  <div className="mt-6 flex flex-wrap gap-3">
+  <button
+    onClick={() =>
+      document
+        .getElementById("daftar-event")
+        ?.scrollIntoView({ behavior: "smooth" })
+    }
+    className="rounded-full bg-white px-5 py-3 text-sm font-bold text-red-700 hover:bg-red-50"
+  >
+    Jelajahi Event ↓
+  </button>
 
+  {currentRole === "user" && (
+    <button
+      type="button"
+      onClick={() => {
+        setSelectedEvent(null);
+        setShowCostumeDirectory(true);
+        setShowCalendar(false);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }}
+      className="rounded-full border border-white px-5 py-3 text-sm font-bold text-white hover:bg-white/10"
+    >
+      Cari Costume
+    </button>
+  )}
+</div>
                   <a
                     href="https://teer.id/makicos.id"
                     target="_blank"
