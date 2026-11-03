@@ -1,38 +1,59 @@
+
 import './globals.css';
 import type { Metadata } from 'next';
 
 const BASE_URL = 'https://ngipen-makicos-seven.vercel.app';
 
 export const metadata: Metadata = {
-  title: 'NGIPEN - Satu Hobby Satu Keseruan',
-  description: 'Platform event jejepangan, cosplay, idol, toys, market Indonesia. Temukan dan bagikan event jejepangan terlengkap di Indonesia.',
   metadataBase: new URL(BASE_URL),
-  icons: { icon: '/logo.png' },
+
+  title: 'NGIPEN - Satu Hobby Satu Keseruan',
+
+  description:
+    'Platform event jejepangan, cosplay, idol, market Indonesia. Temukan dan bagikan event jejepangan terlengkap di Indonesia.',
+
+  icons: {
+    icon: '/logo.png',
+  },
+
   openGraph: {
     title: 'NGIPEN - Satu Hobby Satu Keseruan',
-    description: 'Platform event jejepangan, cosplay, idol, toys, market Indonesia. Temukan dan bagikan event jejepangan terlengkap di Indonesia.',
+
+    description:
+      'Platform event jejepangan, cosplay, idol, market Indonesia. Temukan dan bagikan event jejepangan terlengkap di Indonesia.',
+
     url: BASE_URL,
     siteName: 'NGIPEN',
     locale: 'id_ID',
     type: 'website',
+
     images: [
       {
-        url: `${BASE_URL}/opengraph-image`,
+        url: '/ngipen-og-preview.png',
         width: 1200,
         height: 630,
         alt: 'NGIPEN - Satu Hobby Satu Keseruan',
       },
     ],
   },
+
   twitter: {
     card: 'summary_large_image',
+
     title: 'NGIPEN - Satu Hobby Satu Keseruan',
-    description: 'Platform event jejepangan, cosplay, idol, toys, market Indonesia.',
-    images: [`${BASE_URL}/opengraph-image`],
+
+    description:
+      'Platform event jejepangan, cosplay, idol, toys, market Indonesia.',
+
+    images: ['/ngipen-og-preview.png'],
   },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="id" suppressHydrationWarning>
       <body className="bg-[#F7F7F8] dark:bg-[#121212] text-[#242424] dark:text-white antialiased">
