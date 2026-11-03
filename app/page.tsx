@@ -1434,48 +1434,74 @@ if (!allowedImageTypes.includes(docFile.type)) {
   };
 
   // Ganti password
+  
   const handleChangeUserPassword = async () => {
-    const oldPassword = (
-      document.getElementById("edit-user-oldpass") as HTMLInputElement
-    )?.value;
+    const oldInput = document.getElementById(
+      "edit-user-oldpass"
+    ) as HTMLInputElement | null;
 
-    const newPassword = (
-      document.getElementById("edit-user-newpass") as HTMLInputElement
-    )?.value;
+    const newInput = document.getElementById(
+      "edit-user-newpass"
+    ) as HTMLInputElement | null;
 
-    const { data, error } = await supabase
-      .from("users")
-      .select("password_hash")
-      .eq("id", currentUserId)
-      .maybeSingle();
+    const oldPassword = oldInput?.value || "";
+    const newPassword = newInput?.value || "";
 
-    if (error || !data || data.password_hash !== oldPassword) {
-      setToast("Password lama salah.");
+    if (!oldPassword) {
+      setToast("Masukkan password lama.");
       return;
     }
 
     if (
-      !newPassword ||
       newPassword.length < 8 ||
+      newPassword.length > 128 ||
       !/[a-zA-Z]/.test(newPassword) ||
       !/[0-9]/.test(newPassword)
     ) {
-      setToast("Password baru minimal 8 karakter dan berisi huruf serta angka.");
+      setToast(
+        "Password baru minimal 8 karakter dan berisi huruf serta angka."
+      );
       return;
     }
 
-    const { error: updateError } = await supabase
-      .from("users")
-      .update({ password_hash: newPassword })
-      .eq("id", currentUserId);
-
-    if (updateError) {
-      setToast(`Gagal mengganti password: ${updateError.message}`);
+    if (oldPassword === newPassword) {
+      setToast("Password baru harus berbeda dari password lama.");
       return;
     }
 
-    setToast("Password berhasil diganti.");
-    setTimeout(() => setToast(""), 2000);
+    try {
+      const response = await fetch("/api/auth", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          action: "change_password",
+          oldPassword,
+          newPassword,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        setToast(
+          result.error || "Gagal mengganti password."
+        );
+        return;
+      }
+
+      setToast("Password berhasil diganti.");
+
+      if (oldInput) oldInput.value = "";
+      if (newInput) newInput.value = "";
+
+      setTimeout(() => setToast(""), 2000);
+    } catch (error) {
+      console.error("Change password request error:", error);
+      setToast("Tidak dapat terhubung ke server.");
+    }
   };
 
   // Crop avatar menjadi gambar persegi 512 x 512
