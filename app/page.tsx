@@ -4919,6 +4919,10 @@ accept="image/jpeg,image/png,image/webp"
 </>
 )}
 
+            </section>
+          </div>
+        )}
+
 {/* MODAL PROFIL USER */}
         {showUserProfile && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-black/60 p-4">
