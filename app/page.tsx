@@ -3764,7 +3764,14 @@ const shareEvent = async (event: Event) => {
             ) : (
               <div className="space-y-3">
                 {[...rentals]
-                  .sort((a, b) => Number(b.is_subscription_active) - Number(a.is_subscription_active))
+                   .sort((a, b) => {
+                    const getRentalPriority = (rental: CostumeRental) => {
+                      if (rental.is_subscription_active) return 0;
+                      if (rental.is_verified) return 1;
+                      return 2;
+                    };
+                    return getRentalPriority(a) - getRentalPriority(b);
+                  })
                   .map((rental) => (
                   <div
                     key={rental.id}
