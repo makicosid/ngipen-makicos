@@ -374,8 +374,13 @@ useEffect(() => {
   setEditingRentalId(null);
 };
 const handleSaveRental = async () => {
-  if (!rentalName.trim() || !rentalRegion.trim() || !rentalInstagram.trim()) {
-    setToast("Nama, wilayah, dan Instagram wajib diisi.");
+  if (
+    !rentalName.trim() ||
+    !rentalProvince.trim() ||
+    !rentalCity.trim() ||
+    !rentalInstagram.trim()
+  ) {
+    setToast("Nama, Provinsi, Kota/Kabupaten, dan Instagram wajib diisi.");
     return;
   }
 
@@ -394,7 +399,11 @@ if (editingRentalId) {
 }
 
 formData.append("name", rentalName.trim());
-formData.append("region", rentalRegion.trim());
+// Kolom region tetap dikirim untuk kompatibilitas database lama,
+// tetapi tidak lagi ditampilkan sebagai input Domisili di form Admin.
+const regionValue =
+  rentalRegion.trim() || `${rentalProvince.trim()}, ${rentalCity.trim()}`;
+formData.append("region", regionValue);
 formData.append("province", rentalProvince.trim());
 formData.append("city", rentalCity.trim());
 formData.append("instagram_url", rentalInstagram.trim());
@@ -4950,34 +4959,38 @@ accept="image/jpeg,image/png,image/webp"
                         className="w-full rounded-xl border border-gray-200 bg-transparent px-4 py-3 text-sm outline-none focus:border-red-500 dark:border-gray-700"
                       />
 
-                      <input
-                        type="text"
-                        value={rentalRegion}
-                        onChange={(event) => setRentalRegion(event.target.value)}
-                        placeholder="Wilayah / Domisili, contoh: Jawa Barat, Bandung"
-                        className="w-full rounded-xl border border-gray-200 bg-transparent px-4 py-3 text-sm outline-none focus:border-red-500 dark:border-gray-700"
-                      />
+                      <label className="block text-sm font-semibold">
+                        Provinsi <span className="text-red-600">*</span>
+                        <select
+                          value={rentalProvince}
+                          onChange={(event) => {
+                            setRentalProvince(event.target.value);
+                            setRentalCity("");
+                          }}
+                          required
+                          className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-red-500 dark:border-gray-700 dark:bg-gray-950"
+                        >
+                          <option value="">Pilih Provinsi</option>
+                          {ALL_PROVINCES.map((province) => (
+                            <option key={province} value={province}>
+                              {province}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
 
-                      <input
-                        type="text"
-                        value={rentalProvince}
-                        onChange={(event) => {
-                          setRentalProvince(event.target.value);
-                          setRentalCity("");
-                        }}
-                        placeholder="Provinsi (contoh: Banten)"
-                        maxLength={100}
-                        className="w-full rounded-xl border border-gray-200 bg-transparent px-4 py-3 text-sm outline-none focus:border-red-500 dark:border-gray-700"
-                      />
-
-                      <input
-                        type="text"
-                        value={rentalCity}
-                        onChange={(event) => setRentalCity(event.target.value)}
-                        placeholder="Kota / Kabupaten (contoh: Serang)"
-                        maxLength={100}
-                        className="w-full rounded-xl border border-gray-200 bg-transparent px-4 py-3 text-sm outline-none focus:border-red-500 dark:border-gray-700"
-                      />
+                      <label className="block text-sm font-semibold">
+                        Kota / Kabupaten <span className="text-red-600">*</span>
+                        <input
+                          type="text"
+                          value={rentalCity}
+                          onChange={(event) => setRentalCity(event.target.value)}
+                          placeholder="Contoh: Tangerang Selatan"
+                          maxLength={100}
+                          required
+                          className="mt-1 w-full rounded-xl border border-gray-200 bg-transparent px-4 py-3 text-sm outline-none focus:border-red-500 dark:border-gray-700"
+                        />
+                      </label>
 
                       <input
                         type="url"
