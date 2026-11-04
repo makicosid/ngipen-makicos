@@ -186,6 +186,128 @@ function slugify(value: string) {
     .replace(/^-|-$/g, "");
 }
 
+
+const GUIDE_BOOK_PAGES = [
+  {
+    title: "Sampul",
+    eyebrow: "PANDUAN PENGGUNAAN WEBSITE",
+    paragraphs: [
+      "NGIPEN — Satu hobby satu keseruan.",
+      "Panduan singkat untuk menjelajahi event jejepangan dan menemukan kebutuhan cosplay."
+    ],
+    bullets: ["Untuk Guest dan User", "Panduan HP dan desktop", "Bantuan Customer Service"],
+    visual: "cover",
+  },
+  {
+    title: "Mengenal NGIPEN",
+    eyebrow: "TENTANG NGIPEN",
+    paragraphs: [
+      "NGIPEN adalah website informasi dan jadwal event jejepangan di seluruh Indonesia untuk membantu cosplayer dan penikmat jejepangan, mencari berbagai kegiatan event jejepangan yang ada di Indonesia, mengikuti perkembangan event, dan mencari kebutuhan cosplay."
+    ],
+    bullets: ["Menemukan jadwal event jejepangan", "Melihat informasi event", "Mencari rental costume", "Mengakses informasi melalui HP maupun desktop"],
+    visual: "intro",
+  },
+  {
+    title: "Beranda NGIPEN",
+    eyebrow: "MULAI DARI BERANDA",
+    paragraphs: [
+      "Beranda menjadi titik awal untuk menemukan informasi yang tersedia di NGIPEN. Bagian yang tampil dapat berbeda sesuai status Guest atau User."
+    ],
+    bullets: ["Pilihan Partner dan Event Promote menampilkan event pilihan", "Jelajahi Event menampilkan daftar event", "Cari Costume tersedia untuk User login", "Kalender Event tersedia untuk User login"],
+    visual: "home",
+  },
+  {
+    title: "Jelajahi Event",
+    eyebrow: "TEMUKAN EVENT",
+    paragraphs: [
+      "Gunakan daftar Jelajahi Event untuk mencari kegiatan jejepangan berdasarkan informasi dan penyaring yang tersedia."
+    ],
+    bullets: ["Cari berdasarkan nama atau informasi event", "Saring berdasarkan provinsi, kota, kategori, dan jenis tiket", "Pilih urutan Terbaru atau Terpopuler", "Kategori: Cosplay, Pefomance, Market, Game, dan Comic", "Gunakan status Upcoming, Ongoing, atau Completed"],
+    visual: "explore",
+  },
+  {
+    title: "Kalender Event",
+    eyebrow: "JADWAL BERDASARKAN TANGGAL",
+    paragraphs: [
+      "Kalender Event membantu User melihat event berdasarkan tanggal yang dipilih."
+    ],
+    bullets: ["Login sebagai User terlebih dahulu", "Buka Kalender melalui navigasi atau tombol Buka Kalender Event", "Pilih tanggal pada kalender", "Pilih event pada daftar tanggal tersebut untuk membuka detailnya", "Gunakan tombol kembali untuk kembali ke kalender"],
+    visual: "calendar",
+  },
+  {
+    title: "Preview & Detail Event",
+    eyebrow: "LIHAT INFORMASI EVENT",
+    paragraphs: [
+      "Pada kartu event, User dapat menahan sentuhan atau klik untuk menampilkan Hold-to-Preview. Untuk membuka informasi lengkap, lepaskan dan pilih kartu event secara normal."
+    ],
+    bullets: ["Hold-to-Preview muncul setelah sekitar 400 milidetik", "Geser sebelum waktu tercapai untuk membatalkan preview", "Lepaskan sentuhan atau tombol mouse untuk menutup preview", "Buka Detail Event untuk melihat informasi lengkap, poster, lokasi, jadwal, dan deskripsi", "Pencatatan views terjadi saat Detail Event dibuka oleh User, bukan saat preview ditampilkan"],
+    visual: "preview",
+  },
+  {
+    title: "Simpan & Interaksi Event",
+    eyebrow: "FITUR USER",
+    paragraphs: [
+      "Setelah login, User dapat menggunakan fitur interaksi yang tersedia pada halaman Detail Event."
+    ],
+    bullets: ["Simpan event agar mudah ditemukan kembali melalui tab Tersimpan", "Berikan rating dan komentar pada event", "Lihat rating dan komentar yang tersedia", "Unggah dokumentasi event jika fitur tersebut tersedia pada detail event"],
+    visual: "saved",
+  },
+  {
+    title: "Publikasikan Event",
+    eyebrow: "BAGIKAN INFORMASI EVENT",
+    paragraphs: [
+      "User dapat mengirim informasi event melalui fitur Upload Event. Event yang dikirim akan mengikuti proses moderasi sebelum ditampilkan sebagai event yang disetujui."
+    ],
+    bullets: ["Login sebagai User", "Pilih Upload Event atau Publikasikan Event", "Lengkapi informasi event dan unggah poster", "Kirim data untuk proses moderasi", "Fitur edit event milik User tidak tersedia pada versi ini"],
+    visual: "publish",
+  },
+  {
+    title: "Cari Costume",
+    eyebrow: "TEMUKAN RENTAL COSPLAY",
+    paragraphs: [
+      "Menu Cari Costume menampilkan direktori rental costume yang terdaftar di NGIPEN. Fitur direktori ini tersedia untuk User login."
+    ],
+    bullets: ["Telusuri kartu rental dan informasi lokasinya", "Gunakan filter provinsi dan kota jika tersedia pada tampilan direktori", "Subscription menampilkan rental berlangganan yang aktif", "Verified menandai rental terverifikasi", "Basic menampilkan rental reguler"],
+    visual: "rental",
+  },
+  {
+    title: "Menghubungi Rental",
+    eyebrow: "KONTAK PENYEDIA RENTAL",
+    paragraphs: [
+      "Setiap kartu rental menyediakan tautan kontak sesuai data yang dicantumkan oleh penyedia rental."
+    ],
+    bullets: ["Pilih tombol Instagram untuk membuka profil rental", "Pilih tombol WhatsApp untuk menghubungi rental", "Pastikan detail kostum, harga, ketersediaan, dan ketentuan sewa langsung kepada penyedia", "Tautan kontak dapat berbeda pada setiap rental"],
+    visual: "contact",
+  },
+  {
+    title: "Guest, User & Akun",
+    eyebrow: "AKSES PENGGUNA",
+    paragraphs: [
+      "Guest dapat menjelajahi informasi publik yang tersedia. Login sebagai User membuka fitur tambahan seperti Kalender, Simpan Event, interaksi event, Upload Event, dan Cari Costume."
+    ],
+    bullets: ["Daftar atau login menggunakan username dan password", "User dapat mengelola informasi profil melalui menu akun", "Gunakan Keluar untuk mengakhiri sesi", "Setelah logout, situs kembali ke mode Guest"],
+    visual: "account",
+  },
+  {
+    title: "Panduan HP & Desktop",
+    eyebrow: "AKSES DI BERBAGAI PERANGKAT",
+    paragraphs: [
+      "Tampilan NGIPEN menyesuaikan ukuran layar. Letak navigasi dan cara memilih elemen dapat berbeda antara HP dan desktop."
+    ],
+    bullets: ["HP: buka navigasi melalui tombol hamburger (☰)", "Desktop: gunakan menu navigasi di bagian atas", "HP: sentuh kartu event; desktop: klik kartu event", "Hold-to-Preview dapat digunakan dengan menahan kartu sekitar 400 milidetik", "Gulir halaman untuk melihat bagian beranda dan footer"],
+    visual: "devices",
+  },
+  {
+    title: "Bantuan & Customer Service",
+    eyebrow: "KAMI SIAP MEMBANTU",
+    paragraphs: [
+      "Jika mengalami kendala atau membutuhkan informasi lebih lanjut mengenai penggunaan NGIPEN, hubungi Customer Service."
+    ],
+    bullets: ["Customer Service NGIPEN", "Nomor WhatsApp: 0881011676184", "Sampaikan kendala dan informasi yang diperlukan agar tim dapat membantu"],
+    visual: "support",
+  },
+];
+
 export default function Page() {
     const formatEventDate = (startDate: string, endDate?: string) => {
     const formatDate = (dateString: string) => {
@@ -219,6 +341,24 @@ export default function Page() {
   };
   const [dark, setDark] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [showGuideBook, setShowGuideBook] = useState(false);
+  const [guidePage, setGuidePage] = useState(0);
+
+  useEffect(() => {
+    if (!showGuideBook) return;
+    const handleGuideKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setShowGuideBook(false);
+      if (event.key === "ArrowRight") {
+        setGuidePage((page) => Math.min(GUIDE_BOOK_PAGES.length - 1, page + 1));
+      }
+      if (event.key === "ArrowLeft") {
+        setGuidePage((page) => Math.max(0, page - 1));
+      }
+    };
+    window.addEventListener("keydown", handleGuideKey);
+    return () => window.removeEventListener("keydown", handleGuideKey);
+  }, [showGuideBook]);
+
 
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
@@ -2684,13 +2824,19 @@ const shareEvent = async (event: Event) => {
       setShowCalendar(true);
       setCalendarMonth(new Date());
       setSelectedCalendarDate("");
-      window.scrollTo({ top: 0, behavior: "smooth" });
     }}
     className="text-sm font-semibold hover:text-red-600"
   >
     Kalender
   </button>
 )}
+              <button
+                type="button"
+                onClick={() => { setGuidePage(0); setShowGuideBook(true); }}
+                className="text-sm font-semibold hover:text-red-600"
+              >
+                Buku Panduan
+              </button>
               {currentRole === "user" && (
                 <button
                   onClick={() => {
@@ -2871,13 +3017,24 @@ const shareEvent = async (event: Event) => {
   setShowCalendar(true);
   setCalendarMonth(new Date());
   setSelectedCalendarDate("");
-  window.scrollTo({ top: 0, behavior: "smooth" });
 }}
     className="rounded-xl px-3 py-3 text-left font-semibold hover:bg-gray-100 dark:hover:bg-gray-900"
   >
     Kalender
   </button>
 )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileOpen(false);
+                    setGuidePage(0);
+                    setShowGuideBook(true);
+                  }}
+                  className="rounded-xl px-3 py-3 text-left font-semibold text-red-700 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-950/30"
+                >
+                  Buku Panduan
+                </button>
+
                 {currentRole === "user" && (
                   <button
                     onClick={() => {
@@ -3360,7 +3517,6 @@ const shareEvent = async (event: Event) => {
     setShowCalendar(true);
     setCalendarMonth(new Date());
     setSelectedCalendarDate("");
-    window.scrollTo({ top: 0, behavior: "smooth" });
   }}
   className="shrink-0 rounded-xl border border-red-600 px-5 py-3 text-sm font-bold text-red-600 hover:bg-red-50 dark:hover:bg-gray-800"
 >
@@ -3960,7 +4116,7 @@ const shareEvent = async (event: Event) => {
                               {tier === "verified" && <span className="rounded bg-blue-100 px-1.5 py-0.5 text-[9px] font-black text-blue-800 dark:bg-blue-950 dark:text-blue-300">✓ VERIFIED</span>}
                               {tier === "free" && <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[9px] font-bold text-gray-600 dark:bg-gray-800 dark:text-gray-300">BASIC</span>}
                             </div>
-                            <h3 className={`line-clamp-2 break-words text-xs sm:text-sm ${tier === "subscription" ? "font-rosehot text-base leading-tight text-red-800 dark:text-red-300 sm:text-lg" : "font-bold"}`}>{rental.name}</h3>
+                            <h3 className={`line-clamp-2 break-words text-xs sm:text-sm ${tier === "subscription" ? "font-rosehot font-bold text-base leading-tight text-red-800 dark:text-red-300 sm:text-lg" : "font-bold"}`}>{rental.name}</h3>
                             <p className="mt-1 break-words text-[9px] leading-snug text-gray-500 dark:text-gray-400 sm:text-[10px]">📍 {rental.city && rental.province ? `${rental.city}, ${rental.province}` : rental.region}</p>
                             <p className="mt-1 text-[9px] font-semibold text-gray-500 dark:text-gray-400 sm:text-[10px]">◉ {Number(rental.total_views || 0).toLocaleString("id-ID")} views</p>
                           </div>
@@ -6053,7 +6209,7 @@ accept="image/jpeg,image/png,image/webp"
               </div>
               <div className="space-y-2 p-4">
                 <h3 className="line-clamp-2 text-base font-black">{activeEventPreview.title}</h3>
-                <p className="text-xs text-gray-500 dark:text-gray-400">📍 {activeEventPreview.venue_address || activeEventPreview.city}{activeEventPreview.province ? `, ${activeEventPreview.province}` : ""}</p>
+                <p className="rounded-lg bg-red-50 px-3 py-2 text-sm font-bold leading-relaxed text-red-800 dark:bg-red-950/50 dark:text-red-200">📍 {activeEventPreview.venue_address || activeEventPreview.city}{activeEventPreview.province ? `, ${activeEventPreview.province}` : ""}</p>
                 <p className="line-clamp-3 text-xs leading-relaxed text-gray-600 dark:text-gray-300">{activeEventPreview.description || "Belum ada deskripsi event."}</p>
                 <p className="text-[10px] font-semibold text-red-600">Lepaskan jari atau tombol mouse untuk menutup preview</p>
               </div>
@@ -6079,6 +6235,201 @@ accept="image/jpeg,image/png,image/webp"
             >
               ×
             </button>
+          </div>
+        )}
+
+        {/* BUKU PANDUAN NGIPEN */}
+        {showGuideBook && (
+          <div
+            className="guide-book-overlay fixed inset-0 z-[180] flex items-center justify-center overflow-y-auto p-2 sm:p-5"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Buku Panduan NGIPEN"
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget) setShowGuideBook(false);
+            }}
+          >
+            <div className="relative my-auto w-full max-w-6xl">
+              <button
+                type="button"
+                onClick={() => setShowGuideBook(false)}
+                aria-label="Tutup Buku Panduan"
+                className="absolute -right-1 -top-1 z-30 flex h-10 w-10 items-center justify-center rounded-full border-2 border-white bg-red-700 text-2xl font-black text-white shadow-xl hover:bg-red-800 sm:-right-3 sm:-top-3"
+              >
+                ×
+              </button>
+
+              <div className="guide-book-shell overflow-hidden rounded-[22px] border-[5px] border-red-800 bg-[#f7ead2] p-2 shadow-[0_25px_90px_rgba(0,0,0,0.5)] sm:rounded-[30px] sm:border-[8px] sm:p-3">
+                <div className="guide-book-paper relative overflow-hidden rounded-xl border border-[#d6b779] bg-[#fffaf0]">
+                  <div className="pointer-events-none absolute inset-0 opacity-40" aria-hidden="true">
+                    <div className="absolute inset-x-0 top-0 h-2 bg-gradient-to-r from-red-700 via-amber-400 to-red-700" />
+                    <div className="absolute -left-16 -top-16 h-40 w-40 rounded-full border-[18px] border-amber-100" />
+                    <div className="absolute -bottom-20 -right-12 h-48 w-48 rounded-full border-[18px] border-red-100" />
+                  </div>
+
+                  <div className="relative grid min-h-[470px] grid-cols-1 md:min-h-[540px] md:grid-cols-[1fr_0.9fr]">
+                    <section className="relative flex min-w-0 flex-col border-b border-[#e7d6b5] px-5 pb-5 pt-7 sm:px-9 sm:pb-7 sm:pt-9 md:border-b-0 md:border-r md:px-10">
+                      <div className="absolute left-3 top-3 flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border-2 border-amber-500 bg-white p-1 shadow-md sm:left-5 sm:top-5 sm:h-12 sm:w-12">
+                        <img src="/ngipen-logo.png" alt="Pin logo NGIPEN" className="h-full w-full object-contain" />
+                      </div>
+                      <div className="absolute right-3 top-3 flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border-2 border-amber-500 bg-white p-1 shadow-md sm:right-5 sm:top-5 sm:h-12 sm:w-12">
+                        <img src="/makicos-logo.jpg" alt="Pin logo MAKICOS.ID" className="h-full w-full object-contain" />
+                      </div>
+
+                      <div className="mt-8 flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-red-700 sm:mt-7 sm:text-xs">
+                        <span className="h-px w-6 bg-amber-500" />
+                        {GUIDE_BOOK_PAGES[guidePage].eyebrow}
+                        <span className="h-px w-6 bg-amber-500" />
+                      </div>
+
+                      <h2 className="mt-5 text-center font-serif text-2xl font-black leading-tight text-red-900 sm:text-4xl">
+                        {GUIDE_BOOK_PAGES[guidePage].title === "Sampul" ? "BUKU PANDUAN NGIPEN" : GUIDE_BOOK_PAGES[guidePage].title}
+                      </h2>
+
+                      <div className="mx-auto mt-3 h-1 w-20 rounded-full bg-gradient-to-r from-red-700 via-amber-400 to-red-700" />
+
+                      <div className="mt-5 space-y-3 text-sm leading-relaxed text-gray-800 sm:mt-7 sm:text-base">
+                        {GUIDE_BOOK_PAGES[guidePage].paragraphs.map((paragraph, index) => (
+                          <p key={index}>{paragraph}</p>
+                        ))}
+                      </div>
+
+                      {GUIDE_BOOK_PAGES[guidePage].bullets.length > 0 && (
+                        <ul className="mt-5 space-y-2.5 text-xs leading-relaxed text-gray-800 sm:mt-6 sm:text-sm">
+                          {GUIDE_BOOK_PAGES[guidePage].bullets.map((item, index) => (
+                            <li key={index} className="flex items-start gap-2.5">
+                              <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-red-700 text-[10px] font-black text-white">{index + 1}</span>
+                              <span>{item}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+
+                      {guidePage === GUIDE_BOOK_PAGES.length - 1 && (
+                        <a
+                          href="https://wa.me/62881011676184"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-green-600 px-4 py-3 text-sm font-black text-white shadow-md transition hover:bg-green-700"
+                        >
+                          <span aria-hidden="true">☘</span>
+                          Hubungi WhatsApp Customer Service
+                        </a>
+                      )}
+
+                      <div className="mt-auto flex items-center justify-between pt-6 text-[10px] font-semibold text-amber-800">
+                        <span>NGIPEN · MAKICOS.ID</span>
+                        <span>HALAMAN {guidePage + 1}</span>
+                      </div>
+                    </section>
+
+                    <section className="relative flex min-h-[190px] flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-[#fff7e7] to-[#f4dfb8] p-5 sm:min-h-[230px] sm:p-8">
+                      <div className="absolute inset-4 rounded-xl border border-amber-300/70" />
+                      {guidePage === 0 ? (
+                        <div className="relative flex w-full flex-col items-center gap-4 text-center">
+                          <div className="flex items-center gap-4">
+                            <img src="/ngipen-logo.png" alt="Logo NGIPEN" className="h-14 w-14 rounded-full border-2 border-amber-500 bg-white p-1 object-contain shadow-md sm:h-20 sm:w-20" />
+                            <img src="/makicos-logo.jpg" alt="Logo MAKICOS.ID" className="h-14 w-14 rounded-full border-2 border-amber-500 bg-white p-1 object-contain shadow-md sm:h-20 sm:w-20" />
+                          </div>
+                          <div className="rounded-xl border border-amber-300 bg-white/90 p-3 shadow-lg sm:p-5">
+                            <p className="font-serif text-xl font-black text-red-800 sm:text-3xl">NGIPEN</p>
+                            <p className="mt-1 text-xs font-bold tracking-wide text-gray-600 sm:text-sm">SATU HOBBY SATU KESERUAN</p>
+                            <div className="mt-3 flex justify-center gap-1">
+                              <span className="h-1.5 w-8 rounded-full bg-red-700" />
+                              <span className="h-1.5 w-8 rounded-full bg-amber-400" />
+                              <span className="h-1.5 w-8 rounded-full bg-red-700" />
+                            </div>
+                          </div>
+                          <p className="text-xs font-bold uppercase tracking-[0.2em] text-amber-800">Jelajahi · Temukan · Rayakan</p>
+                        </div>
+                      ) : guidePage === 12 ? (
+                        <div className="relative w-full max-w-sm rounded-2xl border border-amber-300 bg-white p-5 text-center shadow-xl">
+                          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-green-100 text-3xl">☏</div>
+                          <p className="mt-3 text-xs font-black uppercase tracking-widest text-red-700">Customer Service NGIPEN</p>
+                          <p className="mt-2 text-2xl font-black text-gray-900">0881011676184</p>
+                          <p className="mt-2 text-xs text-gray-500">Bantuan penggunaan website</p>
+                          <div className="mt-4 rounded-lg bg-green-600 px-3 py-2 text-sm font-bold text-white">WhatsApp Support</div>
+                        </div>
+                      ) : (
+                        <div className="relative w-full max-w-sm rounded-2xl border border-amber-300 bg-white p-3 shadow-xl sm:p-4">
+                          <div className="mb-3 flex items-center justify-between border-b border-gray-100 pb-2">
+                            <div className="flex items-center gap-2">
+                              <span className="h-6 w-6 rounded-md bg-red-700" />
+                              <span className="text-xs font-black text-gray-800">NGIPEN</span>
+                            </div>
+                            <span className="rounded-full bg-amber-100 px-2 py-1 text-[9px] font-bold text-amber-800">PANDUAN</span>
+                          </div>
+                          {GUIDE_BOOK_PAGES[guidePage].visual === "calendar" ? (
+                            <div className="grid grid-cols-7 gap-1 text-center text-[9px] text-gray-600">
+                              {["M","S","S","R","K","J","S",...Array.from({length:28},(_,i)=>String(i+1))].map((day,i)=><span key={i} className={`rounded py-1 ${i===12?"bg-red-700 font-black text-white":"bg-gray-50"}`}>{day}</span>)}
+                            </div>
+                          ) : GUIDE_BOOK_PAGES[guidePage].visual === "devices" ? (
+                            <div className="flex items-end justify-center gap-4">
+                              <div className="w-24 rounded-xl border-4 border-gray-800 bg-gray-50 p-2"><div className="h-3 rounded bg-red-600"/><div className="mt-2 grid grid-cols-2 gap-1">{[1,2,3,4].map(x=><span key={x} className="h-10 rounded bg-amber-100"/>)}</div></div>
+                              <div className="w-44 rounded-lg border-4 border-gray-700 bg-gray-50 p-2"><div className="h-3 rounded bg-red-600"/><div className="mt-2 grid grid-cols-3 gap-1">{[1,2,3].map(x=><span key={x} className="h-12 rounded bg-amber-100"/>)}</div></div>
+                            </div>
+                          ) : GUIDE_BOOK_PAGES[guidePage].visual === "contact" ? (
+                            <div className="space-y-3 p-3">
+                              <div className="rounded-lg bg-red-600 p-3 text-center text-sm font-bold text-white">Instagram ↗</div>
+                              <div className="rounded-lg bg-green-600 p-3 text-center text-sm font-bold text-white">WhatsApp ↗</div>
+                            </div>
+                          ) : GUIDE_BOOK_PAGES[guidePage].visual === "account" ? (
+                            <div className="space-y-2 p-3">
+                              <div className="rounded-lg bg-gray-100 p-3 text-sm font-bold text-gray-800">Guest</div>
+                              <div className="rounded-lg bg-red-50 p-3 text-sm font-bold text-red-800">User Login</div>
+                              <div className="rounded-lg bg-amber-100 p-3 text-sm font-bold text-amber-900">Profil · Logout</div>
+                            </div>
+                          ) : (
+                            <div className="space-y-2">
+                              <div className="grid grid-cols-3 gap-2">
+                                {[1,2,3].map((item)=><div key={item} className="overflow-hidden rounded-lg border border-gray-200"><div className="h-14 bg-gradient-to-br from-red-100 to-amber-100"/><div className="space-y-1 p-2"><div className="h-1.5 rounded bg-gray-300"/><div className="h-1.5 w-2/3 rounded bg-gray-200"/></div></div>)}
+                              </div>
+                              <div className="rounded-lg bg-red-50 p-2 text-center text-[10px] font-bold text-red-800">
+                                {GUIDE_BOOK_PAGES[guidePage].visual === "rental" ? "SUBSCRIPTION · VERIFIED · BASIC" : GUIDE_BOOK_PAGES[guidePage].visual === "preview" ? "PREVIEW → DETAIL EVENT" : GUIDE_BOOK_PAGES[guidePage].visual === "saved" ? "EVENT TERSIMPAN · RATING · KOMENTAR" : GUIDE_BOOK_PAGES[guidePage].visual === "publish" ? "UPLOAD EVENT · MODERASI" : "JELAJAHI EVENT NGIPEN"}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      <div className="relative mt-4 text-center text-[10px] font-semibold uppercase tracking-widest text-amber-800">Panduan NGIPEN · MAKICOS.ID</div>
+                    </section>
+                  </div>
+                </div>
+
+                <div className="mt-3 flex items-center justify-between gap-2 rounded-2xl border border-white/20 bg-gray-950/90 px-3 py-3 text-white shadow-xl sm:px-5">
+                  <button
+                    type="button"
+                    disabled={guidePage === 0}
+                    onClick={() => setGuidePage((page) => Math.max(0, page - 1))}
+                    className="rounded-full bg-white/10 px-3 py-2 text-xs font-bold hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-30 sm:px-5 sm:text-sm"
+                  >
+                    ← Sebelumnya
+                  </button>
+                  <div className="min-w-0 text-center">
+                    <p className="text-xs font-black sm:text-sm">{guidePage + 1} / {GUIDE_BOOK_PAGES.length}</p>
+                    <div className="mt-1 flex justify-center gap-1">
+                      {GUIDE_BOOK_PAGES.map((_, index) => (
+                        <button
+                          key={index}
+                          type="button"
+                          aria-label={`Buka halaman ${index + 1}`}
+                          onClick={() => setGuidePage(index)}
+                          className={`h-1.5 rounded-full transition-all ${index === guidePage ? "w-5 bg-amber-400" : "w-1.5 bg-white/40 hover:bg-white/70"}`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={guidePage === GUIDE_BOOK_PAGES.length - 1}
+                    onClick={() => setGuidePage((page) => Math.min(GUIDE_BOOK_PAGES.length - 1, page + 1))}
+                    className="rounded-full bg-red-600 px-3 py-2 text-xs font-bold hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-30 sm:px-5 sm:text-sm"
+                  >
+                    Selanjutnya →
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
@@ -6113,6 +6464,14 @@ accept="image/jpeg,image/png,image/webp"
                   className="hover:text-red-600"
                 >
                   Beranda
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => { setGuidePage(0); setShowGuideBook(true); }}
+                  className="hover:text-red-600"
+                >
+                  Buku Panduan
                 </button>
 
                 <button
