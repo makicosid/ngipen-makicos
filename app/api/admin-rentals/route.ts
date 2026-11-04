@@ -73,6 +73,39 @@ function validInstagramUrl(value: string) {
   }
 }
 
+function normalizeWhatsapp(value: string) {
+  const normalized = value.trim().replace(/[\s()-]/g, "");
+
+  if (!normalized) return null;
+
+  if (!/^\+?\d{8,15}$/.test(normalized)) {
+    return undefined;
+  }
+
+  return normalized;
+}
+
+function normalizeSubscriptionExpiry(value: string) {
+  const date = value.trim();
+
+  if (!date) return null;
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return undefined;
+  }
+
+  const parsed = new Date(`${date}T23:59:59+07:00`);
+
+  if (
+    Number.isNaN(parsed.getTime()) ||
+    parsed.toISOString().slice(0, 10) !== date
+  ) {
+    return undefined;
+  }
+
+  return parsed.toISOString();
+}
+
 function getImageExtension(type: string) {
   if (type === "image/jpeg") return "jpg";
   if (type === "image/png") return "png";
@@ -102,7 +135,9 @@ async function uploadImage(file: File) {
       upsert: false,
     });
 
-  if (error) throw new Error("Gagal mengunggah foto rental.");
+  if (error) {
+    throw new Error("Gagal mengunggah foto rental.");
+  }
 
   const { data } = getSupabaseAdmin()
     .storage
@@ -131,7 +166,9 @@ async function removeImage(path: string) {
 // GET: daftar rental untuk publik dan admin
 export async function GET() {
   try {
-    const { data, error } = await getSupabaseAdmin()
+    const supabase = getSupabaseAdmin();
+
+    const { data, error } = await supabase
       .from("costume_rentals")
       .select("*")
       .order("display_order", { ascending: true })
@@ -142,7 +179,36 @@ export async function GET() {
       return json({ error: "Gagal mengambil daftar rental." }, 500);
     }
 
-    return json({ rentals: data || [] });
+    const now = Date.now();
+
+    const rentals = await Promise.all(
+      (data || []).map(async (rental) => {
+        const { count, error: countError } = await supabase
+          .from("costume_rental_clicks")
+          .select("id", { count: "exact", head: true })
+          .eq("rental_id", rental.id);
+
+        if (countError) {
+          throw countError;
+        }
+
+        const expiry = rental.subscription_expires_at
+          ? new Date(rental.subscription_expires_at).getTime()
+          : 0;
+
+        const isSubscriptionActive =
+          rental.is_subscription === true &&
+          expiry > now;
+
+        return {
+          ...rental,
+          total_views: count ?? 0,
+          is_subscription_active: isSubscriptionActive,
+        };
+      })
+    );
+
+    return json({ rentals });
   } catch (error) {
     console.error("Rental GET error:", error);
     return json({ error: "Terjadi kesalahan server." }, 500);
@@ -165,18 +231,37 @@ export async function POST(request: NextRequest) {
     const name = String(form.get("name") || "").trim();
     const region = String(form.get("region") || "").trim();
     const instagramUrl = String(form.get("instagram_url") || "").trim();
+    const whatsappRaw = String(form.get("whatsapp_number") || "");
     const file = form.get("image");
 
     if (!name || name.length > 100) {
-      return json({ error: "Nama rental wajib diisi (maksimal 100 karakter)." }, 400);
+      return json(
+        { error: "Nama rental wajib diisi (maksimal 100 karakter)." },
+        400
+      );
     }
 
     if (!region || region.length > 120) {
-      return json({ error: "Daerah rental wajib diisi (maksimal 120 karakter)." }, 400);
+      return json(
+        { error: "Daerah rental wajib diisi (maksimal 120 karakter)." },
+        400
+      );
     }
 
     if (!validInstagramUrl(instagramUrl)) {
-      return json({ error: "Masukkan link profil Instagram yang valid." }, 400);
+      return json(
+        { error: "Masukkan link profil Instagram yang valid." },
+        400
+      );
+    }
+
+    const whatsappNumber = normalizeWhatsapp(whatsappRaw);
+
+    if (whatsappNumber === undefined) {
+      return json(
+        { error: "Nomor WhatsApp tidak valid. Gunakan 8–15 digit." },
+        400
+      );
     }
 
     if (!(file instanceof File)) {
@@ -191,6 +276,7 @@ export async function POST(request: NextRequest) {
         name,
         region,
         instagram_url: instagramUrl,
+        whatsapp_number: whatsappNumber,
         image_url: image.image_url,
         image_path: image.image_path,
       })
@@ -207,7 +293,12 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Rental POST error:", error);
     return json(
-      { error: error instanceof Error ? error.message : "Terjadi kesalahan server." },
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "Terjadi kesalahan server.",
+      },
       500
     );
   }
@@ -225,24 +316,39 @@ export async function PATCH(request: NextRequest) {
     }
 
     const form = await request.formData();
+
     const id = String(form.get("id") || "").trim();
     const name = String(form.get("name") || "").trim();
     const region = String(form.get("region") || "").trim();
     const instagramUrl = String(form.get("instagram_url") || "").trim();
 
-    if (!id || !name || name.length > 100 || !region || region.length > 120) {
-      return json({ error: "Data rental tidak lengkap atau tidak valid." }, 400);
+    if (
+      !id ||
+      !name ||
+      name.length > 100 ||
+      !region ||
+      region.length > 120
+    ) {
+      return json(
+        { error: "Data rental tidak lengkap atau tidak valid." },
+        400
+      );
     }
 
     if (!validInstagramUrl(instagramUrl)) {
-      return json({ error: "Link profil Instagram tidak valid." }, 400);
+      return json(
+        { error: "Link profil Instagram tidak valid." },
+        400
+      );
     }
 
     const supabase = getSupabaseAdmin();
 
     const { data: existing, error: findError } = await supabase
       .from("costume_rentals")
-      .select("id, image_path")
+      .select(
+        "id, image_path, whatsapp_number, subscription_expires_at, is_subscription"
+      )
       .eq("id", id)
       .maybeSingle();
 
@@ -250,39 +356,99 @@ export async function PATCH(request: NextRequest) {
       return json({ error: "Data rental tidak ditemukan." }, 404);
     }
 
-   const updates: Record<string, unknown> = {
-  name,
-  region,
-  instagram_url: instagramUrl,
-  updated_at: new Date().toISOString(),
-};
+    const updates: Record<string, unknown> = {
+      name,
+      region,
+      instagram_url: instagramUrl,
+      updated_at: new Date().toISOString(),
+    };
 
-const verifiedValue = form.get("is_verified");
-const subscriptionValue = form.get("is_subscription");
+    const verifiedValue = form.get("is_verified");
+    const subscriptionValue = form.get("is_subscription");
 
-if (
-  verifiedValue !== null &&
-  verifiedValue !== "true" &&
-  verifiedValue !== "false"
-) {
-  return json({ error: "Status Partner Ship tidak valid." }, 400);
-}
+    if (
+      verifiedValue !== null &&
+      verifiedValue !== "true" &&
+      verifiedValue !== "false"
+    ) {
+      return json(
+        { error: "Status Partner Ship tidak valid." },
+        400
+      );
+    }
 
-if (
-  subscriptionValue !== null &&
-  subscriptionValue !== "true" &&
-  subscriptionValue !== "false"
-) {
-  return json({ error: "Status Subscription tidak valid." }, 400);
-}
+    if (
+      subscriptionValue !== null &&
+      subscriptionValue !== "true" &&
+      subscriptionValue !== "false"
+    ) {
+      return json(
+        { error: "Status Subscription tidak valid." },
+        400
+      );
+    }
 
-if (verifiedValue !== null) {
-  updates.is_verified = verifiedValue === "true";
-}
+    if (verifiedValue !== null) {
+      updates.is_verified = verifiedValue === "true";
+    }
 
-if (subscriptionValue !== null) {
-  updates.is_subscription = subscriptionValue === "true";
-}
+    if (subscriptionValue !== null) {
+      updates.is_subscription = subscriptionValue === "true";
+    }
+
+    const whatsappValue = form.get("whatsapp_number");
+
+    if (whatsappValue !== null) {
+      const whatsappNumber = normalizeWhatsapp(
+        String(whatsappValue)
+      );
+
+      if (whatsappNumber === undefined) {
+        return json(
+          { error: "Nomor WhatsApp tidak valid. Gunakan 8–15 digit." },
+          400
+        );
+      }
+
+      updates.whatsapp_number = whatsappNumber;
+    }
+
+    const expiryValue = form.get("subscription_expires_at");
+
+    if (expiryValue !== null) {
+      const expiry = normalizeSubscriptionExpiry(
+        String(expiryValue)
+      );
+
+      if (expiry === undefined) {
+        return json(
+          { error: "Tanggal kedaluwarsa Subscription tidak valid." },
+          400
+        );
+      }
+
+      updates.subscription_expires_at = expiry;
+    }
+
+    const finalSubscriptionStatus =
+      subscriptionValue !== null
+        ? subscriptionValue === "true"
+        : existing.is_subscription === true;
+
+    const finalExpiry =
+      expiryValue !== null
+        ? updates.subscription_expires_at
+        : existing.subscription_expires_at;
+
+    if (finalSubscriptionStatus && !finalExpiry) {
+      return json(
+        {
+          error:
+            "Tanggal kedaluwarsa wajib diisi sebelum mengaktifkan Subscription.",
+        },
+        400
+      );
+    }
 
     const file = form.get("image");
     let newImagePath: string | null = null;
@@ -302,9 +468,15 @@ if (subscriptionValue !== null) {
       .single();
 
     if (error) {
-      if (newImagePath) await removeImage(newImagePath);
+      if (newImagePath) {
+        await removeImage(newImagePath);
+      }
+
       console.error("Rental update error:", error);
-      return json({ error: "Gagal memperbarui data rental." }, 500);
+      return json(
+        { error: "Gagal memperbarui data rental." },
+        500
+      );
     }
 
     if (newImagePath && existing.image_path) {
@@ -315,7 +487,12 @@ if (subscriptionValue !== null) {
   } catch (error) {
     console.error("Rental PATCH error:", error);
     return json(
-      { error: error instanceof Error ? error.message : "Terjadi kesalahan server." },
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "Terjadi kesalahan server.",
+      },
       500
     );
   }
@@ -358,7 +535,10 @@ export async function DELETE(request: NextRequest) {
 
     if (error) {
       console.error("Rental delete error:", error);
-      return json({ error: "Gagal menghapus data rental." }, 500);
+      return json(
+        { error: "Gagal menghapus data rental." },
+        500
+      );
     }
 
     if (existing.image_path) {
