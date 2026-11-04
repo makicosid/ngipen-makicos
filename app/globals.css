@@ -44,3 +44,16 @@ body {
   from { opacity: 1; }
   to { opacity: 0; }
 }
+
+/* Rosehot: font eksklusif untuk elemen Subscription rental */
+@font-face {
+  font-family: "Rosehot";
+  src: url("/fonts/Rosehot.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+.font-rosehot {
+  font-family: "Rosehot", Georgia, serif;
+}
