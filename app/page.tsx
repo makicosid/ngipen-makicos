@@ -6458,8 +6458,8 @@ accept="image/jpeg,image/png,image/webp"
                     <div className="absolute inset-3 rounded-lg border border-amber-300/30" />
                   </div>
 
-                  <div className="relative grid h-full min-h-0 grid-cols-1 md:grid-cols-[1fr_0.9fr]">
-                    <section className="guide-book-content relative flex min-h-0 min-w-0 flex-col overflow-hidden border-b border-[#e7d6b5] px-5 pb-4 pt-24 sm:px-9 sm:pb-6 sm:pt-24 md:border-b-0 md:border-r md:px-10">
+                  <div className="relative grid h-full min-h-0 grid-cols-[1fr_0.9fr]">
+                    <section className="guide-book-content relative flex min-h-0 min-w-0 flex-col overflow-hidden border-r border-[#e7d6b5] px-2 pb-3 pt-24 sm:px-4 sm:pb-4 sm:pt-24 md:px-8">
                       <div className="absolute left-3 top-3 flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border-2 border-amber-500 bg-white p-1 shadow-md sm:left-5 sm:top-5 sm:h-12 sm:w-12">
                         <img src="/ngipen-logo.png" alt="Pin logo NGIPEN" className="h-full w-full object-contain" />
                       </div>
@@ -6495,20 +6495,20 @@ accept="image/jpeg,image/png,image/webp"
                         <span className="h-px w-6 bg-amber-500" />
                       </div>
 
-                      <h2 className="mt-5 text-center font-serif text-2xl font-black leading-tight text-red-900 sm:text-4xl">
+                      <h2 className="mt-3 text-center font-serif text-sm font-black leading-tight text-red-900 sm:text-xl md:text-3xl">
                         {GUIDE_BOOK_PAGES[guidePage].title === "Sampul" ? "BUKU PANDUAN NGIPEN" : GUIDE_BOOK_PAGES[guidePage].title}
                       </h2>
 
                       <div className="mx-auto mt-3 h-1 w-20 rounded-full bg-gradient-to-r from-red-700 via-amber-400 to-red-700" />
 
-                      <div className="mt-5 space-y-3 text-sm leading-relaxed text-gray-800 sm:mt-7 sm:text-base">
+                      <div className="mt-5 space-y-3 text-[10px] leading-relaxed text-gray-800 sm:mt-5 sm:text-xs md:text-sm">
                         {GUIDE_BOOK_PAGES[guidePage].paragraphs.map((paragraph, index) => (
                           <p key={index}>{paragraph}</p>
                         ))}
                       </div>
 
                       {GUIDE_BOOK_PAGES[guidePage].bullets.length > 0 && (
-                        <ul className="mt-5 space-y-2.5 text-xs leading-relaxed text-gray-800 sm:mt-6 sm:text-sm">
+                        <ul className="mt-3 space-y-2 text-[9px] leading-relaxed text-gray-800 sm:mt-4 sm:text-[10px] md:text-xs">
                           {GUIDE_BOOK_PAGES[guidePage].bullets.map((item, index) => (
                             <li key={index} className="flex items-start gap-2.5">
                               <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-red-700 text-[10px] font-black text-white">{index + 1}</span>
@@ -6516,24 +6516,6 @@ accept="image/jpeg,image/png,image/webp"
                             </li>
                           ))}
                         </ul>
-                      )}
-
-                      {GUIDE_SCREENSHOTS[guidePage] && (
-                        <figure className="mt-6 overflow-hidden rounded-xl border border-amber-300 bg-white p-2 shadow-sm">
-                          <div className="mb-2 flex items-center gap-2 px-1 text-[10px] font-black uppercase tracking-[0.14em] text-red-800 sm:text-xs">
-                            <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
-                            Contoh Tampilan NGIPEN
-                          </div>
-                          <img
-                            src={GUIDE_SCREENSHOTS[guidePage].src}
-                            alt={GUIDE_BOOK_PAGES[guidePage].title}
-                            loading="lazy"
-                            className="mx-auto h-auto max-h-[560px] w-full rounded-lg border border-gray-100 object-contain"
-                          />
-                          <figcaption className="px-2 pb-1 pt-2 text-center text-[10px] leading-relaxed text-gray-500 sm:text-xs">
-                            {GUIDE_SCREENSHOTS[guidePage].caption}
-                          </figcaption>
-                        </figure>
                       )}
 
                       {guidePage === GUIDE_BOOK_PAGES.length - 1 && (
@@ -6555,9 +6537,28 @@ accept="image/jpeg,image/png,image/webp"
                       </div>
                     </section>
 
-                    <section className="relative hidden min-h-0 flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-[#fff7e7] to-[#f4dfb8] p-5 sm:p-8 md:flex">
+                    <section className="relative relative flex min-h-0 flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-[#fff7e7] to-[#f4dfb8] p-2 sm:p-4 md:p-6">
                       <div className="absolute inset-4 rounded-xl border border-amber-300/70" />
-                      {guidePage === 0 ? (
+                      {GUIDE_SCREENSHOTS[guidePage] ? (
+                        <figure className="relative z-10 flex h-full w-full max-w-full flex-col items-center justify-center gap-2 rounded-xl border border-amber-300 bg-white/90 p-2 shadow-lg sm:p-3">
+                          <div className="flex w-full items-center justify-center gap-2 text-center text-[8px] font-black uppercase tracking-[0.12em] text-red-800 sm:text-[10px] md:text-xs">
+                            <span className="h-1 w-4 rounded-full bg-amber-500" />
+                            Contoh Tampilan NGIPEN
+                            <span className="h-1 w-4 rounded-full bg-amber-500" />
+                          </div>
+                          <div className="flex min-h-0 w-full flex-1 items-center justify-center overflow-hidden rounded-lg bg-[#fffaf0]">
+                            <img
+                              src={GUIDE_SCREENSHOTS[guidePage].src}
+                              alt={`Ilustrasi ${GUIDE_BOOK_PAGES[guidePage].title}`}
+                              loading="lazy"
+                              className="max-h-full max-w-full rounded-md object-contain"
+                            />
+                          </div>
+                          <figcaption className="w-full px-1 text-center text-[8px] leading-snug text-gray-600 sm:text-[10px] md:text-xs">
+                            {GUIDE_SCREENSHOTS[guidePage].caption}
+                          </figcaption>
+                        </figure>
+                      ) : guidePage === 0 ? (
                         <div className="relative flex w-full flex-col items-center gap-4 text-center">
                           <div className="flex items-center gap-4">
                             <img src="/ngipen-logo.png" alt="Logo NGIPEN" className="h-14 w-14 rounded-full border-2 border-amber-500 bg-white p-1 object-contain shadow-md sm:h-20 sm:w-20" />
