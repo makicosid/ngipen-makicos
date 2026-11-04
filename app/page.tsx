@@ -3629,13 +3629,32 @@ const shareEvent = async (event: Event) => {
     className="mx-auto min-h-[60vh] max-w-[1100px] animate-[fadeIn_0.35s_ease-out] px-4 py-8"
   >
     <div className="mb-6">
-              <h2 className="text-2xl font-black sm:text-3xl">
-                PARTNER SHIP MAKICOS
-              </h2>
-              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                Temukan partner rental costume untuk kebutuhan cosplay-mu.
-              </p>
-            </div>
+      <h2 className="text-2xl font-black sm:text-3xl">
+        PARTNER SHIP MAKICOS
+      </h2>
+      <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+        Temukan partner rental costume untuk kebutuhan cosplay-mu.
+      </p>
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <div className="rounded-xl border border-blue-200 bg-blue-50 p-3 dark:border-blue-900 dark:bg-blue-950/30">
+          <p className="text-sm font-bold text-blue-700 dark:text-blue-300">
+            ✓ Partner Ship
+          </p>
+          <p className="mt-1 text-xs text-blue-700/80 dark:text-blue-300/80">
+            Rental yang telah menjadi partner resmi Makicos.
+          </p>
+        </div>
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 dark:border-amber-900 dark:bg-amber-950/30">
+          <p className="text-sm font-bold text-amber-700 dark:text-amber-300">
+            ♛ Subscription
+          </p>
+          <p className="mt-1 text-xs text-amber-700/80 dark:text-amber-300/80">
+            Rental yang berlangganan layanan Paid Promote Makicos.
+          </p>
+        </div>
+      </div>
+    </div>
 
             {rentalLoading ? (
               <div className="rounded-2xl border border-gray-200 p-10 text-center text-sm text-gray-500 dark:border-gray-800">
@@ -3665,8 +3684,20 @@ const shareEvent = async (event: Event) => {
                       alt={rental.name}
                       className="h-20 w-20 shrink-0 rounded-xl object-cover"
                     />
-                    <div className="min-w-0">
-                      <h3 className="font-bold">{rental.name}</h3>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="font-bold">{rental.name}</h3>
+                        {rental.is_verified && (
+                          <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-1 text-[10px] font-bold text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+                            ✓ Partner Ship
+                          </span>
+                        )}
+                        {rental.is_subscription && (
+                          <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-1 text-[10px] font-bold text-amber-700 dark:bg-amber-950 dark:text-amber-300">
+                            ♛ Subscription
+                          </span>
+                        )}
+                      </div>
                       <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                         📍 {rental.region}
                       </p>
