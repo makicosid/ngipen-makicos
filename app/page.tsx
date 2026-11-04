@@ -4840,79 +4840,84 @@ accept="image/jpeg,image/png,image/webp"
                       </p>
                     ) : (
                       <div className="space-y-3">
-                        {rentals.map((rental) => (
-                          <div
-                            key={rental.id}
-                            className="flex items-center gap-3 rounded-xl border border-gray-200 p-3 dark:border-gray-800"
-                          >
-                            <img
-                              src={rental.image_url}
-                              alt={rental.name}
-                              className="h-16 w-16 shrink-0 rounded-xl object-cover"
-                            />
-
-                            <div className="min-w-0 flex-1">
-                              <p className="truncate text-sm font-bold">
-                                {rental.name}
-                              </p>
-                              <p className="truncate text-xs text-gray-500">
-                                {rental.region}
-                              </p>
-                              <a
-                                href={rental.instagram_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-xs font-semibold text-red-600"
-                              >
-                                Instagram
-                              </a>
-                            </div>
-
-                           <div className="flex shrink-0 flex-col gap-2">
-  <button
-    type="button"
-    onClick={() => handleEditRental(rental)}
-    className="rounded-lg bg-gray-100 px-3 py-2 text-xs font-bold dark:bg-gray-800"
+                      {rentals.map((rental) => (
+  <div
+    key={rental.id}
+    className="flex items-center gap-3 rounded-xl border border-gray-200 p-3 dark:border-gray-800"
   >
-    Edit
-  </button>
+    <img
+      src={rental.image_url}
+      alt={rental.name}
+      className="h-16 w-16 shrink-0 rounded-xl object-cover"
+    />
 
-  <button
-    type="button"
-    onClick={() => void handleToggleRentalStatus(rental, "is_verified")}
-    className={`rounded-lg px-3 py-2 text-xs font-bold ${
-      rental.is_verified
-        ? "bg-blue-100 text-blue-700"
-        : "bg-gray-100 text-gray-500 dark:bg-gray-800"
-    }`}
-  >
-    ✓ Partner Ship {rental.is_verified ? "ON" : "OFF"}
-  </button>
+    <div className="min-w-0 flex-1">
+      <p className="truncate text-sm font-bold">
+        {rental.name}
+      </p>
+      <p className="truncate text-xs text-gray-500">
+        {rental.region}
+      </p>
+      <a
+        href={rental.instagram_url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-xs font-semibold text-red-600"
+      >
+        Instagram
+      </a>
+    </div>
 
-  <button
-    type="button"
-    onClick={() => void handleToggleRentalStatus(rental, "is_subscription")}
-    className={`rounded-lg px-3 py-2 text-xs font-bold ${
-      rental.is_subscription
-        ? "bg-yellow-100 text-yellow-800"
-        : "bg-gray-100 text-gray-500 dark:bg-gray-800"
-    }`}
-  >
-    ♛ Subscription {rental.is_subscription ? "ON" : "OFF"}
-  </button>
+    <div className="flex shrink-0 flex-col gap-2">
+      <button
+        type="button"
+        onClick={() => handleEditRental(rental)}
+        className="rounded-lg bg-gray-100 px-3 py-2 text-xs font-bold dark:bg-gray-800"
+      >
+        Edit
+      </button>
 
-  <button
-    type="button"
-    onClick={() => void handleDeleteRental(rental)}
-    className="rounded-lg bg-red-100 px-3 py-2 text-xs font-bold text-red-700"
-  >
-   Hapus
-  </button>
+      <button
+        type="button"
+        onClick={() => void handleToggleRentalStatus(rental, "is_verified")}
+        className={`rounded-lg px-3 py-2 text-xs font-bold ${
+          rental.is_verified
+            ? "bg-blue-100 text-blue-700"
+            : "bg-gray-100 text-gray-500 dark:bg-gray-800"
+        }`}
+      >
+        ✓ Partner Ship {rental.is_verified ? "ON" : "OFF"}
+      </button>
+
+      <button
+        type="button"
+        onClick={() => void handleToggleRentalStatus(rental, "is_subscription")}
+        className={`rounded-lg px-3 py-2 text-xs font-bold ${
+          rental.is_subscription
+            ? "bg-yellow-100 text-yellow-800"
+            : "bg-gray-100 text-gray-500 dark:bg-gray-800"
+        }`}
+      >
+        ♛ Subscription {rental.is_subscription ? "ON" : "OFF"}
+      </button>
+
+      <button
+        type="button"
+        onClick={() => void handleDeleteRental(rental)}
+        className="rounded-lg bg-red-100 px-3 py-2 text-xs font-bold text-red-700"
+      >
+        Hapus
+      </button>
+    </div>
+  </div>
+))}
 </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+)}
+</div>
+</div>
+)}
+</>
+)}
 
 {/* MODAL PROFIL USER */}
         {showUserProfile && (
