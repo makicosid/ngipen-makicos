@@ -230,6 +230,8 @@ export async function POST(request: NextRequest) {
 
     const name = String(form.get("name") || "").trim();
     const region = String(form.get("region") || "").trim();
+    const province = String(form.get("province") || "").trim();
+    const city = String(form.get("city") || "").trim();
     const instagramUrl = String(form.get("instagram_url") || "").trim();
     const whatsappRaw = String(form.get("whatsapp_number") || "");
     const file = form.get("image");
@@ -244,6 +246,13 @@ export async function POST(request: NextRequest) {
     if (!region || region.length > 120) {
       return json(
         { error: "Daerah rental wajib diisi (maksimal 120 karakter)." },
+        400
+      );
+    }
+
+    if (province.length > 100 || city.length > 100) {
+      return json(
+        { error: "Provinsi dan kota maksimal 100 karakter." },
         400
       );
     }
@@ -275,6 +284,8 @@ export async function POST(request: NextRequest) {
       .insert({
         name,
         region,
+        province: province || null,
+        city: city || null,
         instagram_url: instagramUrl,
         whatsapp_number: whatsappNumber,
         image_url: image.image_url,
@@ -320,6 +331,8 @@ export async function PATCH(request: NextRequest) {
     const id = String(form.get("id") || "").trim();
     const name = String(form.get("name") || "").trim();
     const region = String(form.get("region") || "").trim();
+    const province = String(form.get("province") || "").trim();
+    const city = String(form.get("city") || "").trim();
     const instagramUrl = String(form.get("instagram_url") || "").trim();
 
     if (
@@ -331,6 +344,13 @@ export async function PATCH(request: NextRequest) {
     ) {
       return json(
         { error: "Data rental tidak lengkap atau tidak valid." },
+        400
+      );
+    }
+
+    if (province.length > 100 || city.length > 100) {
+      return json(
+        { error: "Provinsi dan kota maksimal 100 karakter." },
         400
       );
     }
@@ -359,6 +379,8 @@ export async function PATCH(request: NextRequest) {
     const updates: Record<string, unknown> = {
       name,
       region,
+      province: province || null,
+      city: city || null,
       instagram_url: instagramUrl,
       updated_at: new Date().toISOString(),
     };
