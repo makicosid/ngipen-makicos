@@ -2671,7 +2671,7 @@ const clearEventPreviewTimer = () => {
 };
 
 const beginEventPreview = (event: Event, pointerEvent: React.PointerEvent) => {
-  if (currentRole !== "user" || !pointerEvent.isPrimary || pointerEvent.button !== 0) return;
+  if ((currentRole !== "user" && currentRole !== "guest") || !pointerEvent.isPrimary || pointerEvent.button !== 0) return;
   suppressNextEventClickRef.current = false;
   clearEventPreviewTimer();
   if (eventPreviewCloseTimerRef.current !== null) {
@@ -6383,7 +6383,7 @@ accept="image/jpeg,image/png,image/webp"
         )}
 
         {/* NOTIFIKASI / TOAST */}
-        {activeEventPreview && currentRole === "user" && (
+        {activeEventPreview && (currentRole === "user" || currentRole === "guest") && (
           <div className={`pointer-events-none fixed inset-0 z-[120] flex items-center justify-center bg-black/35 p-4 ${eventPreviewClosing ? "animate-[previewFadeOut_0.14s_ease-in_forwards]" : "animate-[fadeIn_0.12s_ease-out]"}`}>
             <div className={`w-full max-w-[360px] overflow-hidden rounded-2xl border border-white/20 bg-white shadow-2xl dark:bg-gray-900 ${eventPreviewClosing ? "animate-[previewPopOut_0.14s_ease-in_forwards]" : "animate-[previewPopIn_0.16s_ease-out]"}`}>
               <div className="relative flex max-h-[58vh] items-center justify-center bg-gray-100 dark:bg-gray-950">
