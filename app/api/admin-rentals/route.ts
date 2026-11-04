@@ -250,12 +250,39 @@ export async function PATCH(request: NextRequest) {
       return json({ error: "Data rental tidak ditemukan." }, 404);
     }
 
-    const updates: Record<string, unknown> = {
-      name,
-      region,
-      instagram_url: instagramUrl,
-      updated_at: new Date().toISOString(),
-    };
+   const updates: Record<string, unknown> = {
+  name,
+  region,
+  instagram_url: instagramUrl,
+  updated_at: new Date().toISOString(),
+};
+
+const verifiedValue = form.get("is_verified");
+const subscriptionValue = form.get("is_subscription");
+
+if (
+  verifiedValue !== null &&
+  verifiedValue !== "true" &&
+  verifiedValue !== "false"
+) {
+  return json({ error: "Status Partner Ship tidak valid." }, 400);
+}
+
+if (
+  subscriptionValue !== null &&
+  subscriptionValue !== "true" &&
+  subscriptionValue !== "false"
+) {
+  return json({ error: "Status Subscription tidak valid." }, 400);
+}
+
+if (verifiedValue !== null) {
+  updates.is_verified = verifiedValue === "true";
+}
+
+if (subscriptionValue !== null) {
+  updates.is_subscription = subscriptionValue === "true";
+}
 
     const file = form.get("image");
     let newImagePath: string | null = null;
