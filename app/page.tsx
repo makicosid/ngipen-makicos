@@ -1867,7 +1867,127 @@ useEffect(() => {
   return () => window.clearInterval(interval);
 }, [sponsoredEvents.length]);
 
-  
+  const eventFilterCounts = useMemo(() => {
+  const applyCommonFilters = (eventsToCount: Event[]) => {
+    let result = [...eventsToCount];
+
+    if (userTab === "Tersimpan") {
+      result = result.filter((event) => savedIds.includes(event.id));
+    }
+
+    if (search.trim()) {
+      const query = search.toLowerCase();
+
+      result = result.filter((event) =>
+        [
+          event.title,
+          event.description,
+          event.city,
+          event.province,
+          event.venue_address,
+          event.organizer_name,
+        ]
+          .filter(Boolean)
+          .some((value) => value!.toLowerCase().includes(query))
+      );
+    }
+
+    if (selectedProv !== "Semua") {
+      result = result.filter((event) => event.province === selectedProv);
+    }
+
+    if (selectedCity !== "Semua") {
+      result = result.filter((event) => event.city === selectedCity);
+    }
+
+    if (selectedCat !== "Semua") {
+      result = result.filter((event) =>
+        event.categories?.includes(selectedCat as Category)
+      );
+    }
+
+    if (selectedTicket !== "Semua") {
+      result = result.filter((event) => event.ticket_type === selectedTicket);
+    }
+
+    return result;
+  };
+
+  const commonEvents = applyCommonFilters(approvedEvents);
+
+  const jakartaParts = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "Asia/Jakarta",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+}).formatToParts(new Date());
+
+const dateParts = Object.fromEntries(
+  jakartaParts.map((part) => [part.type, part.value])
+);
+
+const year = Number(dateParts.year);
+const month = Number(dateParts.month);
+const day = Number(dateParts.day);
+
+const jakartaToday = new Date(Date.UTC(year, month - 1, day));
+const daysSinceMonday = (jakartaToday.getUTCDay() + 6) % 7;
+
+const monday = new Date(jakartaToday);
+monday.setUTCDate(jakartaToday.getUTCDate() - daysSinceMonday);
+
+const friday = new Date(monday);
+friday.setUTCDate(monday.getUTCDate() + 4);
+
+const sunday = new Date(monday);
+sunday.setUTCDate(monday.getUTCDate() + 6);
+
+const toDateKey = (date: Date) =>
+  `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-${String(date.getUTCDate()).padStart(2, "0")}`;
+
+const weekStart = toDateKey(friday);
+const weekEnd = toDateKey(sunday);
+
+const mingguIni = commonEvents.filter((event) => {
+  const eventStart = event.start_date;
+  const eventEnd = event.end_date || event.start_date;
+
+  return (
+    getTimeStatus(event) !== "Completed" &&
+    Boolean(eventStart) &&
+    /^\d{4}-\d{2}-\d{2}$/.test(eventStart) &&
+    /^\d{4}-\d{2}-\d{2}$/.test(eventEnd) &&
+    eventStart <= weekEnd &&
+    eventEnd >= weekStart
+  );
+}).length;
+
+return {
+  semua: commonEvents.filter(
+    (event) => getTimeStatus(event) !== "Completed"
+  ).length,
+  mingguIni,
+  upcoming: commonEvents.filter(
+    (event) => getTimeStatus(event) === "Upcoming"
+  ).length,
+  ongoing: commonEvents.filter(
+    (event) => getTimeStatus(event) === "Ongoing"
+  ).length,
+  completed: commonEvents.filter(
+    (event) => getTimeStatus(event) === "Completed"
+  ).length,
+};
+}, [
+  approvedEvents,
+  userTab,
+  savedIds,
+  search,
+  selectedProv,
+  selectedCity,
+  selectedCat,
+  selectedTicket,
+  realTimeTick,
+]);
   const filteredEvents = useMemo(() => {
     let result = [...approvedEvents];
 
@@ -3185,7 +3305,7 @@ const shareEvent = async (event: Event) => {
                         : "bg-gray-100 text-gray-600 dark:bg-gray-900 dark:text-gray-300"
                     }`}
                   >
-                    Semua Event
+                                        Semua Event ({eventFilterCounts.semua})
                   </button>
 
                   <button
@@ -3198,7 +3318,7 @@ const shareEvent = async (event: Event) => {
                         : "bg-gray-100 text-gray-600 dark:bg-gray-900 dark:text-gray-300"
                     }`}
                   >
-                    Minggu Ini
+                                        Minggu Ini ({eventFilterCounts.mingguIni})
                   </button>
 
 {(["Upcoming", "Ongoing", "Completed"] as const).map((status) => (
@@ -3211,7 +3331,11 @@ const shareEvent = async (event: Event) => {
         : "bg-gray-100 text-gray-600 dark:bg-gray-900 dark:text-gray-300"
     }`}
   >
-    {status === "Completed" ? "Selesai" : status}
+   {status === "Completed"
+  ? `Selesai (${eventFilterCounts.completed})`
+  : status === "Upcoming"
+    ? `Upcoming (${eventFilterCounts.upcoming})`
+    : `Ongoing (${eventFilterCounts.ongoing})`}
   </button>
 ))}
 
