@@ -259,6 +259,15 @@ const [eventStatusTab, setEventStatusTab] = useState<
 >("Semua");
 
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+const eventOpenSourceRef = useRef<"calendar" | "explore" | "other">("explore");
+const calendarScrollYRef = useRef(0);
+const [activeEventPreview, setActiveEventPreview] = useState<Event | null>(null);
+const [eventPreviewClosing, setEventPreviewClosing] = useState(false);
+const eventPreviewTimerRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
+const eventPreviewCloseTimerRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
+const eventPreviewStartRef = useRef<{ x: number; y: number } | null>(null);
+const eventPreviewShownRef = useRef(false);
+const suppressNextEventClickRef = useRef(false);
   const [pendingGuestEvent, setPendingGuestEvent] = useState<Event | null>(null);
 const [descriptionExpanded, setDescriptionExpanded] = useState(false);
 
@@ -337,6 +346,7 @@ const [rentalSubscriptionExpiry, setRentalSubscriptionExpiry] = useState("");
 const [rentalFile, setRentalFile] = useState<File | null>(null);
 const [rentalPreview, setRentalPreview] = useState("");
 const [editingRentalId, setEditingRentalId] = useState<string | null>(null);
+const [rentalFormHighlight, setRentalFormHighlight] = useState(false);
 const [rentalSaving, setRentalSaving] = useState(false);
   const refreshRentals = async () => {
   try {
@@ -455,8 +465,14 @@ if (rentalSubscriptionExpiry) {
   setRentalFile(null);
   setRentalPreview(rental.image_url);
   setEditingRentalId(rental.id);
+  setRentalFormHighlight(true);
 
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  window.setTimeout(() => {
+    const form = document.getElementById("admin-rental-form");
+    form?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, 80);
+
+  window.setTimeout(() => setRentalFormHighlight(false), 1800);
 };
   const handleToggleRentalStatus = async (
   rental: CostumeRental,
@@ -1208,6 +1224,17 @@ const logout = async () => {
     setSavedIds([]);
     setMyRatings({});
     setMobileOpen(false);
+    setSelectedEvent(null);
+    setPendingGuestEvent(null);
+    setShowCalendar(false);
+    setShowCostumeDirectory(false);
+    setSelectedCalendarDate("");
+    setUserTab("Semua");
+    setEventStatusTab("Semua");
+    eventOpenSourceRef.current = "explore";
+    setActiveEventPreview(null);
+
+    window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
 
     setToast("Kamu telah keluar.");
     setTimeout(() => setToast(""), 2000);
@@ -2326,7 +2353,79 @@ return {
     [approvedEvents, selectedProv]
   );
 
+const clearEventPreviewTimer = () => {
+  if (eventPreviewTimerRef.current !== null) {
+    window.clearTimeout(eventPreviewTimerRef.current);
+    eventPreviewTimerRef.current = null;
+  }
+};
+
+const beginEventPreview = (event: Event, pointerEvent: React.PointerEvent) => {
+  if (currentRole !== "user" || !pointerEvent.isPrimary || pointerEvent.button !== 0) return;
+  suppressNextEventClickRef.current = false;
+  clearEventPreviewTimer();
+  if (eventPreviewCloseTimerRef.current !== null) {
+    window.clearTimeout(eventPreviewCloseTimerRef.current);
+    eventPreviewCloseTimerRef.current = null;
+  }
+  setEventPreviewClosing(false);
+  eventPreviewStartRef.current = { x: pointerEvent.clientX, y: pointerEvent.clientY };
+  eventPreviewShownRef.current = false;
+  eventPreviewTimerRef.current = window.setTimeout(() => {
+    setActiveEventPreview(event);
+    eventPreviewShownRef.current = true;
+  }, 400);
+};
+
+const moveEventPreviewPointer = (pointerEvent: React.PointerEvent) => {
+  const start = eventPreviewStartRef.current;
+  if (!start) return;
+  const distance = Math.hypot(pointerEvent.clientX - start.x, pointerEvent.clientY - start.y);
+  if (distance > 12) {
+    clearEventPreviewTimer();
+    if (eventPreviewShownRef.current) {
+      suppressNextEventClickRef.current = true;
+      setEventPreviewClosing(true);
+      eventPreviewCloseTimerRef.current = window.setTimeout(() => {
+        setActiveEventPreview(null);
+        setEventPreviewClosing(false);
+        eventPreviewCloseTimerRef.current = null;
+      }, 140);
+    }
+    eventPreviewStartRef.current = null;
+    eventPreviewShownRef.current = false;
+  }
+};
+
+const endEventPreview = () => {
+  clearEventPreviewTimer();
+  if (eventPreviewShownRef.current) {
+    suppressNextEventClickRef.current = true;
+    setEventPreviewClosing(true);
+    if (eventPreviewCloseTimerRef.current !== null) {
+      window.clearTimeout(eventPreviewCloseTimerRef.current);
+    }
+    eventPreviewCloseTimerRef.current = window.setTimeout(() => {
+      setActiveEventPreview(null);
+      setEventPreviewClosing(false);
+      eventPreviewCloseTimerRef.current = null;
+    }, 140);
+  }
+  eventPreviewStartRef.current = null;
+  eventPreviewShownRef.current = false;
+};
+
+const handleEventCardClick = (event: Event) => {
+  if (suppressNextEventClickRef.current) {
+    suppressNextEventClickRef.current = false;
+    return;
+  }
+  void openEvent(event);
+};
+
 const openEvent = async (event: Event) => {
+  eventOpenSourceRef.current = "explore";
+  setActiveEventPreview(null);
   if (currentRole === "guest") {
     setPendingGuestEvent(event);
     setShowLoginUser(true);
@@ -2924,10 +3023,6 @@ const shareEvent = async (event: Event) => {
       </div>
       <button type="button" onClick={() => setShowLoginUser(true)} className="text-xs font-bold text-red-600 hover:text-red-700">Lihat selengkapnya →</button>
     </div>
-    <div className="mb-3 flex flex-wrap gap-2">
-      <a href="https://wa.me/6281381067774?text=Halo%20MAKICOS%2C%20saya%20ingin%20berlangganan%20rental%20costume%20untuk%20ditampilkan%20di%20NGIPEN." target="_blank" rel="noopener noreferrer" className="rounded-lg bg-amber-500 px-3 py-2 text-[10px] font-black text-white">Subscribe to MAKICOS</a>
-      <a href="https://forms.gle/oHxPoxk7ortqRJ1RA" target="_blank" rel="noopener noreferrer" className="rounded-lg border border-red-600 px-3 py-2 text-[10px] font-black text-red-600">Daftarkan Rentalan</a>
-    </div>
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
       {rentals.filter((rental) => rental.is_subscription_active).slice(0, 3).map((rental) => (
         <div key={rental.id} className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-white p-3 dark:border-amber-900 dark:bg-gray-900">
@@ -2944,7 +3039,7 @@ const shareEvent = async (event: Event) => {
 )}
 
 {showCalendar && currentRole === "user" && (
-  <section className="mx-auto max-w-[1400px] px-4 pb-8">
+  <section id="user-event-calendar" className="mx-auto max-w-[1400px] px-4 pb-8">
     <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900 sm:p-7">
 
       {/* HEADER KALENDER */}
@@ -3137,7 +3232,7 @@ const shareEvent = async (event: Event) => {
 })()}
 
       {/* DAFTAR EVENT BERDASARKAN TANGGAL */}
-      <div className="mt-8 border-t border-gray-200 pt-6 dark:border-gray-800">
+      <div id="calendar-event-list" className="mt-8 border-t border-gray-200 pt-6 dark:border-gray-800">
         {!selectedCalendarDate ? (
           <div className="rounded-xl bg-gray-50 p-6 text-center text-sm text-gray-500 dark:bg-gray-800 dark:text-gray-400">
             Pilih tanggal pada kalender untuk melihat event.
@@ -3169,7 +3264,19 @@ const shareEvent = async (event: Event) => {
                 {calendarEvents.map((event) => (
                   <button
                     key={event.id}
+                    onPointerDown={(pointerEvent) => beginEventPreview(event, pointerEvent)}
+                    onPointerMove={moveEventPreviewPointer}
+                    onPointerUp={endEventPreview}
+                    onPointerLeave={endEventPreview}
+                    onPointerCancel={endEventPreview}
+                    onContextMenu={(contextEvent) => contextEvent.preventDefault()}
                     onClick={() => {
+                      if (suppressNextEventClickRef.current) {
+                        suppressNextEventClickRef.current = false;
+                        return;
+                      }
+                      eventOpenSourceRef.current = "calendar";
+                      calendarScrollYRef.current = window.scrollY;
                       setSelectedEvent(event);
                       setShowCalendar(false);
                     }}
@@ -3336,13 +3443,19 @@ const shareEvent = async (event: Event) => {
     <button
       key={event.id}
       type="button"
-      onClick={() => openEvent(event)}
-      className="w-full min-w-full shrink-0 snap-start overflow-hidden rounded-2xl border border-gray-200 bg-white text-left shadow-sm dark:border-gray-800 dark:bg-gray-900 md:grid md:min-h-[250px] md:grid-cols-[300px_minmax(0,1fr)]"
+      onPointerDown={(pointerEvent) => beginEventPreview(event, pointerEvent)}
+      onPointerMove={moveEventPreviewPointer}
+      onPointerUp={endEventPreview}
+      onPointerLeave={endEventPreview}
+      onPointerCancel={endEventPreview}
+      onContextMenu={(contextEvent) => contextEvent.preventDefault()}
+      onClick={() => handleEventCardClick(event)}
+      className="group w-full min-w-full shrink-0 snap-start overflow-hidden rounded-2xl border border-gray-200 bg-white text-left shadow-sm transition-transform duration-300 dark:border-gray-800 dark:bg-gray-900 md:grid md:min-h-[250px] md:grid-cols-[300px_minmax(0,1fr)] md:hover:scale-[1.015]"
     >
       <div className="relative w-full overflow-hidden bg-gray-100 dark:bg-gray-800 md:flex md:h-[250px] md:items-center md:justify-center">
         {event.poster_url ? (
           <>
-            <img src={event.poster_url} alt="" aria-hidden="true" className="absolute inset-0 hidden h-full w-full scale-110 object-cover opacity-50 blur-xl md:block" />
+            <img src={event.poster_url} alt="" aria-hidden="true" className="absolute inset-0 hidden h-full w-full scale-110 object-cover opacity-45 blur-md md:block" />
             <img src={event.poster_url} alt={`Poster ${event.title}`} loading="lazy" className="relative block h-auto max-h-[420px] w-full object-contain md:max-h-[230px] md:w-auto md:max-w-full" />
           </>
         ) : (
@@ -3584,7 +3697,13 @@ const shareEvent = async (event: Event) => {
                     >
                       <button
                         type="button"
-                        onClick={() => openEvent(event)}
+                        onPointerDown={(pointerEvent) => beginEventPreview(event, pointerEvent)}
+                        onPointerMove={moveEventPreviewPointer}
+                        onPointerUp={endEventPreview}
+                        onPointerLeave={endEventPreview}
+                        onPointerCancel={endEventPreview}
+                        onContextMenu={(contextEvent) => contextEvent.preventDefault()}
+                        onClick={() => handleEventCardClick(event)}
                         className="block w-full text-left"
                       >
                         <div className="relative aspect-[3/4] overflow-hidden bg-gray-100 dark:bg-gray-800">
@@ -3780,10 +3899,12 @@ const shareEvent = async (event: Event) => {
     <div className="mb-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-2xl font-black sm:text-3xl">PARTNER SHIP MAKICOS</h2>
-        <div className="flex w-full gap-2 sm:w-auto">
-          <a href="https://wa.me/6281381067774?text=Halo%20MAKICOS%2C%20saya%20ingin%20berlangganan%20rental%20costume%20untuk%20ditampilkan%20di%20NGIPEN." target="_blank" rel="noopener noreferrer" className="flex-1 rounded-lg bg-amber-500 px-3 py-2.5 text-center text-xs font-black text-white sm:flex-none">Subscribe</a>
-          <a href="https://forms.gle/oHxPoxk7ortqRJ1RA" target="_blank" rel="noopener noreferrer" className="flex-1 rounded-lg border border-red-600 px-3 py-2.5 text-center text-xs font-black text-red-600 sm:flex-none">Daftarkan Rentalan</a>
-        </div>
+        {currentRole === "user" && (
+          <div className="flex w-full gap-2 sm:w-auto">
+            <a href="https://wa.me/6281381067774?text=Halo%20MAKICOS%2C%20saya%20ingin%20berlangganan%20rental%20costume%20untuk%20ditampilkan%20di%20NGIPEN." target="_blank" rel="noopener noreferrer" className="flex-1 rounded-lg bg-amber-500 px-3 py-2.5 text-center text-xs font-black text-white sm:flex-none">Subscribe</a>
+            <a href="https://forms.gle/oHxPoxk7ortqRJ1RA" target="_blank" rel="noopener noreferrer" className="flex-1 rounded-lg border border-red-600 px-3 py-2.5 text-center text-xs font-black text-red-600 sm:flex-none">Daftarkan Rentalan</a>
+          </div>
+        )}
       </div>
       <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
         Temukan partner rental costume untuk kebutuhan cosplay-mu.
@@ -3825,27 +3946,32 @@ const shareEvent = async (event: Event) => {
                 const visible = paginated ? items.slice((page - 1) * pageSize, page * pageSize) : items;
                 const totalPages = Math.max(1, Math.ceil(items.length / pageSize));
                 return <>
-                  {items.length === 0 ? <p className="rounded-xl border border-dashed border-gray-300 p-6 text-center text-sm text-gray-500 dark:border-gray-700">Belum ada rental pada kategori dan filter ini.</p> : <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+                  {items.length === 0 ? <p className="rounded-xl border border-dashed border-gray-300 p-6 text-center text-sm text-gray-500 dark:border-gray-700">Belum ada rental pada kategori dan filter ini.</p> : <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     {visible.map((rental) => (
-                      <article key={rental.id} className={`flex min-w-0 flex-col overflow-hidden rounded-xl border bg-white p-2 shadow-sm dark:bg-gray-900 ${tier === "subscription" ? "border-2 border-amber-400 dark:border-amber-500" : tier === "verified" ? "border-2 border-blue-300 dark:border-blue-700" : "border-gray-200 dark:border-gray-800"}`}>
+                      <div key={rental.id} className="min-w-0">
+                      <article className={`flex min-w-0 flex-col overflow-hidden rounded-xl border bg-white p-2 shadow-sm dark:bg-gray-900 ${tier === "subscription" ? "border-2 border-amber-400 shadow-amber-100/70 dark:border-amber-500 dark:shadow-amber-950/30" : tier === "verified" ? "border-2 border-blue-300 dark:border-blue-700" : "border-gray-300 dark:border-gray-700"} sm:rounded-xl`}>
                         <div className="flex min-w-0 gap-2">
-                          <img src={rental.image_url} alt={rental.name} className="h-20 w-20 shrink-0 rounded-lg object-cover sm:h-24 sm:w-24" />
+                          <div className={`relative shrink-0 rounded-xl p-0.5 ${tier === "subscription" ? "bg-gradient-to-br from-yellow-300 via-amber-500 to-yellow-700" : tier === "verified" ? "bg-gradient-to-br from-sky-300 via-blue-500 to-blue-700" : "bg-gradient-to-br from-gray-200 via-gray-400 to-gray-500"}`}>
+                            {tier === "subscription" && <span className="absolute -right-1.5 -top-2 z-10 text-lg drop-shadow" aria-label="Subscription">👑</span>}
+                            <img src={rental.image_url} alt={rental.name} className="h-20 w-20 rounded-[10px] object-cover sm:h-24 sm:w-24" />
+                          </div>
                           <div className="min-w-0 flex-1">
                             <div className="mb-1 flex flex-wrap items-center gap-1">
                               {tier === "subscription" && <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[9px] font-black text-amber-800 dark:bg-amber-950 dark:text-amber-300">♛ SUBSCRIPTION</span>}
                               {tier === "verified" && <span className="rounded bg-blue-100 px-1.5 py-0.5 text-[9px] font-black text-blue-800 dark:bg-blue-950 dark:text-blue-300">✓ VERIFIED</span>}
-                              {tier === "free" && <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[9px] font-bold text-gray-600 dark:bg-gray-800 dark:text-gray-300">FREE</span>}
+                              {tier === "free" && <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[9px] font-bold text-gray-600 dark:bg-gray-800 dark:text-gray-300">BASIC</span>}
                             </div>
                             <h3 className={`line-clamp-2 break-words text-xs sm:text-sm ${tier === "subscription" ? "font-black" : "font-bold"}`}>{rental.name}</h3>
-                            <p className="mt-1 line-clamp-2 text-[10px] text-gray-500 dark:text-gray-400">📍 {rental.city && rental.province ? `${rental.city}, ${rental.province}` : rental.region}</p>
+                            <p className="mt-1 break-words text-[10px] leading-relaxed text-gray-500 dark:text-gray-400">📍 {rental.city && rental.province ? `${rental.city}, ${rental.province}` : rental.region}</p>
                             <p className="mt-1 text-[10px] font-semibold text-gray-500 dark:text-gray-400">◉ {Number(rental.total_views || 0).toLocaleString("id-ID")} views</p>
                           </div>
                         </div>
-                        <div className="mt-2 grid grid-cols-2 gap-1.5">
-                          <button type="button" onClick={() => openRentalInstagram(rental)} className="min-w-0 rounded-lg bg-red-600 px-1.5 py-2 text-[10px] font-bold text-white hover:bg-red-700 sm:text-xs">Instagram ↗</button>
-                          <button type="button" onClick={() => openRentalWhatsapp(rental)} disabled={!rental.whatsapp_number} className="min-w-0 rounded-lg bg-green-600 px-1.5 py-2 text-[10px] font-bold text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-40 sm:text-xs">WhatsApp ↗</button>
-                        </div>
                       </article>
+                      <div className="mt-2 grid grid-cols-2 gap-1.5">
+                        <button type="button" onClick={() => openRentalInstagram(rental)} className="min-w-0 rounded-lg bg-red-600 px-1.5 py-2 text-[10px] font-bold text-white hover:bg-red-700 sm:text-xs">Instagram ↗</button>
+                        <button type="button" onClick={() => openRentalWhatsapp(rental)} disabled={!rental.whatsapp_number} className="min-w-0 rounded-lg bg-green-600 px-1.5 py-2 text-[10px] font-bold text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-40 sm:text-xs">WhatsApp ↗</button>
+                      </div>
+                      </div>
                     ))}
                   </div>}
                   {paginated && items.length > pageSize && <div className="mt-4 flex items-center justify-center gap-3">
@@ -3872,7 +3998,7 @@ const shareEvent = async (event: Event) => {
                 {rentalLoading ? <div className="rounded-2xl border border-gray-200 p-10 text-center text-sm text-gray-500 dark:border-gray-800">Memuat daftar rental...</div> : <div className="space-y-7">
                   <section><h3 className="mb-3 text-base font-black text-amber-700 dark:text-amber-300">♛ Subscription <span className="text-xs font-semibold text-gray-500">({subscription.length})</span></h3>{renderCards(subscription, "subscription")}</section>
                   <section><h3 className="mb-3 text-base font-black text-blue-700 dark:text-blue-300">✓ Verified <span className="text-xs font-semibold text-gray-500">({verified.length})</span></h3>{renderCards(verified, "verified", true, verifiedRentalPage)}</section>
-                  <section><h3 className="mb-3 text-base font-black text-gray-700 dark:text-gray-200">Free <span className="text-xs font-semibold text-gray-500">({free.length})</span></h3>{renderCards(free, "free", true, freeRentalPage)}</section>
+                  <section><h3 className="mb-3 text-base font-black text-gray-700 dark:text-gray-200">BASIC <span className="text-xs font-semibold text-gray-500">({free.length})</span></h3>{renderCards(free, "free", true, freeRentalPage)}</section>
                 </div>}
               </>;
             })()}
@@ -3896,19 +4022,48 @@ const shareEvent = async (event: Event) => {
         {/* HALAMAN DETAIL EVENT */}
         {selectedEvent && (
           <main className="mx-auto min-h-screen max-w-[1200px] px-4 py-6 sm:py-10">
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedEvent(null);
-                sharedEventOpenedRef.current = null;
-                const cleanUrl = new URL(window.location.href);
-                cleanUrl.searchParams.delete("event");
-                window.history.replaceState({}, "", cleanUrl.toString());
-              }}
-              className="mb-6 inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-bold hover:border-red-500 hover:text-red-600 dark:border-gray-700 dark:bg-gray-900"
-            >
-              ← Kembali ke daftar event
-            </button>
+            <div className="mb-6 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedEvent(null);
+                  sharedEventOpenedRef.current = null;
+                  eventOpenSourceRef.current = "explore";
+                  setShowCalendar(false);
+                  setShowCostumeDirectory(false);
+                  const cleanUrl = new URL(window.location.href);
+                  cleanUrl.searchParams.delete("event");
+                  window.history.replaceState({}, "", cleanUrl.toString());
+                  window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+                }}
+                className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-bold hover:border-red-500 hover:text-red-600 dark:border-gray-700 dark:bg-gray-900"
+              >
+                ← Kembali ke Beranda
+              </button>
+              {eventOpenSourceRef.current === "calendar" && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedEvent(null);
+                    sharedEventOpenedRef.current = null;
+                    setShowCostumeDirectory(false);
+                    setShowCalendar(true);
+                    const cleanUrl = new URL(window.location.href);
+                    cleanUrl.searchParams.delete("event");
+                    window.history.replaceState({}, "", cleanUrl.toString());
+                    window.setTimeout(() => {
+                      document.getElementById("calendar-event-list")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                      if (!document.getElementById("calendar-event-list")) {
+                        window.scrollTo({ top: calendarScrollYRef.current, behavior: "smooth" });
+                      }
+                    }, 80);
+                  }}
+                  className="inline-flex items-center gap-2 rounded-full border border-red-200 bg-red-50 px-4 py-2 text-sm font-bold text-red-700 hover:border-red-500 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300"
+                >
+                  <span aria-hidden="true">▦</span> Kembali ke Kalender
+                </button>
+              )}
+            </div>
 
             <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] md:gap-10">
               {/* POSTER EVENT */}
@@ -4941,7 +5096,7 @@ accept="image/jpeg,image/png,image/webp"
                 </div>
               ) : (
                 <div className="mt-4 space-y-5">
-                  <div className="rounded-2xl border border-gray-200 p-4 dark:border-gray-800">
+                  <div id="admin-rental-form" className={`rounded-2xl border p-4 transition-all duration-500 dark:border-gray-800 ${rentalFormHighlight ? "border-red-500 bg-red-50 shadow-lg shadow-red-200/60 ring-2 ring-red-300 dark:bg-red-950/30 dark:shadow-red-950/40" : "border-gray-200"}`}>
                     <h3 className="font-bold">
                       {editingRentalId ? "Edit Rental Costume" : "Tambah Rental Costume"}
                     </h3>
@@ -5888,6 +6043,26 @@ accept="image/jpeg,image/png,image/webp"
         )}
 
         {/* NOTIFIKASI / TOAST */}
+        {activeEventPreview && currentRole === "user" && (
+          <div className={`pointer-events-none fixed inset-0 z-[120] flex items-center justify-center bg-black/35 p-4 ${eventPreviewClosing ? "animate-[previewFadeOut_0.14s_ease-in_forwards]" : "animate-[fadeIn_0.12s_ease-out]"}`}>
+            <div className={`w-full max-w-[360px] overflow-hidden rounded-2xl border border-white/20 bg-white shadow-2xl dark:bg-gray-900 ${eventPreviewClosing ? "animate-[previewPopOut_0.14s_ease-in_forwards]" : "animate-[previewPopIn_0.16s_ease-out]"}`}>
+              <div className="relative flex max-h-[58vh] items-center justify-center bg-gray-100 dark:bg-gray-950">
+                {activeEventPreview.poster_url ? (
+                  <img src={activeEventPreview.poster_url} alt={`Preview poster ${activeEventPreview.title}`} className="max-h-[58vh] w-full object-contain" />
+                ) : (
+                  <div className="flex aspect-[3/4] w-full items-center justify-center text-sm text-gray-500">Poster tidak tersedia</div>
+                )}
+              </div>
+              <div className="space-y-2 p-4">
+                <h3 className="line-clamp-2 text-base font-black">{activeEventPreview.title}</h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400">📍 {activeEventPreview.venue_address || activeEventPreview.city}{activeEventPreview.province ? `, ${activeEventPreview.province}` : ""}</p>
+                <p className="line-clamp-3 text-xs leading-relaxed text-gray-600 dark:text-gray-300">{activeEventPreview.description || "Belum ada deskripsi event."}</p>
+                <p className="text-[10px] font-semibold text-red-600">Lepaskan jari atau tombol mouse untuk menutup preview</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {toast && (
           <div
             role="status"
