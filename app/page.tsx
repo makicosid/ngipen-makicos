@@ -67,6 +67,8 @@ interface CostumeRental {
   id: string;
   name: string;
   region: string;
+  province: string | null;
+  city: string | null;
   instagram_url: string;
   image_url: string;
   image_path: string;
@@ -257,6 +259,7 @@ const [eventStatusTab, setEventStatusTab] = useState<
 >("Semua");
 
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [pendingGuestEvent, setPendingGuestEvent] = useState<Event | null>(null);
 const [descriptionExpanded, setDescriptionExpanded] = useState(false);
 
 useEffect(() => {
@@ -286,6 +289,7 @@ const sponsorCarouselPausedRef = useRef(false);
   const [showUserProfile, setShowUserProfile] = useState(false);
 
   const [currentRole, setCurrentRole] = useState<Role>("guest");
+  const [sessionReady, setSessionReady] = useState(false);
   const [currentUser, setCurrentUser] = useState("");
   const [currentUserId, setCurrentUserId] = useState("");
 
@@ -321,7 +325,13 @@ const [rentalLoading, setRentalLoading] = useState(true);
 // Form rental admin
 const [rentalName, setRentalName] = useState("");
 const [rentalRegion, setRentalRegion] = useState("");
+const [rentalProvince, setRentalProvince] = useState("");
+const [rentalCity, setRentalCity] = useState("");
 const [rentalInstagram, setRentalInstagram] = useState("");
+const [rentalFilterProvince, setRentalFilterProvince] = useState("Semua");
+const [rentalFilterCity, setRentalFilterCity] = useState("Semua");
+const [verifiedRentalPage, setVerifiedRentalPage] = useState(1);
+const [freeRentalPage, setFreeRentalPage] = useState(1);
 const [rentalWhatsapp, setRentalWhatsapp] = useState("");
 const [rentalSubscriptionExpiry, setRentalSubscriptionExpiry] = useState("");
 const [rentalFile, setRentalFile] = useState<File | null>(null);
@@ -354,6 +364,8 @@ useEffect(() => {
   const resetRentalForm = () => {
   setRentalName("");
   setRentalRegion("");
+  setRentalProvince("");
+  setRentalCity("");
   setRentalInstagram("");
   setRentalWhatsapp("");
   setRentalSubscriptionExpiry("");
@@ -383,6 +395,8 @@ if (editingRentalId) {
 
 formData.append("name", rentalName.trim());
 formData.append("region", rentalRegion.trim());
+formData.append("province", rentalProvince.trim());
+formData.append("city", rentalCity.trim());
 formData.append("instagram_url", rentalInstagram.trim());
 formData.append("whatsapp_number", rentalWhatsapp.trim());
 if (rentalSubscriptionExpiry) {
@@ -420,6 +434,8 @@ if (rentalSubscriptionExpiry) {
   const handleEditRental = (rental: CostumeRental) => {
   setRentalName(rental.name);
   setRentalRegion(rental.region);
+  setRentalProvince(rental.province || "");
+  setRentalCity(rental.city || "");
   setRentalInstagram(rental.instagram_url);
   setRentalWhatsapp(rental.whatsapp_number || "");
   setRentalSubscriptionExpiry(
@@ -445,6 +461,8 @@ if (rentalSubscriptionExpiry) {
     formData.append("id", rental.id);
     formData.append("name", rental.name);
     formData.append("region", rental.region);
+    formData.append("province", rental.province || "");
+    formData.append("city", rental.city || "");
     formData.append("instagram_url", rental.instagram_url);
     if (rental.whatsapp_number) {
       formData.append("whatsapp_number", rental.whatsapp_number);
@@ -682,6 +700,8 @@ const handleRentalImage = (file: File | null) => {
     }
   } catch (error) {
     console.error("Gagal memulihkan sesi:", error);
+  } finally {
+    if (active) setSessionReady(true);
   }
 };
 
@@ -2298,6 +2318,12 @@ return {
   );
 
 const openEvent = async (event: Event) => {
+  if (currentRole === "guest") {
+    setPendingGuestEvent(event);
+    setShowLoginUser(true);
+    return;
+  }
+
   setSelectedEvent(event);
   setCommentText("");
 
@@ -2374,7 +2400,7 @@ const openEvent = async (event: Event) => {
 };
   // Buka detail event otomatis ketika halaman diakses melalui link ?event=<id>.
   useEffect(() => {
-    if (typeof window === "undefined" || events.length === 0) return;
+    if (typeof window === "undefined" || !sessionReady || events.length === 0) return;
 
     const sharedEventId = new URLSearchParams(window.location.search).get("event");
     if (!sharedEventId || sharedEventOpenedRef.current === sharedEventId) return;
@@ -2389,7 +2415,14 @@ const openEvent = async (event: Event) => {
       sharedEventOpenedRef.current = sharedEventId;
       void openEvent(sharedEvent);
     }
-  }, [events]);
+  }, [events, sessionReady, currentRole]);
+
+  useEffect(() => {
+    if (currentRole !== "user" || !pendingGuestEvent) return;
+    const eventToOpen = pendingGuestEvent;
+    setPendingGuestEvent(null);
+    void openEvent(eventToOpen);
+  }, [currentRole, pendingGuestEvent]);
 
   const toggleTheme = () => {
     const next = !dark;
@@ -2855,7 +2888,7 @@ const shareEvent = async (event: Event) => {
       </button>
     </div>
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-      {[...rentals].filter((rental) => rental.is_subscription_active).slice(0, 3).map((rental) => (
+      {[...rentals].filter((rental) => rental.is_subscription_active).map((rental) => (
         <div key={rental.id} className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-white p-3 dark:border-amber-900 dark:bg-gray-900">
           <img src={rental.image_url} alt={rental.name} className="h-14 w-14 shrink-0 rounded-xl object-cover" />
           <div className="min-w-0 flex-1">
@@ -2866,6 +2899,34 @@ const shareEvent = async (event: Event) => {
           <div className="flex flex-col gap-1">
             <button type="button" onClick={() => openRentalInstagram(rental)} className="rounded-lg bg-red-600 px-3 py-2 text-xs font-bold text-white">Instagram ↗</button>
             {rental.whatsapp_number && <button type="button" onClick={() => openRentalWhatsapp(rental)} className="rounded-lg bg-green-600 px-3 py-2 text-xs font-bold text-white">WhatsApp ↗</button>}
+          </div>
+        </div>
+      ))}
+    </div>
+  </section>
+)}
+
+{!showCalendar && !showCostumeDirectory && currentRole === "guest" && (
+  <section className="mx-auto max-w-[1400px] px-4 pb-7">
+    <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <h2 className="text-lg font-black sm:text-xl">Rental Costume Pilihan</h2>
+        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Partner Subscription aktif Makicos</p>
+      </div>
+      <button type="button" onClick={() => setShowLoginUser(true)} className="text-xs font-bold text-red-600 hover:text-red-700">Lihat selengkapnya →</button>
+    </div>
+    <div className="mb-3 flex flex-wrap gap-2">
+      <a href="https://wa.me/6281381067774?text=Halo%20MAKICOS%2C%20saya%20ingin%20berlangganan%20rental%20costume%20untuk%20ditampilkan%20di%20NGIPEN." target="_blank" rel="noopener noreferrer" className="rounded-lg bg-amber-500 px-3 py-2 text-[10px] font-black text-white">Subscribe to MAKICOS</a>
+      <a href="https://forms.gle/oHxPoxk7ortqRJ1RA" target="_blank" rel="noopener noreferrer" className="rounded-lg border border-red-600 px-3 py-2 text-[10px] font-black text-red-600">Daftarkan Rentalan</a>
+    </div>
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {rentals.filter((rental) => rental.is_subscription_active).slice(0, 3).map((rental) => (
+        <div key={rental.id} className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-white p-3 dark:border-amber-900 dark:bg-gray-900">
+          <img src={rental.image_url} alt={rental.name} className="h-14 w-14 shrink-0 rounded-xl object-cover" />
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-bold">{rental.name}</p>
+            <p className="truncate text-xs text-gray-500 dark:text-gray-400">{rental.region}</p>
+            <p className="mt-1 text-[11px] font-semibold text-amber-700 dark:text-amber-300">♛ Subscription</p>
           </div>
         </div>
       ))}
@@ -3267,39 +3328,26 @@ const shareEvent = async (event: Event) => {
       key={event.id}
       type="button"
       onClick={() => openEvent(event)}
-      className="w-full min-w-full shrink-0 snap-start overflow-hidden rounded-2xl border border-gray-200 bg-white text-left shadow-sm dark:border-gray-800 dark:bg-gray-900"
+      className="w-full min-w-full shrink-0 snap-start overflow-hidden rounded-2xl border border-gray-200 bg-white text-left shadow-sm dark:border-gray-800 dark:bg-gray-900 md:grid md:min-h-[250px] md:grid-cols-[300px_minmax(0,1fr)]"
     >
-     <div className="relative w-full bg-gray-100 dark:bg-gray-800">
+      <div className="relative w-full overflow-hidden bg-gray-100 dark:bg-gray-800 md:flex md:h-[250px] md:items-center md:justify-center">
         {event.poster_url ? (
-          <img
-            src={event.poster_url}
-            alt={`Poster ${event.title}`}
-            loading="lazy"
-            className="block h-auto w-full object-contain"
-          />
+          <>
+            <img src={event.poster_url} alt="" aria-hidden="true" className="absolute inset-0 hidden h-full w-full scale-110 object-cover opacity-50 blur-xl md:block" />
+            <img src={event.poster_url} alt={`Poster ${event.title}`} loading="lazy" className="relative block h-auto max-h-[420px] w-full object-contain md:max-h-[230px] md:w-auto md:max-w-full" />
+          </>
         ) : (
-          <div className="flex h-full items-center justify-center text-sm text-gray-500">
-            Poster tidak tersedia
-          </div>
+          <div className="flex h-48 items-center justify-center text-sm text-gray-500 md:h-full">Poster tidak tersedia</div>
         )}
-
-        <span className="absolute left-3 top-3 rounded-full bg-amber-400 px-3 py-1 text-xs font-black text-gray-950">
-          ★ SPONSOR
-        </span>
+        <span className="absolute left-3 top-3 rounded-full bg-amber-400 px-3 py-1 text-xs font-black text-gray-950">★ SPONSOR</span>
       </div>
-
-      <div className="p-4">
-        <h3 className="text-base font-bold sm:text-lg">
-          {event.title}
-        </h3>
-
-        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {event.city}, {event.province}
-        </p>
-
-        <p className="mt-2 text-sm font-semibold text-red-600">
-          {event.start_date}
-        </p>
+      <div className="flex min-w-0 flex-col justify-center p-4 sm:p-5 md:p-6">
+        <p className="text-[10px] font-black uppercase tracking-widest text-red-600">Event pilihan partner</p>
+        <h3 className="mt-1 line-clamp-2 text-base font-black sm:text-lg">{event.title}</h3>
+        <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">📍 {event.venue_address || event.city}, {event.province}</p>
+        <p className="mt-1 text-sm font-bold text-red-600">📅 {formatEventDate(event.start_date, event.end_date)}</p>
+        {event.description && <p className="mt-3 line-clamp-3 text-xs leading-relaxed text-gray-600 dark:text-gray-300">{event.description}</p>}
+        <span className="mt-4 text-xs font-black text-red-600">Lihat detail event →</span>
       </div>
     </button>
   ))}
@@ -3721,9 +3769,13 @@ const shareEvent = async (event: Event) => {
     className="mx-auto min-h-[60vh] max-w-[1100px] animate-[fadeIn_0.35s_ease-out] px-4 py-8"
   >
     <div className="mb-6">
-      <h2 className="text-2xl font-black sm:text-3xl">
-        PARTNER SHIP MAKICOS
-      </h2>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-2xl font-black sm:text-3xl">PARTNER SHIP MAKICOS</h2>
+        <div className="flex w-full gap-2 sm:w-auto">
+          <a href="https://wa.me/6281381067774?text=Halo%20MAKICOS%2C%20saya%20ingin%20berlangganan%20rental%20costume%20untuk%20ditampilkan%20di%20NGIPEN." target="_blank" rel="noopener noreferrer" className="flex-1 rounded-lg bg-amber-500 px-3 py-2.5 text-center text-xs font-black text-white sm:flex-none">Subscribe</a>
+          <a href="https://forms.gle/oHxPoxk7ortqRJ1RA" target="_blank" rel="noopener noreferrer" className="flex-1 rounded-lg border border-red-600 px-3 py-2.5 text-center text-xs font-black text-red-600 sm:flex-none">Daftarkan Rentalan</a>
+        </div>
+      </div>
       <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
         Temukan partner rental costume untuk kebutuhan cosplay-mu.
       </p>
@@ -3748,81 +3800,73 @@ const shareEvent = async (event: Event) => {
       </div>
     </div>
 
-            {rentalLoading ? (
-              <div className="rounded-2xl border border-gray-200 p-10 text-center text-sm text-gray-500 dark:border-gray-800">
-                Memuat daftar rental...
-              </div>
-            ) : rentals.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-gray-300 px-5 py-16 text-center dark:border-gray-700">
-                <p className="text-lg font-bold">
-                  Belum ada rental costume tersedia
-                </p>
-                <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                  Daftar partner rental akan ditampilkan di sini.
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {[...rentals]
-                   .sort((a, b) => {
-                    const getRentalPriority = (rental: CostumeRental) => {
-                      if (rental.is_subscription_active) return 0;
-                      if (rental.is_verified) return 1;
-                      return 2;
-                    };
-                    return getRentalPriority(a) - getRentalPriority(b);
-                  })
-                  .map((rental) => (
-                  <div
-                    key={rental.id}
-                    className="flex flex-col gap-3 rounded-2xl border border-gray-200 bg-white p-3 transition hover:border-red-300 hover:shadow-sm dark:border-gray-800 dark:bg-gray-900 sm:flex-row sm:items-center sm:gap-4"
-                  >
-                    <img
-                      src={rental.image_url}
-                      alt={rental.name}
-                      className="h-20 w-20 shrink-0 rounded-xl object-cover"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="font-bold">{rental.name}</h3>
-                        {rental.is_verified && (
-                          <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-1 text-[10px] font-bold text-blue-700 dark:bg-blue-950 dark:text-blue-300">
-                            ✓ Partner Ship
-                          </span>
-                        )}
-                        {rental.is_subscription_active && (
-                          <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-1 text-[10px] font-bold text-amber-700 dark:bg-amber-950 dark:text-amber-300">
-                            ♛ Subscription
-                          </span>
-                        )}
-                      </div>
-                      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">📍 {rental.region}</p>
-                      <p className="mt-2 text-xs font-semibold text-gray-500 dark:text-gray-400">
-                        <span aria-hidden="true">◉</span> {Number(rental.total_views || 0).toLocaleString("id-ID")} Views
-                      </p>
-                    </div>
-                    <div className="flex flex-wrap gap-2 sm:justify-end">
-                      <button
-                        type="button"
-                        onClick={() => openRentalInstagram(rental)}
-                        className="rounded-xl bg-red-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-red-700"
-                      >
-                        Instagram ↗
-                      </button>
-                      {rental.whatsapp_number && (
-                        <button
-                          type="button"
-                          onClick={() => openRentalWhatsapp(rental)}
-                          className="rounded-xl bg-green-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-green-700"
-                        >
-                          WhatsApp ↗
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+            {(() => {
+              const normalized = (value: string | null | undefined) => (value || "").trim().toLocaleLowerCase("id-ID");
+              const provinces = Array.from(new Set(rentals.map((r) => r.province).filter((v): v is string => !!v?.trim()))).sort((a, b) => a.localeCompare(b, "id"));
+              const cities = Array.from(new Set(rentals.filter((r) => rentalFilterProvince === "Semua" || normalized(r.province) === normalized(rentalFilterProvince)).map((r) => r.city).filter((v): v is string => !!v?.trim()))).sort((a, b) => a.localeCompare(b, "id"));
+              const filtered = rentals.filter((r) =>
+                (rentalFilterProvince === "Semua" || normalized(r.province) === normalized(rentalFilterProvince)) &&
+                (rentalFilterCity === "Semua" || normalized(r.city) === normalized(rentalFilterCity))
+              );
+              const subscription = filtered.filter((r) => r.is_subscription_active);
+              const verified = filtered.filter((r) => !r.is_subscription_active && r.is_verified);
+              const free = filtered.filter((r) => !r.is_subscription_active && !r.is_verified);
+              const pageSize = isMobileCalendar ? 8 : 9;
+              const renderCards = (items: CostumeRental[], tier: "subscription" | "verified" | "free", paginated = false, page = 1) => {
+                const visible = paginated ? items.slice((page - 1) * pageSize, page * pageSize) : items;
+                const totalPages = Math.max(1, Math.ceil(items.length / pageSize));
+                return <>
+                  {items.length === 0 ? <p className="rounded-xl border border-dashed border-gray-300 p-6 text-center text-sm text-gray-500 dark:border-gray-700">Belum ada rental pada kategori dan filter ini.</p> : <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+                    {visible.map((rental) => (
+                      <article key={rental.id} className={`flex min-w-0 flex-col overflow-hidden rounded-xl border bg-white p-2 shadow-sm dark:bg-gray-900 ${tier === "subscription" ? "border-2 border-amber-400 dark:border-amber-500" : tier === "verified" ? "border-2 border-blue-300 dark:border-blue-700" : "border-gray-200 dark:border-gray-800"}`}>
+                        <div className="flex min-w-0 gap-2">
+                          <img src={rental.image_url} alt={rental.name} className="h-20 w-20 shrink-0 rounded-lg object-cover sm:h-24 sm:w-24" />
+                          <div className="min-w-0 flex-1">
+                            <div className="mb-1 flex flex-wrap items-center gap-1">
+                              {tier === "subscription" && <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[9px] font-black text-amber-800 dark:bg-amber-950 dark:text-amber-300">♛ SUBSCRIPTION</span>}
+                              {tier === "verified" && <span className="rounded bg-blue-100 px-1.5 py-0.5 text-[9px] font-black text-blue-800 dark:bg-blue-950 dark:text-blue-300">✓ VERIFIED</span>}
+                              {tier === "free" && <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[9px] font-bold text-gray-600 dark:bg-gray-800 dark:text-gray-300">FREE</span>}
+                            </div>
+                            <h3 className={`line-clamp-2 break-words text-xs sm:text-sm ${tier === "subscription" ? "font-black" : "font-bold"}`}>{rental.name}</h3>
+                            <p className="mt-1 line-clamp-2 text-[10px] text-gray-500 dark:text-gray-400">📍 {rental.city && rental.province ? `${rental.city}, ${rental.province}` : rental.region}</p>
+                            <p className="mt-1 text-[10px] font-semibold text-gray-500 dark:text-gray-400">◉ {Number(rental.total_views || 0).toLocaleString("id-ID")} views</p>
+                          </div>
+                        </div>
+                        <div className="mt-2 grid grid-cols-2 gap-1.5">
+                          <button type="button" onClick={() => openRentalInstagram(rental)} className="min-w-0 rounded-lg bg-red-600 px-1.5 py-2 text-[10px] font-bold text-white hover:bg-red-700 sm:text-xs">Instagram ↗</button>
+                          <button type="button" onClick={() => openRentalWhatsapp(rental)} disabled={!rental.whatsapp_number} className="min-w-0 rounded-lg bg-green-600 px-1.5 py-2 text-[10px] font-bold text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-40 sm:text-xs">WhatsApp ↗</button>
+                        </div>
+                      </article>
+                    ))}
+                  </div>}
+                  {paginated && items.length > pageSize && <div className="mt-4 flex items-center justify-center gap-3">
+                    <button type="button" disabled={page <= 1} onClick={() => tier === "verified" ? setVerifiedRentalPage(page - 1) : setFreeRentalPage(page - 1)} className="rounded-lg border border-gray-300 px-3 py-2 text-xs font-bold disabled:opacity-40 dark:border-gray-700">← Sebelumnya</button>
+                    <span className="text-xs text-gray-500">Halaman {page} / {totalPages}</span>
+                    <button type="button" disabled={page >= totalPages} onClick={() => tier === "verified" ? setVerifiedRentalPage(page + 1) : setFreeRentalPage(page + 1)} className="rounded-lg border border-gray-300 px-3 py-2 text-xs font-bold disabled:opacity-40 dark:border-gray-700">Berikutnya →</button>
+                  </div>}
+                </>;
+              };
+              return <>
+                <div className="mb-5 flex flex-wrap items-end gap-3 rounded-xl border border-gray-200 p-3 dark:border-gray-800">
+                  <label className="min-w-[180px] flex-1 text-xs font-semibold">Provinsi
+                    <select value={rentalFilterProvince} onChange={(e) => { setRentalFilterProvince(e.target.value); setRentalFilterCity("Semua"); setVerifiedRentalPage(1); setFreeRentalPage(1); }} className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-950">
+                      <option value="Semua">Semua Provinsi</option>{provinces.map((v) => <option key={v} value={v}>{v}</option>)}
+                    </select>
+                  </label>
+                  <label className="min-w-[180px] flex-1 text-xs font-semibold">Kota / Kabupaten
+                    <select value={rentalFilterCity} onChange={(e) => { setRentalFilterCity(e.target.value); setVerifiedRentalPage(1); setFreeRentalPage(1); }} className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-950">
+                      <option value="Semua">Semua Kota</option>{cities.map((v) => <option key={v} value={v}>{v}</option>)}
+                    </select>
+                  </label>
+                  <button type="button" onClick={() => { setRentalFilterProvince("Semua"); setRentalFilterCity("Semua"); setVerifiedRentalPage(1); setFreeRentalPage(1); }} className="rounded-lg border border-gray-300 px-4 py-2.5 text-xs font-bold dark:border-gray-700">Reset Filter</button>
+                </div>
+                {rentalLoading ? <div className="rounded-2xl border border-gray-200 p-10 text-center text-sm text-gray-500 dark:border-gray-800">Memuat daftar rental...</div> : <div className="space-y-7">
+                  <section><h3 className="mb-3 text-base font-black text-amber-700 dark:text-amber-300">♛ Subscription <span className="text-xs font-semibold text-gray-500">({subscription.length})</span></h3>{renderCards(subscription, "subscription")}</section>
+                  <section><h3 className="mb-3 text-base font-black text-blue-700 dark:text-blue-300">✓ Verified <span className="text-xs font-semibold text-gray-500">({verified.length})</span></h3>{renderCards(verified, "verified", true, verifiedRentalPage)}</section>
+                  <section><h3 className="mb-3 text-base font-black text-gray-700 dark:text-gray-200">Free <span className="text-xs font-semibold text-gray-500">({free.length})</span></h3>{renderCards(free, "free", true, freeRentalPage)}</section>
+                </div>}
+              </>;
+            })()}
 
             <button
               type="button"
@@ -4329,6 +4373,7 @@ accept="image/jpeg,image/png,image/webp"
             onClick={(event) => {
               if (event.target === event.currentTarget) {
                 setShowLoginUser(false);
+                setPendingGuestEvent(null);
               }
             }}
           >
@@ -4431,6 +4476,7 @@ accept="image/jpeg,image/png,image/webp"
                   type="button"
                   onClick={() => {
                     setShowLoginUser(false);
+                setPendingGuestEvent(null);
                     setShowRegUser(true);
                   }}
                   className="font-bold text-red-600 hover:underline"
@@ -4909,6 +4955,27 @@ accept="image/jpeg,image/png,image/webp"
                         value={rentalRegion}
                         onChange={(event) => setRentalRegion(event.target.value)}
                         placeholder="Wilayah / Domisili, contoh: Jawa Barat, Bandung"
+                        className="w-full rounded-xl border border-gray-200 bg-transparent px-4 py-3 text-sm outline-none focus:border-red-500 dark:border-gray-700"
+                      />
+
+                      <input
+                        type="text"
+                        value={rentalProvince}
+                        onChange={(event) => {
+                          setRentalProvince(event.target.value);
+                          setRentalCity("");
+                        }}
+                        placeholder="Provinsi (contoh: Banten)"
+                        maxLength={100}
+                        className="w-full rounded-xl border border-gray-200 bg-transparent px-4 py-3 text-sm outline-none focus:border-red-500 dark:border-gray-700"
+                      />
+
+                      <input
+                        type="text"
+                        value={rentalCity}
+                        onChange={(event) => setRentalCity(event.target.value)}
+                        placeholder="Kota / Kabupaten (contoh: Serang)"
+                        maxLength={100}
                         className="w-full rounded-xl border border-gray-200 bg-transparent px-4 py-3 text-sm outline-none focus:border-red-500 dark:border-gray-700"
                       />
 
