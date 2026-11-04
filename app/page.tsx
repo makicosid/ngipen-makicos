@@ -189,124 +189,294 @@ function slugify(value: string) {
 
 const GUIDE_BOOK_PAGES = [
   {
-    title: "Sampul",
-    eyebrow: "PANDUAN PENGGUNAAN WEBSITE",
-    paragraphs: [
-      "NGIPEN — Satu hobby satu keseruan.",
-      "Panduan singkat untuk menjelajahi event jejepangan dan menemukan kebutuhan cosplay."
+    "title": "Sampul",
+    "eyebrow": "WELCOME TO NGIPEN!",
+    "paragraphs": [
+      "Panduan kecil buat kamu yang ingin menjelajahi dunia event jejepangan dan menemukan berbagai kebutuhan cosplay."
     ],
-    bullets: ["Untuk Guest dan User", "Panduan HP dan desktop", "Bantuan Customer Service"],
-    visual: "cover",
+    "bullets": [
+      "Cari event • Pantau jadwal • Simpan favorit • Temukan rental costume",
+      "LET'S EXPLORE AND HAVE FUN! ♥"
+    ],
+    "visual": "cover"
   },
   {
-    title: "Mengenal NGIPEN",
-    eyebrow: "TENTANG NGIPEN",
-    paragraphs: [
-      "NGIPEN adalah website informasi dan jadwal event jejepangan di seluruh Indonesia untuk membantu cosplayer dan penikmat jejepangan, mencari berbagai kegiatan event jejepangan yang ada di Indonesia, mengikuti perkembangan event, dan mencari kebutuhan cosplay."
+    "title": "Kenalan dengan NGIPEN",
+    "eyebrow": "APA SIH NGIPEN ITU?",
+    "paragraphs": [
+      "NGIPEN adalah website informasi dan jadwal event jejepangan di seluruh Indonesia.",
+      "Buat kamu yang suka cosplay, jejepangan, atau sekadar senang datang ke event, NGIPEN hadir supaya kamu lebih gampang menemukan berbagai kegiatan seru di sekitarmu maupun di kota lain.",
+      "Di NGIPEN, kamu bisa:"
     ],
-    bullets: ["Menemukan jadwal event jejepangan", "Melihat informasi event", "Mencari rental costume", "Mengakses informasi melalui HP maupun desktop"],
-    visual: "intro",
+    "bullets": [
+      "🔎 Cari berbagai event jejepangan.",
+      "📅 Cek jadwal event berdasarkan tanggal.",
+      "❤️ Simpan event yang menarik perhatianmu.",
+      "🎭 Temukan informasi rental costume.",
+      "📱 Jelajahi NGIPEN lewat HP maupun desktop.",
+      "Jadi, nggak perlu bingung lagi mencari informasi event jejepangan!"
+    ],
+    "visual": "intro"
   },
   {
-    title: "Beranda NGIPEN",
-    eyebrow: "MULAI DARI BERANDA",
-    paragraphs: [
-      "Beranda menjadi titik awal untuk menemukan informasi yang tersedia di NGIPEN. Bagian yang tampil dapat berbeda sesuai status Guest atau User."
+    "title": "Beranda NGIPEN",
+    "eyebrow": "MULAI JELAJAHI DARI SINI!",
+    "paragraphs": [
+      "Saat membuka NGIPEN, kamu akan menemukan beberapa bagian yang bisa membantu perjalananmu mencari event dan kebutuhan cosplay.",
+      "Kenalan dulu dengan bagian-bagian beranda:"
     ],
-    bullets: ["Pilihan Partner dan Event Promote menampilkan event pilihan", "Jelajahi Event menampilkan daftar event", "Cari Costume tersedia untuk User login", "Kalender Event tersedia untuk User login"],
-    visual: "home",
+    "bullets": [
+      "Pilihan Partner — tempat melihat partner pilihan NGIPEN.",
+      "Event Promote — kumpulan event yang sedang dipromosikan.",
+      "Jelajahi Event — tempat mencari berbagai event jejepangan.",
+      "Cari Costume — akses untuk menemukan daftar rental cosplay.",
+      "Kalender Event — lihat jadwal event berdasarkan tanggal.",
+      "Yuk, mulai jelajahi dan temukan event yang cocok buat kamu!"
+    ],
+    "visual": "home"
   },
   {
-    title: "Jelajahi Event",
-    eyebrow: "TEMUKAN EVENT",
-    paragraphs: [
-      "Gunakan daftar Jelajahi Event untuk mencari kegiatan jejepangan berdasarkan informasi dan penyaring yang tersedia."
+    "title": "Jelajahi Event",
+    "eyebrow": "LAGI CARI EVENT? ADA DI SINI!",
+    "paragraphs": [
+      "Mau cari event di kotamu atau penasaran dengan event di daerah lain? Langsung saja buka menu Jelajahi Event!",
+      "Supaya pencarianmu lebih gampang, kamu bisa menggunakan beberapa fitur berikut:"
     ],
-    bullets: ["Cari berdasarkan nama atau informasi event", "Saring berdasarkan provinsi, kota, kategori, dan jenis tiket", "Pilih urutan Terbaru atau Terpopuler", "Kategori: Cosplay, Pefomance, Market, Game, dan Comic", "Gunakan status Upcoming, Ongoing, atau Completed"],
-    visual: "explore",
+    "bullets": [
+      "Cari event berdasarkan nama atau informasinya.",
+      "Filter berdasarkan provinsi dan kota.",
+      "Pilih kategori event: Cosplay, Pefomance, Market, Game, dan Comic.",
+      "Gunakan filter jenis tiket jika tersedia.",
+      "Urutkan event berdasarkan Terbaru atau Terpopuler.",
+      "Lihat event pada minggu ini",
+      "Lihat event berdasarkan status Upcoming, Ongoing, atau Completed.",
+      "Tinggal atur pencarian sesuai keinginanmu, lalu temukan event yang ingin kamu kunjungi!"
+    ],
+    "visual": "explore"
   },
   {
-    title: "Kalender Event",
-    eyebrow: "JADWAL BERDASARKAN TANGGAL",
-    paragraphs: [
-      "Kalender Event membantu User melihat event berdasarkan tanggal yang dipilih."
+    "title": "Kalender Event",
+    "eyebrow": "JANGAN SAMPAI SALAH TANGGAL EVENT!",
+    "paragraphs": [
+      "Kalender Event membantu kamu melihat event berdasarkan tanggal yang dipilih.",
+      "Cara menggunakannya gampang banget:"
     ],
-    bullets: ["Login sebagai User terlebih dahulu", "Buka Kalender melalui navigasi atau tombol Buka Kalender Event", "Pilih tanggal pada kalender", "Pilih event pada daftar tanggal tersebut untuk membuka detailnya", "Gunakan tombol kembali untuk kembali ke kalender"],
-    visual: "calendar",
+    "bullets": [
+      "1. Login terlebih dahulu sebagai User, daftar jika belum punya.",
+      "2. Buka menu Kalender melalui menu atau tombol Buka Kalender Event.",
+      "3. Pilih tanggal yang ingin kamu cek.",
+      "4. Lihat daftar event pada tanggal tersebut.",
+      "5. Pilih event yang menarik untuk membuka Detail Event.",
+      "6. Mau kembali ke kalender? Gunakan tombol kembali.",
+      "Sekarang kamu bisa lebih mudah merencanakan event mana yang ingin dikunjungi!"
+    ],
+    "visual": "calendar"
   },
   {
-    title: "Preview & Detail Event",
-    eyebrow: "LIHAT INFORMASI EVENT",
-    paragraphs: [
-      "Pada kartu event, User dapat menahan sentuhan atau klik untuk menampilkan Hold-to-Preview. Untuk membuka informasi lengkap, lepaskan dan pilih kartu event secara normal."
+    "title": "Preview & Detail Event",
+    "eyebrow": "KEPO SAMA DETAIL EVENT? INTIP DULU!",
+    "paragraphs": [
+      "Sebelum membuka informasi lengkap, kamu bisa menggunakan fitur Hold-to-Preview pada kartu event.",
+      "Caranya:"
     ],
-    bullets: ["Hold-to-Preview muncul setelah sekitar 400 milidetik", "Geser sebelum waktu tercapai untuk membatalkan preview", "Lepaskan sentuhan atau tombol mouse untuk menutup preview", "Buka Detail Event untuk melihat informasi lengkap, poster, lokasi, jadwal, dan deskripsi", "Pencatatan views terjadi saat Detail Event dibuka oleh User, bukan saat preview ditampilkan"],
-    visual: "preview",
+    "bullets": [
+      "Di HP, tekan dan tahan kartu event.",
+      "Di desktop, klik dan tahan kartu event.",
+      "Tunggu beberapa saat sampai preview poster muncul.",
+      "Lepaskan sentuhan atau tombol mouse untuk menutup preview.",
+      "Kalau ingin tahu informasi lebih lengkap, buka Detail Event. Di halaman ini kamu bisa melihat informasi seperti poster, lokasi, jadwal, dan deskripsi event."
+    ],
+    "visual": "preview"
   },
   {
-    title: "Simpan & Interaksi Event",
-    eyebrow: "FITUR USER",
-    paragraphs: [
-      "Setelah login, User dapat menggunakan fitur interaksi yang tersedia pada halaman Detail Event."
+    "title": "Simpan & Interaksi Event",
+    "eyebrow": "EVENT MENARIK? SIMPAN DULU!",
+    "paragraphs": [
+      "Kadang menemukan banyak event menarik sekaligus, sampai takut lupa event mana yang ingin dikunjungi.",
+      "Tenang, kamu bisa menggunakan fitur simpan event setelah login sebagai User."
     ],
-    bullets: ["Simpan event agar mudah ditemukan kembali melalui tab Tersimpan", "Berikan rating dan komentar pada event", "Lihat rating dan komentar yang tersedia", "Unggah dokumentasi event jika fitur tersebut tersedia pada detail event"],
-    visual: "saved",
+    "bullets": [
+      "Simpan event favorit agar lebih mudah ditemukan lagi melalui tab Tersimpan.",
+      "Berikan rating untuk event.",
+      "Tulis komentar dan lihat komentar dari pengguna lain.",
+      "Unggah dokumentasi event jika fitur tersebut tersedia pada Detail Event.",
+      "Jadi, kamu nggak perlu repot mencari ulang event yang sudah menarik perhatianmu!"
+    ],
+    "visual": "saved"
   },
   {
-    title: "Publikasikan Event",
-    eyebrow: "BAGIKAN INFORMASI EVENT",
-    paragraphs: [
-      "User dapat mengirim informasi event melalui fitur Upload Event. Event yang dikirim akan mengikuti proses moderasi sebelum ditampilkan sebagai event yang disetujui."
+    "title": "Publikasikan Event",
+    "eyebrow": "PUNYA INFORMASI EVENT? YUK, BAGIKAN!",
+    "paragraphs": [
+      "Kalau kamu punya informasi event jejepangan yang ingin dibagikan, kamu bisa menggunakan fitur Upload Event.",
+      "Caranya:"
     ],
-    bullets: ["Login sebagai User", "Pilih Upload Event atau Publikasikan Event", "Lengkapi informasi event dan unggah poster", "Kirim data untuk proses moderasi", "Fitur edit event milik User tidak tersedia pada versi ini"],
-    visual: "publish",
+    "bullets": [
+      "7. Login sebagai User.",
+      "8. Pilih menu Upload Event atau Publikasikan Event.",
+      "9. Lengkapi informasi event yang diminta.",
+      "10. Unggah poster event.",
+      "11. Kirim informasi untuk masuk ke proses moderasi.",
+      "Setelah dikirim, event akan melalui proses pemeriksaan terlebih dahulu sebelum bisa ditampilkan sebagai event yang disetujui.",
+      "Dengan begitu, informasi event jejepangan bisa semakin mudah ditemukan oleh komunitas!",
+      "Catatan: Saat ini User belum memiliki fitur untuk mengedit event yang sudah dikirim."
+    ],
+    "visual": "publish"
   },
   {
-    title: "Cari Costume",
-    eyebrow: "TEMUKAN RENTAL COSPLAY",
-    paragraphs: [
-      "Menu Cari Costume menampilkan direktori rental costume yang terdaftar di NGIPEN. Fitur direktori ini tersedia untuk User login."
+    "title": "Cari Costume",
+    "eyebrow": "LAGI CARI COSTUME BUAT EVENT?",
+    "paragraphs": [
+      "Nggak cuma informasi event, NGIPEN juga punya fitur untuk membantu kamu menemukan rental costume cosplay.",
+      "Melalui menu Cari Costume, kamu bisa menjelajahi daftar rental yang tersedia di NGIPEN.",
+      "Di sini kamu bisa:"
     ],
-    bullets: ["Telusuri kartu rental dan informasi lokasinya", "Gunakan filter provinsi dan kota jika tersedia pada tampilan direktori", "Subscription menampilkan rental berlangganan yang aktif", "Verified menandai rental terverifikasi", "Basic menampilkan rental reguler"],
-    visual: "rental",
+    "bullets": [
+      "Melihat berbagai took rental cosplay.",
+      "Mengetahui nama rental.",
+      "Melihat lokasi atau domisili rental.",
+      "Mengunjungi Instagram penyedia rental.",
+      "Menemukan pilihan rental sesuai informasi yang tersedia.",
+      "Siapa tahu costume yang selama ini kamu cari ternyata ada di salah satu rental yang terdaftar!"
+    ],
+    "visual": "rental"
   },
   {
-    title: "Menghubungi Rental",
-    eyebrow: "KONTAK PENYEDIA RENTAL",
-    paragraphs: [
-      "Setiap kartu rental menyediakan tautan kontak sesuai data yang dicantumkan oleh penyedia rental."
+    "title": "Daftar Rentalan (Partner Ship Makicos)",
+    "eyebrow": "KENALAN DENGAN PARTNER SHIP MAKICOS!",
+    "paragraphs": [
+      "Partner Ship Makicos merupakan halaman yang menampilkan daftar rental cosplay yang terdaftar di NGIPEN.",
+      "Setiap rental memiliki informasi supaya kamu lebih mudah mengenali dan menemukan penyedianya.",
+      "Informasi yang bisa kamu lihat:"
     ],
-    bullets: ["Pilih tombol Instagram untuk membuka profil rental", "Pilih tombol WhatsApp untuk menghubungi rental", "Pastikan detail kostum, harga, ketersediaan, dan ketentuan sewa langsung kepada penyedia", "Tautan kontak dapat berbeda pada setiap rental"],
-    visual: "contact",
+    "bullets": [
+      "Foto atau Logo Rental — identitas rental",
+      "Nama Rental — nama usaha penyedia rental.",
+      "Domisili — informasi provinsi dan kota rental.",
+      "Instagram — link menuju profile Instagram rental.",
+      "Cara melihat daftar rental:",
+      "12. Login sebagai User.",
+      "13. Buka menu Cari Costume melalui navigasi atau hamburger menu.",
+      "14. Masuk ke halaman Partner Ship Makicos.",
+      "15. Pilih rental yang ingin kamu lihat.",
+      "16. Klik tautan Instagram untuk mengunjungi akun rental tersebut.",
+      "Gampang, kan? Sekarang kamu bisa mulai mencari rental costume yang sesuai kebutuhanmu!"
+    ],
+    "visual": "rental"
   },
   {
-    title: "Guest, User & Akun",
-    eyebrow: "AKSES PENGGUNA",
-    paragraphs: [
-      "Guest dapat menjelajahi informasi publik yang tersedia. Login sebagai User membuka fitur tambahan seperti Kalender, Simpan Event, interaksi event, Upload Event, dan Cari Costume."
+    "title": "Penambahan Daftar Rentalan",
+    "eyebrow": "BAGAIMANA CARA RENTAL MASUK KE NGIPEN?",
+    "paragraphs": [
+      "Punya usaha rental costume dan ingin masuk ke daftar Partner Ship Makicos?",
+      "Saat ini, penambahan daftar rental dikelola oleh Admin",
+      "Data yang dibutuhkan untuk menambahkan rental:"
     ],
-    bullets: ["Daftar atau login menggunakan username dan password", "User dapat mengelola informasi profil melalui menu akun", "Gunakan Keluar untuk mengakhiri sesi", "Setelah logout, situs kembali ke mode Guest"],
-    visual: "account",
+    "bullets": [
+      "Informasi — Keterangan",
+      "Foto / Logo — Gambar persegi dengan rasio 1:1",
+      "Nama Rental — Nama usaha rental",
+      "Domisili — Provinsi dan kota",
+      "Instagram — Tautan akun Instagram rental",
+      "Nomor Rentalan",
+      "Admin juga bisa melakukan beberapa pengelolaan:",
+      "Menambahkan rental baru.",
+      "Mengganti foto atau logo.",
+      "Mengubah nama rental.",
+      "Memperbarui domisili.",
+      "Mengganti tautan Instagram.",
+      "Menghapus rental dari daftar.",
+      "Catatan: Penambahan dan perubahan data rental saat ini dilakukan melalui Admin, bukan melalui formulir pendaftaran mandiri di halaman publik."
+    ],
+    "visual": "admin"
   },
   {
-    title: "Panduan HP & Desktop",
-    eyebrow: "AKSES DI BERBAGAI PERANGKAT",
-    paragraphs: [
-      "Tampilan NGIPEN menyesuaikan ukuran layar. Letak navigasi dan cara memilih elemen dapat berbeda antara HP dan desktop."
+    "title": "Menghubungi Rental",
+    "eyebrow": "SUDAH MENEMUKAN RENTAL YANG COCOK?",
+    "paragraphs": [
+      "Kalau sudah menemukan rental yang kamu cari, sekarang waktunya menghubungi penyedianya!",
+      "Gunakan tautan kontak yang tersedia pada informasi rental."
     ],
-    bullets: ["HP: buka navigasi melalui tombol hamburger (☰)", "Desktop: gunakan menu navigasi di bagian atas", "HP: sentuh kartu event; desktop: klik kartu event", "Hold-to-Preview dapat digunakan dengan menahan kartu sekitar 400 milidetik", "Gulir halaman untuk melihat bagian beranda dan footer"],
-    visual: "devices",
+    "bullets": [
+      "Klik Instagram untuk melihat profil rental.",
+      "Jika tersedia, gunakan WhatsApp untuk menghubungi penyedia.",
+      "Tanyakan ketersediaan costume yang kamu inginkan.",
+      "Pastikan harga, jadwal sewa, dan ketentuan rental langsung kepada penyedia.",
+      "Jangan lupa cek informasi dan ketentuan rental sebelum melakukan pemesanan, ya!"
+    ],
+    "visual": "contact"
   },
   {
-    title: "Bantuan & Customer Service",
-    eyebrow: "KAMI SIAP MEMBANTU",
-    paragraphs: [
-      "Jika mengalami kendala atau membutuhkan informasi lebih lanjut mengenai penggunaan NGIPEN, hubungi Customer Service."
+    "title": "Guest, User & Akun",
+    "eyebrow": "GUEST ATAU USER, KAMU TERMASUK YANG MANA?",
+    "paragraphs": [
+      "Di NGIPEN, kamu bisa menjelajahi website sebagai Guest atau login sebagai User.",
+      "Guest — Cocok buat kamu yang ingin melihat informasi publik tanpa login.",
+      "User — Dengan login, kamu bisa mengakses fitur tambahan seperti:"
     ],
-    bullets: ["Customer Service NGIPEN", "Nomor WhatsApp: 0881011676184", "Sampaikan kendala dan informasi yang diperlukan agar tim dapat membantu"],
-    visual: "support",
+    "bullets": [
+      "Kalender Event.",
+      "Simpan Event.",
+      "Rating dan komentar.",
+      "Upload Event.",
+      "Cari Costume.",
+      "Cara masuk ke akun:",
+      "Pilih menu Login.",
+      "Masukkan username Instagram dan password.",
+      "Setelah berhasil, kamu bisa mulai menggunakan fitur User.",
+      "Kamu juga bisa mengelola informasi profil melalui menu akun. Kalau sudah selesai, pilih Keluar untuk logout."
+    ],
+    "visual": "account"
   },
+  {
+    "title": "Panduan HP & Desktop",
+    "eyebrow": "NGIPEN BISA DIBUKA DI MANA SAJA!",
+    "paragraphs": [
+      "Mau buka NGIPEN lewat HP atau laptop? Keduanya bisa digunakan! Hanya saja, posisi menu dan cara menggunakannya sedikit berbeda.",
+      "Kalau menggunakan HP:"
+    ],
+    "bullets": [
+      "Tekan tombol hamburger (☰) untuk membuka navigasi.",
+      "Sentuh kartu event untuk membuka informasinya.",
+      "Gulir halaman untuk melihat bagian lainnya.",
+      "Gunakan sentuhan dan tahan untuk Hold-to-Preview.",
+      "Kalau menggunakan Desktop:",
+      "Gunakan navigasi yang tersedia di bagian atas halaman.",
+      "Klik kartu event untuk membuka informasinya.",
+      "Klik dan tahan kartu untuk Hold-to-Preview.",
+      "Gulir halaman menggunakan mouse atau touchpad.",
+      "Tampilan akan menyesuaikan ukuran layar perangkatmu, jadi kamu tetap bisa menjelajahi NGIPEN dengan nyaman!"
+    ],
+    "visual": "devices"
+  },
+  {
+    "title": "Bantuan & Customer Service",
+    "eyebrow": "BUTUH BANTUAN? JANGAN SUNGKAN HUBUNGI KAMI!",
+    "paragraphs": [
+      "Kalau kamu mengalami kendala saat menggunakan NGIPEN atau ingin bertanya mengenai website, kamu bisa menghubungi Customer Service kami.",
+      "CUSTOMER SERVICE NGIPEN",
+      "WhatsApp: 0881011676184",
+      "https://wa.me/62881011676184",
+      "Jangan lupa jelaskan kendala atau pertanyaanmu supaya tim kami bisa membantu dengan lebih mudah.",
+      "TERIMA KASIH SUDAH MENJADI BAGIAN DARI NGIPEN!",
+      "Sampai bertemu di event jejepangan berikutnya! 🎌"
+    ],
+    "bullets": [],
+    "visual": "support"
+  }
 ];
+
+
+const GUIDE_SCREENSHOTS: Record<number, { src: string; caption: string }> = {
+  2: { src: "/guidebook/beranda.webp", caption: "Contoh tampilan beranda NGIPEN." },
+  3: { src: "/guidebook/jelajahi-event.webp", caption: "Contoh daftar event, kolom pencarian, filter, dan tombol Reset Filter." },
+  4: { src: "/guidebook/kalender.webp", caption: "Contoh Kalender Event dan daftar event berdasarkan tanggal." },
+  5: { src: "/guidebook/detail-event.webp", caption: "Contoh halaman Detail Event, rating, komentar, dan dokumentasi." },
+  6: { src: "/guidebook/event-tersimpan.webp", caption: "Contoh tab Tersimpan pada Jelajahi Event." },
+  7: { src: "/guidebook/upload-event.webp", caption: "Contoh formulir untuk memublikasikan poster dan informasi event." },
+  9: { src: "/guidebook/rental-costume.webp", caption: "Contoh halaman Partner Ship Makicos dan daftar rental costume." },
+  12: { src: "/guidebook/daftar-akun.webp", caption: "Contoh formulir pendaftaran akun User." },
+};
 
 export default function Page() {
     const formatEventDate = (startDate: string, endDate?: string) => {
@@ -4745,7 +4915,7 @@ accept="image/jpeg,image/png,image/webp"
                     htmlFor="login-user-u"
                     className="mb-1 block text-sm font-semibold"
                   >
-                    Username Instagram
+                    Username
                   </label>
                   <input
                     id="login-user-u"
@@ -4863,7 +5033,7 @@ accept="image/jpeg,image/png,image/webp"
                     htmlFor="reg-user-u"
                     className="mb-1 block text-sm font-semibold"
                   >
-                    Username Instagram
+                    Username
                   </label>
                   <input
                     id="reg-user-u"
@@ -6346,6 +6516,24 @@ accept="image/jpeg,image/png,image/webp"
                             </li>
                           ))}
                         </ul>
+                      )}
+
+                      {GUIDE_SCREENSHOTS[guidePage] && (
+                        <figure className="mt-6 overflow-hidden rounded-xl border border-amber-300 bg-white p-2 shadow-sm">
+                          <div className="mb-2 flex items-center gap-2 px-1 text-[10px] font-black uppercase tracking-[0.14em] text-red-800 sm:text-xs">
+                            <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                            Contoh Tampilan NGIPEN
+                          </div>
+                          <img
+                            src={GUIDE_SCREENSHOTS[guidePage].src}
+                            alt={GUIDE_BOOK_PAGES[guidePage].title}
+                            loading="lazy"
+                            className="mx-auto h-auto max-h-[560px] w-full rounded-lg border border-gray-100 object-contain"
+                          />
+                          <figcaption className="px-2 pb-1 pt-2 text-center text-[10px] leading-relaxed text-gray-500 sm:text-xs">
+                            {GUIDE_SCREENSHOTS[guidePage].caption}
+                          </figcaption>
+                        </figure>
                       )}
 
                       {guidePage === GUIDE_BOOK_PAGES.length - 1 && (
