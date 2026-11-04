@@ -3690,7 +3690,7 @@ const shareEvent = async (event: Event) => {
                 </p>
               </div>
 
-              <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+              <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-6">
                 <input
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
@@ -3755,6 +3755,22 @@ const shareEvent = async (event: Event) => {
                   <option value="Gratis">Gratis</option>
                   <option value="Berbayar">Berbayar</option>
                 </select>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedProv("Semua");
+                    setSelectedCity("Semua");
+                    setSelectedCat("Semua");
+                    setSelectedTicket("Semua");
+                    setCurrentEventPage(1);
+                  }}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700 transition hover:border-red-300 hover:bg-red-100 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-300 dark:hover:bg-red-950/60"
+                  aria-label="Reset semua filter provinsi, kota, kategori, dan jenis tiket"
+                >
+                  <span aria-hidden="true" className="text-base">↺</span>
+                  Reset Filter
+                </button>
               </div>
 
               <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
@@ -6241,7 +6257,7 @@ accept="image/jpeg,image/png,image/webp"
         {/* BUKU PANDUAN NGIPEN */}
         {showGuideBook && (
           <div
-            className="guide-book-overlay fixed inset-0 z-[180] flex items-center justify-center overflow-y-auto p-2 sm:p-5"
+            className="guide-book-overlay fixed inset-0 z-[180] flex items-center justify-center overflow-hidden p-2 sm:p-4"
             role="dialog"
             aria-modal="true"
             aria-label="Buku Panduan NGIPEN"
@@ -6249,7 +6265,7 @@ accept="image/jpeg,image/png,image/webp"
               if (event.target === event.currentTarget) setShowGuideBook(false);
             }}
           >
-            <div className="relative my-auto w-full max-w-6xl">
+            <div className="relative h-[calc(100dvh-16px)] max-h-[860px] w-full max-w-6xl">
               <button
                 type="button"
                 onClick={() => setShowGuideBook(false)}
@@ -6259,16 +6275,21 @@ accept="image/jpeg,image/png,image/webp"
                 ×
               </button>
 
-              <div className="guide-book-shell overflow-hidden rounded-[22px] border-[5px] border-red-800 bg-[#f7ead2] p-2 shadow-[0_25px_90px_rgba(0,0,0,0.5)] sm:rounded-[30px] sm:border-[8px] sm:p-3">
-                <div className="guide-book-paper relative overflow-hidden rounded-xl border border-[#d6b779] bg-[#fffaf0]">
-                  <div className="pointer-events-none absolute inset-0 opacity-40" aria-hidden="true">
-                    <div className="absolute inset-x-0 top-0 h-2 bg-gradient-to-r from-red-700 via-amber-400 to-red-700" />
+              <div className="guide-book-shell flex h-full max-h-full flex-col overflow-hidden rounded-[22px] border-[5px] border-red-800 bg-[#f7ead2] p-2 shadow-[0_25px_90px_rgba(0,0,0,0.5)] sm:rounded-[30px] sm:border-[8px] sm:p-3">
+                <div className="guide-book-paper relative min-h-0 flex-1 overflow-hidden rounded-xl border border-[#d6b779] bg-[#fffaf0]">
+                  <div className="pointer-events-none absolute inset-0 overflow-hidden opacity-60" aria-hidden="true">
+                    <div className="absolute inset-x-0 top-0 h-2 bg-gradient-to-r from-red-800 via-amber-400 to-red-800" />
                     <div className="absolute -left-16 -top-16 h-40 w-40 rounded-full border-[18px] border-amber-100" />
                     <div className="absolute -bottom-20 -right-12 h-48 w-48 rounded-full border-[18px] border-red-100" />
+                    <div className="absolute left-2 top-2 text-2xl text-amber-500/40">❖ ✦</div>
+                    <div className="absolute right-2 top-2 text-2xl text-amber-500/40">✦ ❖</div>
+                    <div className="absolute bottom-2 left-3 text-xl tracking-widest text-red-800/20">✧ ❖ ✧</div>
+                    <div className="absolute bottom-2 right-3 text-xl tracking-widest text-amber-700/30">✦ ✧ ✦</div>
+                    <div className="absolute inset-3 rounded-lg border border-amber-300/30" />
                   </div>
 
-                  <div className="relative grid min-h-[470px] grid-cols-1 md:min-h-[540px] md:grid-cols-[1fr_0.9fr]">
-                    <section className="relative flex min-w-0 flex-col border-b border-[#e7d6b5] px-5 pb-5 pt-7 sm:px-9 sm:pb-7 sm:pt-9 md:border-b-0 md:border-r md:px-10">
+                  <div className="relative grid h-full min-h-0 grid-cols-1 md:grid-cols-[1fr_0.9fr]">
+                    <section className="guide-book-content relative flex min-h-0 min-w-0 flex-col overflow-hidden border-b border-[#e7d6b5] px-5 pb-4 pt-24 sm:px-9 sm:pb-6 sm:pt-24 md:border-b-0 md:border-r md:px-10">
                       <div className="absolute left-3 top-3 flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border-2 border-amber-500 bg-white p-1 shadow-md sm:left-5 sm:top-5 sm:h-12 sm:w-12">
                         <img src="/ngipen-logo.png" alt="Pin logo NGIPEN" className="h-full w-full object-contain" />
                       </div>
@@ -6276,7 +6297,29 @@ accept="image/jpeg,image/png,image/webp"
                         <img src="/makicos-logo.jpg" alt="Pin logo MAKICOS.ID" className="h-full w-full object-contain" />
                       </div>
 
-                      <div className="mt-8 flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-red-700 sm:mt-7 sm:text-xs">
+                      <div className="absolute left-3 right-3 top-[68px] z-20 flex items-center justify-between sm:left-5 sm:right-5">
+                        <button
+                          type="button"
+                          disabled={guidePage === 0}
+                          onClick={() => setGuidePage((current) => Math.max(0, current - 1))}
+                          aria-label="Halaman sebelumnya"
+                          className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-amber-400 bg-white/95 text-xl font-black text-red-800 shadow-md transition hover:-translate-y-0.5 hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-30 sm:h-10 sm:w-10"
+                        >
+                          ‹
+                        </button>
+                        <button
+                          type="button"
+                          disabled={guidePage === GUIDE_BOOK_PAGES.length - 1}
+                          onClick={() => setGuidePage((current) => Math.min(GUIDE_BOOK_PAGES.length - 1, current + 1))}
+                          aria-label="Halaman selanjutnya"
+                          className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-amber-400 bg-white/95 text-xl font-black text-red-800 shadow-md transition hover:-translate-y-0.5 hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-30 sm:h-10 sm:w-10"
+                        >
+                          ›
+                        </button>
+                      </div>
+
+                      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto pr-1">
+                      <div className="mt-2 flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-red-700 sm:mt-3 sm:text-xs">
                         <span className="h-px w-6 bg-amber-500" />
                         {GUIDE_BOOK_PAGES[guidePage].eyebrow}
                         <span className="h-px w-6 bg-amber-500" />
@@ -6321,9 +6364,10 @@ accept="image/jpeg,image/png,image/webp"
                         <span>NGIPEN · MAKICOS.ID</span>
                         <span>HALAMAN {guidePage + 1}</span>
                       </div>
+                      </div>
                     </section>
 
-                    <section className="relative flex min-h-[190px] flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-[#fff7e7] to-[#f4dfb8] p-5 sm:min-h-[230px] sm:p-8">
+                    <section className="relative hidden min-h-0 flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-[#fff7e7] to-[#f4dfb8] p-5 sm:p-8 md:flex">
                       <div className="absolute inset-4 rounded-xl border border-amber-300/70" />
                       {guidePage === 0 ? (
                         <div className="relative flex w-full flex-col items-center gap-4 text-center">
@@ -6396,38 +6440,7 @@ accept="image/jpeg,image/png,image/webp"
                   </div>
                 </div>
 
-                <div className="mt-3 flex items-center justify-between gap-2 rounded-2xl border border-white/20 bg-gray-950/90 px-3 py-3 text-white shadow-xl sm:px-5">
-                  <button
-                    type="button"
-                    disabled={guidePage === 0}
-                    onClick={() => setGuidePage((page) => Math.max(0, page - 1))}
-                    className="rounded-full bg-white/10 px-3 py-2 text-xs font-bold hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-30 sm:px-5 sm:text-sm"
-                  >
-                    ← Sebelumnya
-                  </button>
-                  <div className="min-w-0 text-center">
-                    <p className="text-xs font-black sm:text-sm">{guidePage + 1} / {GUIDE_BOOK_PAGES.length}</p>
-                    <div className="mt-1 flex justify-center gap-1">
-                      {GUIDE_BOOK_PAGES.map((_, index) => (
-                        <button
-                          key={index}
-                          type="button"
-                          aria-label={`Buka halaman ${index + 1}`}
-                          onClick={() => setGuidePage(index)}
-                          className={`h-1.5 rounded-full transition-all ${index === guidePage ? "w-5 bg-amber-400" : "w-1.5 bg-white/40 hover:bg-white/70"}`}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    disabled={guidePage === GUIDE_BOOK_PAGES.length - 1}
-                    onClick={() => setGuidePage((page) => Math.min(GUIDE_BOOK_PAGES.length - 1, page + 1))}
-                    className="rounded-full bg-red-600 px-3 py-2 text-xs font-bold hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-30 sm:px-5 sm:text-sm"
-                  >
-                    Selanjutnya →
-                  </button>
-                </div>
+
               </div>
             </div>
           </div>
