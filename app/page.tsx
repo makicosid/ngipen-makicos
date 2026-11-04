@@ -3946,31 +3946,29 @@ const shareEvent = async (event: Event) => {
                 const visible = paginated ? items.slice((page - 1) * pageSize, page * pageSize) : items;
                 const totalPages = Math.max(1, Math.ceil(items.length / pageSize));
                 return <>
-                  {items.length === 0 ? <p className="rounded-xl border border-dashed border-gray-300 p-6 text-center text-sm text-gray-500 dark:border-gray-700">Belum ada rental pada kategori dan filter ini.</p> : <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {items.length === 0 ? <p className="rounded-xl border border-dashed border-gray-300 p-6 text-center text-sm text-gray-500 dark:border-gray-700">Belum ada rental pada kategori dan filter ini.</p> : <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     {visible.map((rental) => (
                       <div key={rental.id} className="min-w-0">
-                      <article className={`flex min-w-0 flex-col overflow-hidden rounded-xl border bg-white p-2 shadow-sm dark:bg-gray-900 ${tier === "subscription" ? "border-2 border-amber-400 shadow-amber-100/70 dark:border-amber-500 dark:shadow-amber-950/30" : tier === "verified" ? "border-2 border-blue-300 dark:border-blue-700" : "border-gray-300 dark:border-gray-700"} sm:rounded-xl`}>
-                        <div className="flex min-w-0 gap-2">
-                          <div className={`relative shrink-0 rounded-xl p-0.5 ${tier === "subscription" ? "bg-gradient-to-br from-yellow-300 via-amber-500 to-yellow-700" : tier === "verified" ? "bg-gradient-to-br from-sky-300 via-blue-500 to-blue-700" : "bg-gradient-to-br from-gray-200 via-gray-400 to-gray-500"}`}>
-                            {tier === "subscription" && <span className="absolute -right-1.5 -top-2 z-10 text-lg drop-shadow" aria-label="Subscription">👑</span>}
-                            <img src={rental.image_url} alt={rental.name} className="h-20 w-20 rounded-[10px] object-cover sm:h-24 sm:w-24" />
+                        <article className={`relative flex min-w-0 flex-col overflow-visible rounded-xl border bg-white px-2 pb-3 pt-5 shadow-sm dark:bg-gray-900 sm:flex-row sm:items-center sm:gap-2 sm:p-3 ${tier === "subscription" ? "border-2 border-amber-400 shadow-amber-100/70 dark:border-amber-500 dark:shadow-amber-950/30" : tier === "verified" ? "border-2 border-blue-300 dark:border-blue-700" : "border border-gray-300 dark:border-gray-700"}`}>
+                          {tier === "subscription" && <span className="font-rosehot absolute left-1/2 top-0 z-10 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white px-2 text-xl leading-none text-amber-500 dark:bg-gray-900" aria-label="Ornamen Subscription">♛</span>}
+                          <div className="flex w-full shrink-0 justify-center sm:w-auto sm:justify-start">
+                            <img src={rental.image_url} alt={rental.name} loading="lazy" className="h-16 w-16 max-w-full object-contain sm:h-20 sm:w-20" />
                           </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="mb-1 flex flex-wrap items-center gap-1">
-                              {tier === "subscription" && <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[9px] font-black text-amber-800 dark:bg-amber-950 dark:text-amber-300">♛ SUBSCRIPTION</span>}
+                          <div className="mt-2 min-w-0 flex-1 text-center sm:mt-0 sm:text-left">
+                            <div className="mb-1 flex flex-wrap items-center justify-center gap-1 sm:justify-start">
+                              {tier === "subscription" && <span className="font-rosehot rounded-full bg-amber-100 px-2 py-1 text-[9px] text-amber-900 dark:bg-amber-950 dark:text-amber-300">♛ SUBSCRIPTION</span>}
                               {tier === "verified" && <span className="rounded bg-blue-100 px-1.5 py-0.5 text-[9px] font-black text-blue-800 dark:bg-blue-950 dark:text-blue-300">✓ VERIFIED</span>}
                               {tier === "free" && <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[9px] font-bold text-gray-600 dark:bg-gray-800 dark:text-gray-300">BASIC</span>}
                             </div>
-                            <h3 className={`line-clamp-2 break-words text-xs sm:text-sm ${tier === "subscription" ? "font-black" : "font-bold"}`}>{rental.name}</h3>
-                            <p className="mt-1 break-words text-[10px] leading-relaxed text-gray-500 dark:text-gray-400">📍 {rental.city && rental.province ? `${rental.city}, ${rental.province}` : rental.region}</p>
-                            <p className="mt-1 text-[10px] font-semibold text-gray-500 dark:text-gray-400">◉ {Number(rental.total_views || 0).toLocaleString("id-ID")} views</p>
+                            <h3 className={`line-clamp-2 break-words text-xs sm:text-sm ${tier === "subscription" ? "font-rosehot text-base leading-tight text-red-800 dark:text-red-300 sm:text-lg" : "font-bold"}`}>{rental.name}</h3>
+                            <p className="mt-1 break-words text-[9px] leading-snug text-gray-500 dark:text-gray-400 sm:text-[10px]">📍 {rental.city && rental.province ? `${rental.city}, ${rental.province}` : rental.region}</p>
+                            <p className="mt-1 text-[9px] font-semibold text-gray-500 dark:text-gray-400 sm:text-[10px]">◉ {Number(rental.total_views || 0).toLocaleString("id-ID")} views</p>
                           </div>
+                        </article>
+                        <div className="mt-2 grid grid-cols-2 gap-1">
+                          <button type="button" onClick={() => openRentalInstagram(rental)} className="min-w-0 rounded-lg bg-red-600 px-1 py-2 text-[9px] font-bold text-white hover:bg-red-700 sm:px-1.5 sm:text-xs">Instagram ↗</button>
+                          <button type="button" onClick={() => openRentalWhatsapp(rental)} disabled={!rental.whatsapp_number} className="min-w-0 rounded-lg bg-green-600 px-1 py-2 text-[9px] font-bold text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-40 sm:px-1.5 sm:text-xs">WhatsApp ↗</button>
                         </div>
-                      </article>
-                      <div className="mt-2 grid grid-cols-2 gap-1.5">
-                        <button type="button" onClick={() => openRentalInstagram(rental)} className="min-w-0 rounded-lg bg-red-600 px-1.5 py-2 text-[10px] font-bold text-white hover:bg-red-700 sm:text-xs">Instagram ↗</button>
-                        <button type="button" onClick={() => openRentalWhatsapp(rental)} disabled={!rental.whatsapp_number} className="min-w-0 rounded-lg bg-green-600 px-1.5 py-2 text-[10px] font-bold text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-40 sm:text-xs">WhatsApp ↗</button>
-                      </div>
                       </div>
                     ))}
                   </div>}
@@ -3996,7 +3994,7 @@ const shareEvent = async (event: Event) => {
                   <button type="button" onClick={() => { setRentalFilterProvince("Semua"); setRentalFilterCity("Semua"); setVerifiedRentalPage(1); setFreeRentalPage(1); }} className="rounded-lg border border-gray-300 px-4 py-2.5 text-xs font-bold dark:border-gray-700">Reset Filter</button>
                 </div>
                 {rentalLoading ? <div className="rounded-2xl border border-gray-200 p-10 text-center text-sm text-gray-500 dark:border-gray-800">Memuat daftar rental...</div> : <div className="space-y-7">
-                  <section><h3 className="mb-3 text-base font-black text-amber-700 dark:text-amber-300">♛ Subscription <span className="text-xs font-semibold text-gray-500">({subscription.length})</span></h3>{renderCards(subscription, "subscription")}</section>
+                  <section><h3 className="font-rosehot mb-3 text-lg text-amber-700 dark:text-amber-300">♛ Subscription <span className="text-xs font-semibold text-gray-500">({subscription.length})</span></h3>{renderCards(subscription, "subscription")}</section>
                   <section><h3 className="mb-3 text-base font-black text-blue-700 dark:text-blue-300">✓ Verified <span className="text-xs font-semibold text-gray-500">({verified.length})</span></h3>{renderCards(verified, "verified", true, verifiedRentalPage)}</section>
                   <section><h3 className="mb-3 text-base font-black text-gray-700 dark:text-gray-200">BASIC <span className="text-xs font-semibold text-gray-500">({free.length})</span></h3>{renderCards(free, "free", true, freeRentalPage)}</section>
                 </div>}
