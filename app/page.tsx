@@ -74,6 +74,10 @@ interface CostumeRental {
   created_at: string;
   is_verified: boolean;
   is_subscription: boolean;
+  whatsapp_number: string | null;
+  subscription_expires_at: string | null;
+  total_views: number;
+  is_subscription_active: boolean;
 }
 
 interface Review {
@@ -318,6 +322,8 @@ const [rentalLoading, setRentalLoading] = useState(true);
 const [rentalName, setRentalName] = useState("");
 const [rentalRegion, setRentalRegion] = useState("");
 const [rentalInstagram, setRentalInstagram] = useState("");
+const [rentalWhatsapp, setRentalWhatsapp] = useState("");
+const [rentalSubscriptionExpiry, setRentalSubscriptionExpiry] = useState("");
 const [rentalFile, setRentalFile] = useState<File | null>(null);
 const [rentalPreview, setRentalPreview] = useState("");
 const [editingRentalId, setEditingRentalId] = useState<string | null>(null);
@@ -349,6 +355,8 @@ useEffect(() => {
   setRentalName("");
   setRentalRegion("");
   setRentalInstagram("");
+  setRentalWhatsapp("");
+  setRentalSubscriptionExpiry("");
   setRentalFile(null);
   setRentalPreview("");
   setEditingRentalId(null);
@@ -376,6 +384,10 @@ if (editingRentalId) {
 formData.append("name", rentalName.trim());
 formData.append("region", rentalRegion.trim());
 formData.append("instagram_url", rentalInstagram.trim());
+formData.append("whatsapp_number", rentalWhatsapp.trim());
+if (rentalSubscriptionExpiry) {
+  formData.append("subscription_expires_at", rentalSubscriptionExpiry);
+}
 
     if (rentalFile) {
       formData.append("image", rentalFile);
@@ -409,6 +421,12 @@ formData.append("instagram_url", rentalInstagram.trim());
   setRentalName(rental.name);
   setRentalRegion(rental.region);
   setRentalInstagram(rental.instagram_url);
+  setRentalWhatsapp(rental.whatsapp_number || "");
+  setRentalSubscriptionExpiry(
+    rental.subscription_expires_at
+      ? new Date(rental.subscription_expires_at).toLocaleDateString("en-CA", { timeZone: "Asia/Jakarta" })
+      : ""
+  );
   setRentalFile(null);
   setRentalPreview(rental.image_url);
   setEditingRentalId(rental.id);
@@ -428,6 +446,23 @@ formData.append("instagram_url", rentalInstagram.trim());
     formData.append("name", rental.name);
     formData.append("region", rental.region);
     formData.append("instagram_url", rental.instagram_url);
+    if (rental.whatsapp_number) {
+      formData.append("whatsapp_number", rental.whatsapp_number);
+    }
+    if (statusField === "is_subscription" && nextValue) {
+      const expiryDate = (editingRentalId === rental.id && rentalSubscriptionExpiry)
+        ? rentalSubscriptionExpiry
+        : (rental.subscription_expires_at
+            ? new Date(rental.subscription_expires_at).toLocaleDateString("en-CA", { timeZone: "Asia/Jakarta" })
+            : "");
+      if (!expiryDate) {
+        setToast("Edit rental terlebih dahulu dan isi tanggal akhir Subscription.");
+        return;
+      }
+      formData.append("subscription_expires_at", expiryDate);
+    } else if (rental.subscription_expires_at) {
+      formData.append("subscription_expires_at", new Date(rental.subscription_expires_at).toLocaleDateString("en-CA", { timeZone: "Asia/Jakarta" }));
+    }
     formData.append(statusField, String(nextValue));
 
     const response = await fetch("/api/admin-rentals", {
@@ -460,6 +495,29 @@ formData.append("instagram_url", rentalInstagram.trim());
   }
 };
   
+  const trackRentalClick = (rentalId: string, channel: "instagram" | "whatsapp") => {
+    void fetch("/api/rental-click", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ rental_id: rentalId, channel }),
+      keepalive: true,
+    }).then(() => refreshRentals()).catch((error) => {
+      console.error("Gagal mencatat klik rental:", error);
+    });
+  };
+
+  const openRentalInstagram = (rental: CostumeRental) => {
+    window.open(rental.instagram_url, "_blank", "noopener,noreferrer");
+    trackRentalClick(rental.id, "instagram");
+  };
+
+  const openRentalWhatsapp = (rental: CostumeRental) => {
+    const number = (rental.whatsapp_number || "").replace(/\D/g, "");
+    if (!number) return;
+    window.open(`https://wa.me/${number}`, "_blank", "noopener,noreferrer");
+    trackRentalClick(rental.id, "whatsapp");
+  };
+
   const handleDeleteRental = async (rental: CostumeRental) => {
   const confirmed = window.confirm(
     `Yakin ingin menghapus rental "${rental.name}"?`
@@ -2781,6 +2839,40 @@ const shareEvent = async (event: Event) => {
               </div>
             </section>
 
+{!showCalendar && !showCostumeDirectory && currentRole === "user" && rentals.some((rental) => rental.is_subscription_active) && (
+  <section className="mx-auto max-w-[1400px] px-4 pb-7">
+    <div className="mb-3 flex items-center justify-between gap-3">
+      <div>
+        <h2 className="text-lg font-black sm:text-xl">Rental Costume Pilihan</h2>
+        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Partner Subscription aktif Makicos</p>
+      </div>
+      <button
+        type="button"
+        onClick={() => { setShowCostumeDirectory(true); setShowCalendar(false); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+        className="text-xs font-bold text-red-600 hover:text-red-700"
+      >
+        Lihat semua →
+      </button>
+    </div>
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {[...rentals].filter((rental) => rental.is_subscription_active).slice(0, 3).map((rental) => (
+        <div key={rental.id} className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-white p-3 dark:border-amber-900 dark:bg-gray-900">
+          <img src={rental.image_url} alt={rental.name} className="h-14 w-14 shrink-0 rounded-xl object-cover" />
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-bold">{rental.name}</p>
+            <p className="truncate text-xs text-gray-500 dark:text-gray-400">{rental.region}</p>
+            <p className="mt-1 text-[11px] font-semibold text-amber-700 dark:text-amber-300">♛ Subscription</p>
+          </div>
+          <div className="flex flex-col gap-1">
+            <button type="button" onClick={() => openRentalInstagram(rental)} className="rounded-lg bg-red-600 px-3 py-2 text-xs font-bold text-white">Instagram ↗</button>
+            {rental.whatsapp_number && <button type="button" onClick={() => openRentalWhatsapp(rental)} className="rounded-lg bg-green-600 px-3 py-2 text-xs font-bold text-white">WhatsApp ↗</button>}
+          </div>
+        </div>
+      ))}
+    </div>
+  </section>
+)}
+
 {showCalendar && currentRole === "user" && (
   <section className="mx-auto max-w-[1400px] px-4 pb-8">
     <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900 sm:p-7">
@@ -3671,13 +3763,12 @@ const shareEvent = async (event: Event) => {
               </div>
             ) : (
               <div className="space-y-3">
-                {rentals.map((rental) => (
-                  <a
+                {[...rentals]
+                  .sort((a, b) => Number(b.is_subscription_active) - Number(a.is_subscription_active))
+                  .map((rental) => (
+                  <div
                     key={rental.id}
-                    href={rental.instagram_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-4 rounded-2xl border border-gray-200 bg-white p-3 transition hover:border-red-300 hover:shadow-sm dark:border-gray-800 dark:bg-gray-900"
+                    className="flex flex-col gap-3 rounded-2xl border border-gray-200 bg-white p-3 transition hover:border-red-300 hover:shadow-sm dark:border-gray-800 dark:bg-gray-900 sm:flex-row sm:items-center sm:gap-4"
                   >
                     <img
                       src={rental.image_url}
@@ -3692,20 +3783,36 @@ const shareEvent = async (event: Event) => {
                             ✓ Partner Ship
                           </span>
                         )}
-                        {rental.is_subscription && (
+                        {rental.is_subscription_active && (
                           <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-1 text-[10px] font-bold text-amber-700 dark:bg-amber-950 dark:text-amber-300">
                             ♛ Subscription
                           </span>
                         )}
                       </div>
-                      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                        📍 {rental.region}
-                      </p>
-                      <p className="mt-2 text-xs font-semibold text-red-600">
-                        Kunjungi Instagram →
+                      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">📍 {rental.region}</p>
+                      <p className="mt-2 text-xs font-semibold text-gray-500 dark:text-gray-400">
+                        <span aria-hidden="true">◉</span> {Number(rental.total_views || 0).toLocaleString("id-ID")} Views
                       </p>
                     </div>
-                  </a>
+                    <div className="flex flex-wrap gap-2 sm:justify-end">
+                      <button
+                        type="button"
+                        onClick={() => openRentalInstagram(rental)}
+                        className="rounded-xl bg-red-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-red-700"
+                      >
+                        Instagram ↗
+                      </button>
+                      {rental.whatsapp_number && (
+                        <button
+                          type="button"
+                          onClick={() => openRentalWhatsapp(rental)}
+                          className="rounded-xl bg-green-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-green-700"
+                        >
+                          WhatsApp ↗
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 ))}
               </div>
             )}
@@ -4806,6 +4913,25 @@ accept="image/jpeg,image/png,image/webp"
                         className="w-full rounded-xl border border-gray-200 bg-transparent px-4 py-3 text-sm outline-none focus:border-red-500 dark:border-gray-700"
                       />
 
+                      <input
+                        type="tel"
+                        value={rentalWhatsapp}
+                        onChange={(event) => setRentalWhatsapp(event.target.value)}
+                        placeholder="Nomor WhatsApp (contoh: 628123456789)"
+                        className="w-full rounded-xl border border-gray-200 bg-transparent px-4 py-3 text-sm outline-none focus:border-red-500 dark:border-gray-700"
+                      />
+
+                      <div>
+                        <label className="mb-2 block text-sm font-semibold">Tanggal akhir Subscription</label>
+                        <input
+                          type="date"
+                          value={rentalSubscriptionExpiry}
+                          onChange={(event) => setRentalSubscriptionExpiry(event.target.value)}
+                          className="w-full rounded-xl border border-gray-200 bg-transparent px-4 py-3 text-sm outline-none focus:border-red-500 dark:border-gray-700"
+                        />
+                        <p className="mt-1 text-xs text-gray-500">Isi tanggal ini sebelum mengaktifkan Subscription.</p>
+                      </div>
+
                       <div>
                         <label className="mb-2 block text-sm font-semibold">
                           Foto / Logo Rental
@@ -4889,14 +5015,24 @@ accept="image/jpeg,image/png,image/webp"
       <p className="truncate text-xs text-gray-500">
         {rental.region}
       </p>
-      <a
-        href={rental.instagram_url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-xs font-semibold text-red-600"
+      <p className="mt-1 text-xs font-semibold text-gray-600 dark:text-gray-300">
+        ◉ {Number(rental.total_views || 0).toLocaleString("id-ID")} Total Views
+      </p>
+      <p className="truncate text-xs text-gray-500">
+        WhatsApp: {rental.whatsapp_number || "Belum diatur"}
+      </p>
+      {rental.subscription_expires_at && (
+        <p className="truncate text-xs text-gray-500">
+          Subscription sampai: {new Date(rental.subscription_expires_at).toLocaleDateString("id-ID", { timeZone: "Asia/Jakarta" })}
+        </p>
+      )}
+      <button
+        type="button"
+        onClick={() => openRentalInstagram(rental)}
+        className="text-left text-xs font-semibold text-red-600"
       >
-        Instagram
-      </a>
+        Instagram ↗
+      </button>
     </div>
 
     <div className="flex shrink-0 flex-col gap-2">
@@ -4924,12 +5060,12 @@ accept="image/jpeg,image/png,image/webp"
         type="button"
         onClick={() => void handleToggleRentalStatus(rental, "is_subscription")}
         className={`rounded-lg px-3 py-2 text-xs font-bold ${
-          rental.is_subscription
+          rental.is_subscription_active
             ? "bg-yellow-100 text-yellow-800"
             : "bg-gray-100 text-gray-500 dark:bg-gray-800"
         }`}
       >
-        ♛ Subscription {rental.is_subscription ? "ON" : "OFF"}
+        ♛ Subscription {rental.is_subscription_active ? "AKTIF" : rental.is_subscription ? "KEDALUWARSA" : "OFF"}
       </button>
 
       <button
