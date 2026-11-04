@@ -72,6 +72,8 @@ interface CostumeRental {
   image_path: string;
   display_order: number;
   created_at: string;
+  is_verified: boolean;
+  is_subscription: boolean;
 }
 
 interface Review {
@@ -413,6 +415,51 @@ formData.append("instagram_url", rentalInstagram.trim());
 
   window.scrollTo({ top: 0, behavior: "smooth" });
 };
+  const handleToggleRentalStatus = async (
+  rental: CostumeRental,
+  statusField: "is_verified" | "is_subscription"
+) => {
+  const nextValue = !rental[statusField];
+
+  try {
+    const formData = new FormData();
+
+    formData.append("id", rental.id);
+    formData.append("name", rental.name);
+    formData.append("region", rental.region);
+    formData.append("instagram_url", rental.instagram_url);
+    formData.append(statusField, String(nextValue));
+
+    const response = await fetch("/api/admin-rentals", {
+      method: "PATCH",
+      credentials: "include",
+      body: formData,
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.error || "Gagal mengubah status rental.");
+    }
+
+    await refreshRentals();
+
+    setToast(
+      statusField === "is_verified"
+        ? nextValue
+          ? "Partner Ship berhasil diaktifkan."
+          : "Partner Ship berhasil dinonaktifkan."
+        : nextValue
+          ? "Subscription berhasil diaktifkan."
+          : "Subscription berhasil dinonaktifkan."
+    );
+  } catch (error) {
+    setToast(
+      error instanceof Error ? error.message : "Terjadi kesalahan."
+    );
+  }
+};
+  
   const handleDeleteRental = async (rental: CostumeRental) => {
   const confirmed = window.confirm(
     `Yakin ingin menghapus rental "${rental.name}"?`
@@ -4821,37 +4868,53 @@ accept="image/jpeg,image/png,image/webp"
                               </a>
                             </div>
 
-                            <div className="flex shrink-0 flex-col gap-2">
-                              <button
-                                type="button"
-                                onClick={() => handleEditRental(rental)}
-                                className="rounded-lg bg-gray-100 px-3 py-2 text-xs font-bold dark:bg-gray-800"
-                              >
-                                Edit
-                              </button>
+                           <div className="flex shrink-0 flex-col gap-2">
+  <button
+    type="button"
+    onClick={() => handleEditRental(rental)}
+    className="rounded-lg bg-gray-100 px-3 py-2 text-xs font-bold dark:bg-gray-800"
+  >
+    Edit
+  </button>
 
-                              <button
-                                type="button"
-                                onClick={() => void handleDeleteRental(rental)}
-                                className="rounded-lg bg-red-100 px-3 py-2 text-xs font-bold text-red-700"
-                              >
-                                Hapus
-                              </button>
-                            </div>
+  <button
+    type="button"
+    onClick={() => void handleToggleRentalStatus(rental, "is_verified")}
+    className={`rounded-lg px-3 py-2 text-xs font-bold ${
+      rental.is_verified
+        ? "bg-blue-100 text-blue-700"
+        : "bg-gray-100 text-gray-500 dark:bg-gray-800"
+    }`}
+  >
+    ✓ Partner Ship {rental.is_verified ? "ON" : "OFF"}
+  </button>
+
+  <button
+    type="button"
+    onClick={() => void handleToggleRentalStatus(rental, "is_subscription")}
+    className={`rounded-lg px-3 py-2 text-xs font-bold ${
+      rental.is_subscription
+        ? "bg-yellow-100 text-yellow-800"
+        : "bg-gray-100 text-gray-500 dark:bg-gray-800"
+    }`}
+  >
+    ♛ Subscription {rental.is_subscription ? "ON" : "OFF"}
+  </button>
+
+  <button
+    type="button"
+    onClick={() => void handleDeleteRental(rental)}
+    className="rounded-lg bg-red-100 px-3 py-2 text-xs font-bold text-red-700"
+  >
+   Hapus
+  </button>
+</div>
                           </div>
                         ))}
                       </div>
                     )}
-                  </div>
-                </div>
-              )}
-                </>
-              )}
-            </section>
-          </div>
-        )}
 
-        {/* MODAL PROFIL USER */}
+{/* MODAL PROFIL USER */}
         {showUserProfile && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-black/60 p-4">
             <section className="my-auto w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl dark:bg-gray-900 sm:p-8">
