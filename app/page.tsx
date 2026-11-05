@@ -2095,20 +2095,16 @@ if (!allowedImageTypes.includes(docFile.type)) {
   };
 
   // Simpan perubahan profil user; gunakan username sebagai kunci stabil untuk menghindari konflik tipe id text/uuid.
+ 
   const handleUpdateUserProfile = async () => {
     const profileUser = registeredUsers.find(
       (user) => String(user.id) === String(currentUserId)
     );
-    const username = profileUser?.username || localStorage.getItem("ngipen_username") || "";
-
-    if (!username) {
-      setToast("Data akun tidak ditemukan. Keluar lalu login kembali.");
-      return;
-    }
 
     const displayName = (
       document.getElementById("edit-user-display") as HTMLInputElement
     )?.value?.trim();
+
     const bio = (
       document.getElementById("edit-user-bio") as HTMLTextAreaElement
     )?.value?.trim() || "";
@@ -2118,7 +2114,13 @@ if (!allowedImageTypes.includes(docFile.type)) {
       return;
     }
 
+    if (displayName.length > 50 || bio.length > 300) {
+      setToast("Nama maksimal 50 karakter dan bio maksimal 300 karakter.");
+      return;
+    }
+
     let avatarUrl = profileUser?.avatar_url || "";
+
     if (userAvatarFile) {
       try {
         avatarUrl = await uploadToBucket(userAvatarFile, "avatars");
@@ -2128,43 +2130,71 @@ if (!allowedImageTypes.includes(docFile.type)) {
       }
     }
 
-    const { data, error } = await supabase
-      .from("users")
-      .update({ display_name: displayName, bio, avatar_url: avatarUrl })
-      .eq("username", username)
-      .select("id,username,display_name,bio,avatar_url,created_at")
-      .maybeSingle();
+    try {
+      const response = await fetch("/api/auth", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          action: "update_profile",
+          displayName,
+          bio,
+          avatarUrl,
+        }),
+      });
 
-    if (error) {
-      setToast(`Gagal menyimpan profil: ${error.message}`);
-      return;
-    }
-    if (!data) {
-      setToast("Profil tidak berubah di database. Periksa izin UPDATE/RLS tabel users di Supabase.");
-      return;
-    }
+      const result = await response.json();
 
-    const updated = data as RegUser;
-    setRegisteredUsers((prev) => {
-      const exists = prev.some((user) => user.username === username);
-      return exists
-        ? prev.map((user) => user.username === username ? updated : user)
-        : [updated, ...prev];
-    });
-    setReviews((prev) => prev.map((review) =>
-      String(review.user_id) === String(updated.id)
-        ? { ...review, username: updated.username, display_name: updated.display_name, avatar_url: updated.avatar_url || "" }
-        : review
-    ));
-    setCurrentUser(displayName);
-    setCurrentUserId(String(updated.id));
-    localStorage.setItem("ngipen_user", displayName);
-    localStorage.setItem("ngipen_username", updated.username);
-    localStorage.setItem("ngipen_user_id", String(updated.id));
-    setUserAvatarFile(null);
-    setShowUserProfile(false);
-    setToast("Profil berhasil diperbarui.");
-    setTimeout(() => setToast(""), 2000);
+      if (!response.ok || !result.success || !result.user) {
+        setToast(result.error || "Gagal menyimpan profil.");
+        return;
+      }
+
+      const updated = result.user as RegUser;
+
+      setRegisteredUsers((prev) => {
+        const exists = prev.some(
+          (user) => String(user.id) === String(updated.id)
+        );
+
+        return exists
+          ? prev.map((user) =>
+              String(user.id) === String(updated.id) ? updated : user
+            )
+          : [updated, ...prev];
+      });
+
+      setReviews((prev) =>
+        prev.map((review) =>
+          String(review.user_id) === String(updated.id)
+            ? {
+                ...review,
+                username: updated.username,
+                display_name: updated.display_name,
+                avatar_url: updated.avatar_url || "",
+              }
+            : review
+        )
+      );
+
+      setCurrentUser(updated.display_name);
+      setCurrentUserId(String(updated.id));
+
+      localStorage.setItem("ngipen_user", updated.display_name);
+      localStorage.setItem("ngipen_username", updated.username);
+      localStorage.setItem("ngipen_user_id", String(updated.id));
+
+      setUserAvatarFile(null);
+      setShowUserProfile(false);
+      setToast("Profil berhasil diperbarui.");
+
+      setTimeout(() => setToast(""), 2000);
+    } catch (error: any) {
+      console.error("Update profile error:", error);
+      setToast("Terjadi kesalahan saat menyimpan profil.");
+    }
   };
 
   // Ganti password
