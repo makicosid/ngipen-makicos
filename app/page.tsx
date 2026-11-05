@@ -1216,13 +1216,21 @@ const savedUserId =
     : null;
 
         if (savedUserId) {
-          const { data: saves } = await supabase
-            .from("event_saves")
-            .select("*")
-            .eq("user_id", savedUserId);
+          const savesResponse = await fetch("/api/event-saves", {
+            method: "GET",
+            credentials: "include",
+            cache: "no-store",
+          });
 
-          if (saves) {
-            setSavedIds(saves.map((save: any) => save.event_id));
+          const savesResult = await savesResponse.json();
+
+          if (savesResponse.ok && savesResult.success) {
+            setSavedIds(savesResult.savedIds || []);
+          } else {
+            console.error(
+              "Gagal memuat event tersimpan:",
+              savesResult.error
+            );
           }
 
           const { data: userReviews } = await supabase
@@ -1435,12 +1443,22 @@ const handlePosterUpload = (
       setCurrentUser(user.display_name || user.username);
       setCurrentUserId(user.id);
 
-      const { data: saves } = await supabase
-        .from("event_saves")
-        .select("*")
-        .eq("user_id", user.id);
+      const savesResponse = await fetch("/api/event-saves", {
+        method: "GET",
+        credentials: "include",
+        cache: "no-store",
+      });
 
-      if (saves) setSavedIds(saves.map((save: any) => save.event_id));
+      const savesResult = await savesResponse.json();
+
+      if (savesResponse.ok && savesResult.success) {
+        setSavedIds(savesResult.savedIds || []);
+      } else {
+        console.error(
+          "Gagal memuat event tersimpan setelah login:",
+          savesResult.error
+        );
+      }
 
       setShowLoginUser(false);
       setToast(`Halo, ${user.display_name || user.username}!`);
@@ -1836,47 +1854,68 @@ const logout = async () => {
 
     const isSaved = savedIds.includes(eventId);
 
-    if (isSaved) {
-      const { error } = await supabase
-        .from("event_saves")
-        .delete()
-        .eq("user_id", currentUserId)
-        .eq("event_id", eventId);
-
-      if (error) {
-        setToast("Gagal menghapus event tersimpan.");
-        return;
-      }
-
-      setSavedIds((prev) => prev.filter((id) => id !== eventId));
-
-      setEvents((prev) =>
-        prev.map((event) =>
-          event.id === eventId
-            ? { ...event, saves_count: Math.max(0, event.saves_count - 1) }
-            : event
-        )
-      );
-    } else {
-      const { error } = await supabase.from("event_saves").insert({
-        user_id: currentUserId,
-        event_id: eventId,
+    try {
+      const response = await fetch("/api/event-saves", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          action: isSaved ? "unsave" : "save",
+          eventId,
+        }),
       });
 
-      if (error) {
-        setToast("Gagal menyimpan event.");
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        setToast(
+          result.error ||
+            (isSaved
+              ? "Gagal menghapus event tersimpan."
+              : "Gagal menyimpan event.")
+        );
         return;
       }
 
-      setSavedIds((prev) => [...prev, eventId]);
+      if (isSaved) {
+        setSavedIds((prev) =>
+          prev.filter((id) => id !== eventId)
+        );
 
-      setEvents((prev) =>
-        prev.map((event) =>
-          event.id === eventId
-            ? { ...event, saves_count: event.saves_count + 1 }
-            : event
-        )
-      );
+        setEvents((prev) =>
+          prev.map((event) =>
+            event.id === eventId
+              ? {
+                  ...event,
+                  saves_count: Math.max(
+                    0,
+                    event.saves_count - 1
+                  ),
+                }
+              : event
+          )
+        );
+      } else {
+        setSavedIds((prev) =>
+          prev.includes(eventId) ? prev : [...prev, eventId]
+        );
+
+        setEvents((prev) =>
+          prev.map((event) =>
+            event.id === eventId
+              ? {
+                  ...event,
+                  saves_count: event.saves_count + 1,
+                }
+              : event
+          )
+        );
+      }
+    } catch (error) {
+      console.error("Toggle save event error:", error);
+      setToast("Gagal menghubungi server. Coba lagi.");
     }
   };
 
