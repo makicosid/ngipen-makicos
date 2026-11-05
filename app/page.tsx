@@ -6455,21 +6455,50 @@ accept="image/jpeg,image/png,image/webp"
         )}
 
         {/* NOTIFIKASI / TOAST */}
+        <style jsx global>{`
+          @keyframes posterMotionBlur {
+            0% {
+              filter: blur(10px);
+              opacity: 0.55;
+              transform: translateY(12px) scale(0.985);
+            }
+            65% {
+              filter: blur(1.5px);
+              opacity: 0.95;
+              transform: translateY(-1px) scale(1.002);
+            }
+            100% {
+              filter: blur(0);
+              opacity: 1;
+              transform: translateY(0) scale(1);
+            }
+          }
+
+          @media (prefers-reduced-motion: reduce) {
+            .poster-preview-motion {
+              animation: none !important;
+              filter: none !important;
+              transform: none !important;
+              opacity: 1 !important;
+            }
+          }
+        `}</style>
         {activeEventPreview && (currentRole === "user" || currentRole === "guest") && (
           <div className={`pointer-events-none fixed inset-0 z-[120] flex items-center justify-center bg-black/35 p-4 ${eventPreviewClosing ? "animate-[previewFadeOut_0.14s_ease-in_forwards]" : "animate-[fadeIn_0.12s_ease-out]"}`}>
-            <div className={`w-full max-w-[360px] overflow-hidden rounded-2xl border border-white/20 bg-white shadow-2xl dark:bg-gray-900 sm:w-fit sm:max-w-[92vw] ${eventPreviewClosing ? "animate-[previewPopOut_0.14s_ease-in_forwards]" : "animate-[previewPopIn_0.16s_ease-out]"}`}>
-              <div className="relative flex max-h-[58vh] items-center justify-center bg-gray-100 dark:bg-gray-950 sm:max-h-[72vh] sm:w-fit sm:max-w-[92vw]">
+            <div className={`w-full max-w-[360px] overflow-hidden rounded-2xl border border-white/20 bg-white shadow-2xl dark:bg-gray-900 sm:w-fit sm:max-w-[min(92vw,680px)] ${eventPreviewClosing ? "animate-[previewPopOut_0.14s_ease-in_forwards]" : "animate-[previewPopIn_0.16s_ease-out]"}`}>
+              <div className="relative flex max-h-[58vh] items-center justify-center bg-gray-100 dark:bg-gray-950 sm:max-h-[72vh] sm:w-fit sm:max-w-[min(92vw,680px)]">
                 {activeEventPreview.poster_url ? (
                   <img
                     src={activeEventPreview.poster_url}
                     alt={`Preview poster ${activeEventPreview.title}`}
-                    className="max-h-[58vh] w-full object-contain sm:h-auto sm:max-h-[72vh] sm:w-auto sm:max-w-[92vw]"
+                    className="poster-preview-motion max-h-[58vh] w-full object-contain sm:h-auto sm:max-h-[72vh] sm:w-auto sm:max-w-[min(92vw,680px)]"
+                    style={{ animation: "posterMotionBlur 420ms cubic-bezier(0.16, 1, 0.3, 1) both" }}
                   />
                 ) : (
                   <div className="flex aspect-[3/4] w-full items-center justify-center text-sm text-gray-500 sm:w-[min(70vw,560px)]">Poster tidak tersedia</div>
                 )}
               </div>
-              <div className="space-y-2 p-4 sm:w-full">
+              <div className="w-full space-y-2 p-4 sm:w-fit sm:max-w-[min(92vw,680px)]">
                 <div className="flex flex-wrap items-center gap-2">
                   <h3 className="min-w-0 line-clamp-2 text-base font-black">{activeEventPreview.title}</h3>
                   <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide ${
