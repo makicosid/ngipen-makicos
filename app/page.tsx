@@ -1797,6 +1797,8 @@ const logout = async () => {
   };
 
   // Hapus event yang sudah selesai secara permanen setelah konfirmasi admin.
+  // Penghapusan dilakukan melalui API server agar sesi admin dan status Completed
+  // diverifikasi kembali di server, bukan menghapus langsung dari browser.
   const handleDeleteCompletedEvent = async (event: Event) => {
     if (getTimeStatus(event) !== "Completed") {
       setToast("Event belum selesai dan tidak dapat dihapus dari daftar ini.");
@@ -1809,22 +1811,37 @@ const logout = async () => {
     );
     if (!confirmed) return;
 
-    const { error } = await supabase
-      .from("events")
-      .delete()
-      .eq("id", event.id);
+    try {
+      const response = await fetch("/api/admin/events/delete-completed", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "same-origin",
+        body: JSON.stringify({ id: event.id }),
+      });
 
-    if (error) {
-      setToast(`Gagal menghapus event: ${error.message}`);
+      const result = await response.json().catch(() => null);
+
+      if (!response.ok || !result?.success) {
+        throw new Error(
+          result?.error || result?.message || "Gagal menghapus event. Silakan coba lagi."
+        );
+      }
+
+      setEvents((prev) => prev.filter((item) => item.id !== event.id));
+      setSavedIds((prev) => prev.filter((id) => id !== event.id));
+      if (selectedEvent?.id === event.id) setSelectedEvent(null);
+      setToast(result.message || "Event selesai berhasil dihapus.");
+      setTimeout(() => setToast(""), 2500);
+    } catch (error) {
+      setToast(
+        error instanceof Error
+          ? `Gagal menghapus event: ${error.message}`
+          : "Gagal menghapus event. Silakan coba lagi."
+      );
       setTimeout(() => setToast(""), 4000);
-      return;
     }
-
-    setEvents((prev) => prev.filter((item) => item.id !== event.id));
-    setSavedIds((prev) => prev.filter((id) => id !== event.id));
-    if (selectedEvent?.id === event.id) setSelectedEvent(null);
-    setToast("Event selesai berhasil dihapus.");
-    setTimeout(() => setToast(""), 2500);
   };
 
   // Simpan atau hapus event dari daftar tersimpan
