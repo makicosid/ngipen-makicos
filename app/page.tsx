@@ -1233,45 +1233,28 @@ const savedUserId =
             );
           }
 
-          const { data: userReviews } = await supabase
-            .from("event_reviews")
-            .select("*")
-            .eq("user_id", savedUserId);
-
-          if (userReviews) {
-            const ratings: Record<string, number> = {};
-
-            userReviews.forEach((review: any) => {
-              ratings[review.event_id] = review.rating;
-            });
-
-            setMyRatings(ratings);
-          }
         }
 
-        const { data: allReviews, error: reviewsError } = await supabase
-          .from("event_reviews")
-          .select("*")
-          .order("created_at", { ascending: false });
+        const reviewsResponse = await fetch("/api/event-reviews", {
+          method: "GET",
+          cache: "no-store",
+        });
+        const reviewsResult = await reviewsResponse.json();
 
-        if (reviewsError) {
-          console.error("Gagal mengambil komentar:", reviewsError.message);
-        }
-
-        if (allReviews) {
+        if (!reviewsResponse.ok || !reviewsResult.success) {
+          console.error("Gagal mengambil ulasan:", reviewsResult.error);
+        } else {
+          setMyRatings(reviewsResult.myRatings || {});
           const userMap = new Map(
             (usersData || []).map((user: any) => [String(user.id), user])
           );
-
           setReviews(
-            allReviews.map((review: any) => {
+            (reviewsResult.reviews || []).map((review: any) => {
               const user: any = userMap.get(String(review.user_id));
-
               return {
                 ...review,
                 username: user?.username || "user",
-                display_name:
-                  user?.display_name || user?.username || "User",
+                display_name: user?.display_name || user?.username || "User",
                 avatar_url: user?.avatar_url || "",
               };
             })
@@ -1919,64 +1902,42 @@ const logout = async () => {
     }
   };
 
-  // Penilaian event
+  // Penilaian event melalui API server
   const handleRate = async (eventId: string, rating: number) => {
     if (currentRole !== "user") {
       setShowLoginUser(true);
       return;
     }
 
-    const { data: existing } = await supabase
-      .from("event_reviews")
-      .select("*")
-      .eq("user_id", currentUserId)
-      .eq("event_id", eventId)
-      .maybeSingle();
-
-    if (existing) {
-      await supabase
-        .from("event_reviews")
-        .update({ rating })
-        .eq("id", existing.id);
-    } else {
-      await supabase.from("event_reviews").insert({
-        user_id: currentUserId,
-        event_id: eventId,
-        rating,
+    try {
+      const response = await fetch("/api/event-reviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ eventId, rating }),
       });
-    }
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || "Gagal menyimpan rating.");
+      }
 
-    setMyRatings((prev) => ({ ...prev, [eventId]: rating }));
-
-    const { data: allReviews } = await supabase
-      .from("event_reviews")
-      .select("*")
-      .eq("event_id", eventId);
-
-    if (allReviews?.length) {
-      const average =
-        allReviews.reduce((sum: number, review: any) => sum + review.rating, 0) /
-        allReviews.length;
-
-      await supabase
-        .from("events")
-        .update({
-          avg_rating: average,
-          rating_count: allReviews.length,
-        })
-        .eq("id", eventId);
-
-      setEvents((prev) =>
-        prev.map((event) =>
-          event.id === eventId
-            ? {
-                ...event,
-                avg_rating: average,
-                rating_count: allReviews.length,
-              }
-            : event
-        )
-      );
+      setMyRatings((prev) => ({ ...prev, [eventId]: rating }));
+      if (typeof result.avg_rating === "number" && typeof result.rating_count === "number") {
+        setEvents((prev) =>
+          prev.map((event) =>
+            String(event.id) === String(eventId)
+              ? { ...event, avg_rating: result.avg_rating, rating_count: result.rating_count }
+              : event
+          )
+        );
+        setSelectedEvent((prev) =>
+          prev && String(prev.id) === String(eventId)
+            ? { ...prev, avg_rating: result.avg_rating, rating_count: result.rating_count }
+            : prev
+        );
+      }
+    } catch (error: any) {
+      setToast(error.message || "Gagal menyimpan rating. Coba lagi.");
+      setTimeout(() => setToast(""), 3000);
     }
   };
 
@@ -1999,45 +1960,35 @@ const logout = async () => {
     }
 
     try {
-      const { data: existing, error: lookupError } = await supabase
-        .from("event_reviews")
-        .select("id,rating,comment")
-        .eq("user_id", String(currentUserId))
-        .eq("event_id", String(selectedEvent.id))
-        .maybeSingle();
-      if (lookupError) throw lookupError;
-
-      const payload: Record<string, any> = {
-        rating: myRatings[selectedEvent.id] || existing?.rating || 5,
-        comment: text || existing?.comment || "",
-      };
-      let saveError: any = null;
-      if (existing) {
-        const result = await supabase.from("event_reviews").update(payload).eq("id", String(existing.id));
-        saveError = result.error;
-      } else {
-        const result = await supabase.from("event_reviews").insert({
-          user_id: String(currentUserId),
-          event_id: String(selectedEvent.id),
-          ...payload,
-        });
-        saveError = result.error;
+      const response = await fetch("/api/event-reviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          eventId: String(selectedEvent.id),
+          rating: myRatings[selectedEvent.id] || undefined,
+          comment: text,
+        }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || "Gagal menyimpan ulasan.");
       }
-      if (saveError) throw saveError;
 
       if (docFile && getTimeStatus(selectedEvent) === "Completed") {
         await handleUploadDoc();
       }
 
-      const { data: allReviews, error: refreshError } = await supabase
-        .from("event_reviews")
-        .select("*")
-        .eq("event_id", String(selectedEvent.id))
-        .order("created_at", { ascending: false });
-      if (refreshError) throw refreshError;
+      const refreshResponse = await fetch(
+        `/api/event-reviews?eventId=${encodeURIComponent(String(selectedEvent.id))}`,
+        { method: "GET", cache: "no-store" }
+      );
+      const refreshResult = await refreshResponse.json();
+      if (!refreshResponse.ok || !refreshResult.success) {
+        throw new Error(refreshResult.error || "Ulasan tersimpan, tetapi daftar gagal diperbarui.");
+      }
 
       const userMap = new Map(registeredUsers.map((user) => [String(user.id), user]));
-      const mapped = (allReviews || []).map((review: any) => {
+      const mapped = (refreshResult.reviews || []).map((review: any) => {
         const user = userMap.get(String(review.user_id));
         return {
           ...review,
@@ -2051,11 +2002,21 @@ const logout = async () => {
         ...prev.filter((review) => String(review.event_id) !== String(selectedEvent.id)),
       ]);
 
-      if (allReviews?.length) {
-        const average = allReviews.reduce((sum: number, review: any) => sum + Number(review.rating || 0), 0) / allReviews.length;
-        await supabase.from("events").update({ avg_rating: average, rating_count: allReviews.length }).eq("id", String(selectedEvent.id));
-        setEvents((prev) => prev.map((event) => String(event.id) === String(selectedEvent.id) ? { ...event, avg_rating: average, rating_count: allReviews.length } : event));
-        setSelectedEvent((prev) => prev ? { ...prev, avg_rating: average, rating_count: allReviews.length } : null);
+      if (typeof refreshResult.myRatings?.[String(selectedEvent.id)] === "number") {
+        setMyRatings((prev) => ({
+          ...prev,
+          [String(selectedEvent.id)]: refreshResult.myRatings[String(selectedEvent.id)],
+        }));
+      }
+      if (typeof result.avg_rating === "number" && typeof result.rating_count === "number") {
+        setEvents((prev) => prev.map((event) => String(event.id) === String(selectedEvent.id)
+          ? { ...event, avg_rating: result.avg_rating, rating_count: result.rating_count }
+          : event));
+        setSelectedEvent((prev) => prev ? {
+          ...prev,
+          avg_rating: result.avg_rating,
+          rating_count: result.rating_count,
+        } : null);
       }
       setCommentText("");
       setToast("Komentar dan rating berhasil disimpan.");
@@ -2913,37 +2874,42 @@ const openEvent = async (event: Event) => {
     }
   }
 
-  // Ambil ulasan event seperti sebelumnya.
-  const { data } = await supabase
-    .from("event_reviews")
-    .select("*")
-    .eq("event_id", event.id)
-    .order("created_at", { ascending: false });
+  // Ambil ulasan event melalui API server.
+  try {
+    const response = await fetch(
+      `/api/event-reviews?eventId=${encodeURIComponent(String(event.id))}`,
+      { method: "GET", cache: "no-store" }
+    );
+    const result = await response.json();
+    if (!response.ok || !result.success) {
+      throw new Error(result.error || "Gagal mengambil ulasan event.");
+    }
 
-  if (data) {
     const userMap = new Map(
       registeredUsers.map((user) => [String(user.id), user])
     );
-
-    const mapped = data.map((review: any) => {
+    const mapped = (result.reviews || []).map((review: any) => {
       const user = userMap.get(String(review.user_id));
-
       return {
         ...review,
         username: user?.username || review.username || "user",
-        display_name:
-          user?.display_name ||
-          user?.username ||
-          review.display_name ||
-          "Pengguna",
+        display_name: user?.display_name || user?.username || review.display_name || "Pengguna",
         avatar_url: user?.avatar_url || review.avatar_url || "",
       };
     });
 
     setReviews((prev) => [
       ...mapped,
-      ...prev.filter((review) => review.event_id !== event.id),
+      ...prev.filter((review) => String(review.event_id) !== String(event.id)),
     ]);
+    if (typeof result.myRatings?.[String(event.id)] === "number") {
+      setMyRatings((prev) => ({
+        ...prev,
+        [String(event.id)]: result.myRatings[String(event.id)],
+      }));
+    }
+  } catch (error) {
+    console.error("Gagal memuat ulasan event:", error);
   }
 };
   // Buka detail event otomatis ketika halaman diakses melalui link ?event=<id>.
