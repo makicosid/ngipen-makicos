@@ -6524,7 +6524,7 @@ accept="image/jpeg,image/png,image/webp"
               <div className="sm:grid sm:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] sm:items-stretch">
                 {/* KOLOM KIRI: POSTER DAN IDENTITAS EVENT */}
                 <div className="min-w-0 sm:flex sm:min-h-0 sm:flex-col">
-                  <div className="relative flex max-h-[58vh] items-center justify-center overflow-hidden bg-white dark:bg-gray-950 sm:max-h-[calc(90vh-124px)] sm:flex-1">
+                  <div className="relative flex max-h-[58vh] items-center justify-center overflow-hidden bg-transparent sm:max-h-[calc(90vh-124px)] sm:flex-1">
                     {activeEventPreview.poster_url ? (
                       <img
                         src={activeEventPreview.poster_url}
@@ -6537,9 +6537,9 @@ accept="image/jpeg,image/png,image/webp"
                     )}
                   </div>
 
-                  <div className="w-full space-y-2 p-4 sm:shrink-0 sm:border-t sm:border-gray-100 sm:dark:border-gray-800">
+                  <div className="w-full space-y-2 bg-transparent p-4 sm:shrink-0 sm:border-t sm:border-gray-100 sm:dark:border-gray-800">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="min-w-0 line-clamp-2 text-base font-black">{activeEventPreview.title}</h3>
+                      <h3 className="min-w-0 line-clamp-2 rounded-lg border border-red-100/60 bg-red-50/35 px-3 py-2 text-base font-black text-red-900 dark:border-red-900/30 dark:bg-red-950/20 dark:text-red-200">{activeEventPreview.title}</h3>
                       <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide ${
                         activeEventPreview.ticket_type === "Gratis"
                           ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300"
@@ -6548,7 +6548,7 @@ accept="image/jpeg,image/png,image/webp"
                         {activeEventPreview.ticket_type === "Gratis" ? "GRATIS" : "BERBAYAR"}
                       </span>
                     </div>
-                    <p className="rounded-lg bg-red-50 px-3 py-2 text-sm font-bold leading-relaxed text-red-800 dark:bg-red-950/50 dark:text-red-200">📍 {activeEventPreview.venue_address || activeEventPreview.city}{activeEventPreview.province ? `, ${activeEventPreview.province}` : ""}</p>
+                    <p className="rounded-lg border border-red-100/60 bg-red-50/35 px-3 py-2 text-sm font-bold leading-relaxed text-red-800 dark:border-red-900/30 dark:bg-red-950/20 dark:text-red-200">📍 {activeEventPreview.venue_address || activeEventPreview.city}{activeEventPreview.province ? `, ${activeEventPreview.province}` : ""}</p>
                     <p className="text-[10px] font-semibold text-red-600 sm:hidden">Lepaskan jari atau tombol mouse untuk menutup preview</p>
                   </div>
                 </div>
