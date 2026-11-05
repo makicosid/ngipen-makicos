@@ -1176,8 +1176,8 @@ const handleRentalImage = (file: File | null) => {
   setLoading(true);
 
   try {
-    const { data: usersData, error: usersError } = await supabase
-      .from("users")
+     const { data: usersData, error: usersError } = await supabase
+      .from("public_users")
       .select("id,username,display_name,bio,avatar_url,created_at")
       .order("created_at", { ascending: false });
 
