@@ -6520,15 +6520,16 @@ accept="image/jpeg,image/png,image/webp"
               transform: "translateZ(0)",
             }}
           >
-            <div className={`w-full max-w-[360px] overflow-hidden rounded-2xl border border-white/20 bg-white shadow-2xl dark:bg-gray-900 sm:w-[min(92vw,920px)] sm:max-w-[920px] ${eventPreviewClosing ? "animate-[previewPopOut_0.14s_ease-in_forwards]" : "animate-[previewPopIn_0.16s_ease-out]"}`}>
-              <div className="sm:grid sm:grid-cols-2 sm:items-stretch">
-                <div className="min-w-0">
-                  <div className="relative flex max-h-[58vh] items-center justify-center overflow-hidden bg-gray-100 dark:bg-gray-950 sm:h-[min(72vh,760px)] sm:max-h-[72vh] sm:w-full">
+            <div className={`w-full max-w-[360px] overflow-hidden rounded-2xl border border-white/20 bg-white shadow-2xl dark:bg-gray-900 sm:w-[min(92vw,1100px)] sm:max-w-[1100px] sm:max-h-[90vh] ${eventPreviewClosing ? "animate-[previewPopOut_0.14s_ease-in_forwards]" : "animate-[previewPopIn_0.16s_ease-out]"}`}>
+              <div className="sm:grid sm:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] sm:items-stretch">
+                {/* KOLOM KIRI: POSTER DAN IDENTITAS EVENT */}
+                <div className="min-w-0 sm:flex sm:min-h-0 sm:flex-col">
+                  <div className="relative flex max-h-[58vh] items-center justify-center overflow-hidden bg-white dark:bg-gray-950 sm:max-h-[calc(90vh-124px)] sm:flex-1">
                     {activeEventPreview.poster_url ? (
                       <img
                         src={activeEventPreview.poster_url}
                         alt={`Preview poster ${activeEventPreview.title}`}
-                        className="poster-preview-motion max-h-[58vh] w-full object-contain sm:h-full sm:max-h-[72vh] sm:w-full"
+                        className="poster-preview-motion block h-auto max-h-[58vh] w-full object-contain sm:max-h-[calc(90vh-124px)] sm:w-full"
                         style={{ animation: "posterMotionBlur 420ms cubic-bezier(0.16, 1, 0.3, 1) both" }}
                       />
                     ) : (
@@ -6536,7 +6537,7 @@ accept="image/jpeg,image/png,image/webp"
                     )}
                   </div>
 
-                  <div className="w-full space-y-2 p-4">
+                  <div className="w-full space-y-2 p-4 sm:shrink-0 sm:border-t sm:border-gray-100 sm:dark:border-gray-800">
                     <div className="flex flex-wrap items-center gap-2">
                       <h3 className="min-w-0 line-clamp-2 text-base font-black">{activeEventPreview.title}</h3>
                       <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide ${
@@ -6552,14 +6553,61 @@ accept="image/jpeg,image/png,image/webp"
                   </div>
                 </div>
 
-                <div className="hidden min-w-0 border-l border-gray-100 p-6 dark:border-gray-800 sm:flex sm:flex-col">
-                  <h4 className="mb-3 text-sm font-extrabold uppercase tracking-wide text-gray-900 dark:text-gray-100">Deskripsi Event</h4>
-                  <p className="line-clamp-6 whitespace-pre-line text-sm leading-7 text-gray-600 dark:text-gray-300">
-                    {activeEventPreview.description || "Belum ada deskripsi event."}
-                  </p>
-                  <p className="mt-auto pt-6 text-[10px] font-semibold text-red-600">Lepaskan tombol mouse untuk menutup preview</p>
+                {/* KOLOM KANAN: DESKRIPSI DAN INFORMASI EVENT */}
+                <div className="hidden min-w-0 border-l border-gray-100 p-6 dark:border-gray-800 sm:flex sm:flex-col sm:gap-5">
+                  <section>
+                    <h4 className="mb-3 text-sm font-extrabold uppercase tracking-wide text-gray-900 dark:text-gray-100">Deskripsi Event</h4>
+                    <p className="line-clamp-6 whitespace-pre-line text-sm leading-7 text-gray-600 dark:text-gray-300">
+                      {activeEventPreview.description || "Belum ada deskripsi event."}
+                    </p>
+                  </section>
+
+                  <div className="h-px w-full bg-gray-100 dark:bg-gray-800" />
+
+                  <section className="space-y-3">
+                    <h4 className="text-sm font-extrabold uppercase tracking-wide text-gray-900 dark:text-gray-100">Informasi Event</h4>
+
+                    <div className="flex items-start gap-3 rounded-xl bg-gray-50 p-3 dark:bg-gray-800/70">
+                      <span className="mt-0.5 text-lg" aria-hidden="true">📅</span>
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-gray-900 dark:text-gray-100">Tanggal & Waktu</p>
+                        <p className="mt-1 text-sm leading-relaxed text-gray-600 dark:text-gray-300">
+                          {formatEventDate(activeEventPreview.start_date, activeEventPreview.end_date)}
+                          {activeEventPreview.start_time ? ` · ${activeEventPreview.start_time.slice(0, 5)}` : ""}
+                          {activeEventPreview.end_time ? `–${activeEventPreview.end_time.slice(0, 5)} WIB` : activeEventPreview.start_time ? " WIB" : ""}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-3 rounded-xl bg-gray-50 p-3 dark:bg-gray-800/70">
+                      <span className="mt-0.5 text-lg" aria-hidden="true">📍</span>
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-gray-900 dark:text-gray-100">Lokasi</p>
+                        <p className="mt-1 text-sm leading-relaxed text-gray-600 dark:text-gray-300">
+                          {[activeEventPreview.venue_address, activeEventPreview.city, activeEventPreview.province].filter(Boolean).join(", ") || "Informasi lokasi belum tersedia."}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="rounded-xl bg-gray-50 p-3 dark:bg-gray-800/70">
+                      <div className="flex items-start gap-3">
+                        <span className="mt-0.5 text-lg" aria-hidden="true">🏷️</span>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-bold text-gray-900 dark:text-gray-100">Kategori</p>
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            {activeEventPreview.categories?.length ? activeEventPreview.categories.map((category) => (
+                              <span key={category} className="rounded-full bg-red-100 px-2.5 py-1 text-[11px] font-bold text-red-700 dark:bg-red-950/60 dark:text-red-300">{category}</span>
+                            )) : <span className="text-sm text-gray-500 dark:text-gray-400">Kategori belum tersedia.</span>}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </section>
+
+                  <p className="mt-auto pt-2 text-[10px] font-semibold text-red-600">Lepaskan tombol mouse untuk menutup preview</p>
                 </div>
 
+                {/* TAMPILAN HP TETAP DIPERTAHANKAN */}
                 <div className="space-y-2 px-4 pb-4 sm:hidden">
                   <p className="line-clamp-3 text-xs leading-relaxed text-gray-600 dark:text-gray-300">{activeEventPreview.description || "Belum ada deskripsi event."}</p>
                 </div>
