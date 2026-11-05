@@ -1188,19 +1188,25 @@ const handleRentalImage = (file: File | null) => {
       setRegisteredUsers(usersData as RegUser[]);
       setUsersLoadError("");
     }
-        const { data: eventsData, error: eventsError } = await supabase
-          .from("events")
-          .select("*")
-          .order("created_at", { ascending: false });
+        const eventsResponse = await fetch("/api/events", {
+          method: "GET",
+          credentials: "include",
+          cache: "no-store",
+        });
 
-        if (eventsError) {
-          console.error("Gagal memuat event:", eventsError.message);
-        } else if (eventsData) {
-          setEvents(eventsData as Event[]);
-          setSponsoredCount(
-            eventsData.filter((event: any) => event.is_sponsored).length
+        const eventsResult = await eventsResponse.json();
+
+        if (!eventsResponse.ok || !Array.isArray(eventsResult.events)) {
+          throw new Error(
+            eventsResult.error || "Gagal memuat data event."
           );
         }
+
+        const eventsData = eventsResult.events as Event[];
+        setEvents(eventsData);
+        setSponsoredCount(
+          eventsData.filter((event: any) => event.is_sponsored).length
+        );
 
         const sessionResponse = await fetch("/api/auth", {
   method: "GET",
