@@ -631,6 +631,46 @@ const sponsorCarouselPausedRef = useRef(false);
   const [currentUserId, setCurrentUserId] = useState("");
 
   const [toast, setToast] = useState("");
+
+  // Buka Kalender setelah halaman selesai scroll ke posisi paling atas.
+  const openCalendarFromNavigation = async () => {
+    setMobileOpen(false);
+
+    if (window.scrollY > 8) {
+      await new Promise<void>((resolve) => {
+        const startedAt = Date.now();
+        let stableTopFrames = 0;
+
+        const checkScrollPosition = () => {
+          if (window.scrollY <= 2) {
+            stableTopFrames += 1;
+          } else {
+            stableTopFrames = 0;
+          }
+
+          if (stableTopFrames >= 2 || Date.now() - startedAt >= 1800) {
+            resolve();
+            return;
+          }
+
+          window.requestAnimationFrame(checkScrollPosition);
+        };
+
+        window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+        window.requestAnimationFrame(checkScrollPosition);
+      });
+    }
+
+    setSelectedEvent(null);
+    setShowCostumeDirectory(false);
+    setShowCalendar(true);
+    setCalendarMonth(new Date());
+    setSelectedCalendarDate("");
+    setActiveNav("calendar");
+
+    setToast("✓ Kalender berhasil dibuka!");
+    window.setTimeout(() => setToast(""), 2500);
+  };
   const [logoClicks, setLogoClicks] = useState(0);
 
   const [registeredUsers, setRegisteredUsers] = useState<RegUser[]>([]);
@@ -3015,14 +3055,7 @@ const shareEvent = async (event: Event) => {
 )}
 {currentRole === "user" && (
   <button
-    onClick={() => {
-      setSelectedEvent(null);
-      setShowCostumeDirectory(false);
-      setShowCalendar(true);
-      setCalendarMonth(new Date());
-      setSelectedCalendarDate("");
-      setActiveNav("calendar");
-    }}
+    onClick={openCalendarFromNavigation}
     aria-current={activeNavKey === "calendar" ? "page" : undefined}
     className={`relative border-b-2 pb-2 text-sm font-semibold transition-colors duration-[250ms] ${activeNavKey === "calendar" ? "border-amber-400 text-amber-700 dark:text-amber-300" : "border-transparent hover:border-amber-300 hover:text-amber-600"}`}
   >
@@ -3216,15 +3249,7 @@ const shareEvent = async (event: Event) => {
                 
 {currentRole === "user" && (
   <button
-    onClick={() => {
-  setMobileOpen(false);
-  setSelectedEvent(null);
-  setShowCostumeDirectory(false);
-  setShowCalendar(true);
-  setCalendarMonth(new Date());
-  setSelectedCalendarDate("");
-  setActiveNav("calendar");
-}}
+    onClick={openCalendarFromNavigation}
     aria-current={activeNavKey === "calendar" ? "page" : undefined}
     className={`rounded-xl border-b-2 px-3 py-3 text-left font-semibold transition-colors duration-[250ms] ${activeNavKey === "calendar" ? "border-amber-400 text-amber-700 dark:text-amber-300" : "border-transparent hover:border-amber-300 hover:bg-gray-100 dark:hover:bg-gray-900"}`}
   >
@@ -3721,12 +3746,7 @@ const shareEvent = async (event: Event) => {
                     + Upload Poster Event
                   </button>
                   <button
-  onClick={() => {
-    setSelectedEvent(null);
-    setShowCalendar(true);
-    setCalendarMonth(new Date());
-    setSelectedCalendarDate("");
-  }}
+  onClick={openCalendarFromNavigation}
   className="shrink-0 rounded-xl border border-red-600 px-5 py-3 text-sm font-bold text-red-600 hover:bg-red-50 dark:hover:bg-gray-800"
 >
   📅 Buka Kalender Event
