@@ -6511,28 +6511,18 @@ accept="image/jpeg,image/png,image/webp"
           }
         `}</style>
         {activeEventPreview && (currentRole === "user" || currentRole === "guest") && (
-          <div className={`pointer-events-none fixed inset-0 z-[120] flex items-center justify-center bg-black/35 p-4 ${eventPreviewClosing ? "animate-[previewFadeOut_0.14s_ease-in_forwards]" : "animate-[fadeIn_0.12s_ease-out]"}`}>
+          <div className={`pointer-events-none fixed inset-0 z-[120] flex items-center justify-center bg-black/30 p-4 backdrop-blur-md ${eventPreviewClosing ? "animate-[previewFadeOut_0.14s_ease-in_forwards]" : "animate-[fadeIn_0.12s_ease-out]"}`}>
             <div className={`w-full max-w-[360px] overflow-hidden rounded-2xl border border-white/20 bg-white shadow-2xl dark:bg-gray-900 sm:w-[min(92vw,920px)] sm:max-w-[920px] ${eventPreviewClosing ? "animate-[previewPopOut_0.14s_ease-in_forwards]" : "animate-[previewPopIn_0.16s_ease-out]"}`}>
               <div className="sm:grid sm:grid-cols-2 sm:items-stretch">
                 <div className="min-w-0">
                   <div className="relative flex max-h-[58vh] items-center justify-center overflow-hidden bg-gray-100 dark:bg-gray-950 sm:h-[min(72vh,760px)] sm:max-h-[72vh] sm:w-full">
                     {activeEventPreview.poster_url ? (
-                      <>
-                        <img
-                          src={activeEventPreview.poster_url}
-                          alt=""
-                          aria-hidden="true"
-                          className="poster-preview-backdrop pointer-events-none absolute inset-0 h-full w-full object-cover"
-                          style={{ animation: "posterBackdropMotion 620ms cubic-bezier(0.16, 1, 0.3, 1) both" }}
-                        />
-                        <div className="pointer-events-none absolute inset-0 bg-black/10" />
-                        <img
-                          src={activeEventPreview.poster_url}
-                          alt={`Preview poster ${activeEventPreview.title}`}
-                          className="poster-preview-motion relative z-[1] max-h-[58vh] w-full object-contain sm:h-full sm:max-h-[72vh] sm:w-full"
-                          style={{ animation: "posterMotionBlur 420ms cubic-bezier(0.16, 1, 0.3, 1) both" }}
-                        />
-                      </>
+                      <img
+                        src={activeEventPreview.poster_url}
+                        alt={`Preview poster ${activeEventPreview.title}`}
+                        className="poster-preview-motion max-h-[58vh] w-full object-contain sm:h-full sm:max-h-[72vh] sm:w-full"
+                        style={{ animation: "posterMotionBlur 420ms cubic-bezier(0.16, 1, 0.3, 1) both" }}
+                      />
                     ) : (
                       <div className="flex aspect-[3/4] w-full items-center justify-center text-sm text-gray-500">Poster tidak tersedia</div>
                     )}
@@ -6556,7 +6546,7 @@ accept="image/jpeg,image/png,image/webp"
 
                 <div className="hidden min-w-0 border-l border-gray-100 p-6 dark:border-gray-800 sm:flex sm:flex-col">
                   <h4 className="mb-3 text-sm font-extrabold uppercase tracking-wide text-gray-900 dark:text-gray-100">Deskripsi Event</h4>
-                  <p className="max-h-[min(62vh,620px)] overflow-y-auto whitespace-pre-line text-sm leading-7 text-gray-600 dark:text-gray-300">
+                  <p className="line-clamp-6 whitespace-pre-line text-sm leading-7 text-gray-600 dark:text-gray-300">
                     {activeEventPreview.description || "Belum ada deskripsi event."}
                   </p>
                   <p className="mt-auto pt-6 text-[10px] font-semibold text-red-600">Lepaskan tombol mouse untuk menutup preview</p>
