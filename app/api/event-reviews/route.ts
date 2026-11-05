@@ -157,9 +157,9 @@ export async function POST(request: NextRequest) {
 
       comment = body.comment.trim();
 
-      if (comment.length > 1500) {
-        return json({ error: "Komentar maksimal 1500 karakter." }, 400);
-      }
+     if (comment!.length > 1500) {
+  return json({ error: "Komentar maksimal 1500 karakter." }, 400);
+}
     }
 
     // Pastikan event memang tersedia.
