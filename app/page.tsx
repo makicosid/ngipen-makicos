@@ -467,6 +467,24 @@ const GUIDE_BOOK_PAGES = [
 ];
 
 
+const GUIDE_MOBILE_ILLUSTRATIONS = [
+  "/ngipen-guidebook-chibi/guide-01.webp",
+  "/ngipen-guidebook-chibi/guide-02.webp",
+  "/ngipen-guidebook-chibi/guide-03.webp",
+  "/ngipen-guidebook-chibi/guide-04.webp",
+  "/ngipen-guidebook-chibi/guide-05.webp",
+  "/ngipen-guidebook-chibi/guide-06.webp",
+  "/ngipen-guidebook-chibi/guide-07.webp",
+  "/ngipen-guidebook-chibi/guide-08.webp",
+  "/ngipen-guidebook-chibi/guide-09.webp",
+  "/ngipen-guidebook-chibi/guide-10.webp",
+  "/ngipen-guidebook-chibi/guide-11.webp",
+  "/ngipen-guidebook-chibi/guide-12.webp",
+  "/ngipen-guidebook-chibi/guide-13.webp",
+  "/ngipen-guidebook-chibi/guide-14.webp",
+  "/ngipen-guidebook-chibi/guide-15.webp",
+];
+
 const GUIDE_SCREENSHOTS: Record<number, { src: string; caption: string }> = {
   2: { src: "/guidebook/beranda.webp", caption: "Contoh tampilan beranda NGIPEN." },
   3: { src: "/guidebook/jelajahi-event.webp", caption: "Contoh daftar event, kolom pencarian, filter, dan tombol Reset Filter." },
@@ -4090,7 +4108,13 @@ const shareEvent = async (event: Event) => {
   </span>
 )}
 
-                          <span className="absolute bottom-2 left-2 rounded-full bg-black/75 px-2 py-1 text-[10px] font-bold text-white">
+                          <span
+                            className={`absolute bottom-2 left-2 rounded-full px-2 py-1 text-[10px] font-bold text-white shadow-sm md:px-3 md:py-1.5 md:text-xs ${
+                              event.ticket_type === "Gratis"
+                                ? "bg-green-600"
+                                : "bg-red-600"
+                            }`}
+                          >
                             {event.ticket_type}
                           </span>
                         </div>
@@ -4441,7 +4465,13 @@ const shareEvent = async (event: Event) => {
                     </span>
                   ))}
 
-                  <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-bold dark:bg-gray-800">
+                  <span
+                    className={`rounded-full px-3 py-1 text-xs font-bold text-white ${
+                      selectedEvent.ticket_type === "Gratis"
+                        ? "bg-green-600"
+                        : "bg-red-600"
+                    }`}
+                  >
                     {selectedEvent.ticket_type}
                   </span>
                 </div>
@@ -6458,8 +6488,8 @@ accept="image/jpeg,image/png,image/webp"
                     <div className="absolute inset-3 rounded-lg border border-amber-300/30" />
                   </div>
 
-                  <div className="relative grid h-full min-h-0 grid-cols-[1fr_0.9fr]">
-                    <section className="guide-book-content relative flex min-h-0 min-w-0 flex-col overflow-hidden border-r border-[#e7d6b5] px-2 pb-3 pt-24 sm:px-4 sm:pb-4 sm:pt-24 md:px-8">
+                  <div className="relative grid h-full min-h-0 grid-cols-1 md:grid-cols-[1fr_0.9fr]">
+                    <section className="guide-book-content relative flex min-h-0 min-w-0 flex-col overflow-hidden border-r-0 border-[#e7d6b5] px-2 pb-3 pt-24 sm:px-4 sm:pb-4 sm:pt-24 md:border-r md:px-8">
                       <div className="absolute left-3 top-3 flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border-2 border-amber-500 bg-white p-1 shadow-md sm:left-5 sm:top-5 sm:h-12 sm:w-12">
                         <img src="/ngipen-logo.png" alt="Pin logo NGIPEN" className="h-full w-full object-contain" />
                       </div>
@@ -6486,6 +6516,15 @@ accept="image/jpeg,image/png,image/webp"
                         >
                           ›
                         </button>
+                      </div>
+
+                      <div className="mx-auto mb-2 flex h-[22%] min-h-[104px] max-h-[180px] w-full shrink-0 items-center justify-center overflow-hidden rounded-xl border border-amber-300/80 bg-gradient-to-br from-[#fff7e7] to-[#f4dfb8] p-1.5 shadow-sm md:hidden">
+                        <img
+                          src={GUIDE_MOBILE_ILLUSTRATIONS[guidePage]}
+                          alt={`Ilustrasi maskot panduan halaman ${guidePage + 1}`}
+                          className="h-full w-full object-contain"
+                          loading="lazy"
+                        />
                       </div>
 
                       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto pr-1">
@@ -6537,7 +6576,7 @@ accept="image/jpeg,image/png,image/webp"
                       </div>
                     </section>
 
-                    <section className="relative relative flex min-h-0 flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-[#fff7e7] to-[#f4dfb8] p-2 sm:p-4 md:p-6">
+                    <section className="relative relative hidden min-h-0 flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-[#fff7e7] to-[#f4dfb8] p-2 sm:p-4 md:flex md:p-6">
                       <div className="absolute inset-4 rounded-xl border border-amber-300/70" />
                       {GUIDE_SCREENSHOTS[guidePage] ? (
                         <figure className="relative z-10 flex h-full w-full max-w-full flex-col items-center justify-center gap-2 rounded-xl border border-amber-300 bg-white/90 p-2 shadow-lg sm:p-3">
