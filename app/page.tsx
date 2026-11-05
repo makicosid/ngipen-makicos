@@ -6457,16 +6457,29 @@ accept="image/jpeg,image/png,image/webp"
         {/* NOTIFIKASI / TOAST */}
         {activeEventPreview && (currentRole === "user" || currentRole === "guest") && (
           <div className={`pointer-events-none fixed inset-0 z-[120] flex items-center justify-center bg-black/35 p-4 ${eventPreviewClosing ? "animate-[previewFadeOut_0.14s_ease-in_forwards]" : "animate-[fadeIn_0.12s_ease-out]"}`}>
-            <div className={`w-full max-w-[360px] overflow-hidden rounded-2xl border border-white/20 bg-white shadow-2xl dark:bg-gray-900 ${eventPreviewClosing ? "animate-[previewPopOut_0.14s_ease-in_forwards]" : "animate-[previewPopIn_0.16s_ease-out]"}`}>
-              <div className="relative flex max-h-[58vh] items-center justify-center bg-gray-100 dark:bg-gray-950">
+            <div className={`w-full max-w-[360px] overflow-hidden rounded-2xl border border-white/20 bg-white shadow-2xl dark:bg-gray-900 sm:w-fit sm:max-w-[92vw] ${eventPreviewClosing ? "animate-[previewPopOut_0.14s_ease-in_forwards]" : "animate-[previewPopIn_0.16s_ease-out]"}`}>
+              <div className="relative flex max-h-[58vh] items-center justify-center bg-gray-100 dark:bg-gray-950 sm:max-h-[72vh] sm:w-fit sm:max-w-[92vw]">
                 {activeEventPreview.poster_url ? (
-                  <img src={activeEventPreview.poster_url} alt={`Preview poster ${activeEventPreview.title}`} className="max-h-[58vh] w-full object-contain" />
+                  <img
+                    src={activeEventPreview.poster_url}
+                    alt={`Preview poster ${activeEventPreview.title}`}
+                    className="max-h-[58vh] w-full object-contain sm:h-auto sm:max-h-[72vh] sm:w-auto sm:max-w-[92vw]"
+                  />
                 ) : (
-                  <div className="flex aspect-[3/4] w-full items-center justify-center text-sm text-gray-500">Poster tidak tersedia</div>
+                  <div className="flex aspect-[3/4] w-full items-center justify-center text-sm text-gray-500 sm:w-[min(70vw,560px)]">Poster tidak tersedia</div>
                 )}
               </div>
-              <div className="space-y-2 p-4">
-                <h3 className="line-clamp-2 text-base font-black">{activeEventPreview.title}</h3>
+              <div className="space-y-2 p-4 sm:w-full">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="min-w-0 line-clamp-2 text-base font-black">{activeEventPreview.title}</h3>
+                  <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide ${
+                    activeEventPreview.ticket_type === "Gratis"
+                      ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300"
+                      : "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300"
+                  }`}>
+                    {activeEventPreview.ticket_type === "Gratis" ? "GRATIS" : "BERBAYAR"}
+                  </span>
+                </div>
                 <p className="rounded-lg bg-red-50 px-3 py-2 text-sm font-bold leading-relaxed text-red-800 dark:bg-red-950/50 dark:text-red-200">📍 {activeEventPreview.venue_address || activeEventPreview.city}{activeEventPreview.province ? `, ${activeEventPreview.province}` : ""}</p>
                 <p className="line-clamp-3 text-xs leading-relaxed text-gray-600 dark:text-gray-300">{activeEventPreview.description || "Belum ada deskripsi event."}</p>
                 <p className="text-[10px] font-semibold text-red-600">Lepaskan jari atau tombol mouse untuk menutup preview</p>
