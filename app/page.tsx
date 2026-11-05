@@ -6474,31 +6474,68 @@ accept="image/jpeg,image/png,image/webp"
             }
           }
 
+          @keyframes posterBackdropMotion {
+            0% {
+              filter: blur(30px);
+              opacity: 0.25;
+              transform: scale(1.22) translateY(10px);
+            }
+            70% {
+              filter: blur(22px);
+              opacity: 0.72;
+              transform: scale(1.14) translateY(-2px);
+            }
+            100% {
+              filter: blur(20px);
+              opacity: 0.62;
+              transform: scale(1.12) translateY(0);
+            }
+          }
+
           @media (prefers-reduced-motion: reduce) {
-            .poster-preview-motion {
+            .poster-preview-motion,
+            .poster-preview-backdrop {
               animation: none !important;
-              filter: none !important;
               transform: none !important;
+            }
+
+            .poster-preview-motion {
+              filter: none !important;
               opacity: 1 !important;
+            }
+
+            .poster-preview-backdrop {
+              filter: blur(20px) !important;
+              opacity: 0.62 !important;
             }
           }
         `}</style>
         {activeEventPreview && (currentRole === "user" || currentRole === "guest") && (
           <div className={`pointer-events-none fixed inset-0 z-[120] flex items-center justify-center bg-black/35 p-4 ${eventPreviewClosing ? "animate-[previewFadeOut_0.14s_ease-in_forwards]" : "animate-[fadeIn_0.12s_ease-out]"}`}>
-            <div className={`w-full max-w-[360px] overflow-hidden rounded-2xl border border-white/20 bg-white shadow-2xl dark:bg-gray-900 sm:w-fit sm:max-w-[min(92vw,680px)] ${eventPreviewClosing ? "animate-[previewPopOut_0.14s_ease-in_forwards]" : "animate-[previewPopIn_0.16s_ease-out]"}`}>
-              <div className="relative flex max-h-[58vh] items-center justify-center bg-gray-100 dark:bg-gray-950 sm:max-h-[72vh] sm:w-fit sm:max-w-[min(92vw,680px)]">
+            <div className={`w-full max-w-[360px] overflow-hidden rounded-2xl border border-white/20 bg-white shadow-2xl dark:bg-gray-900 sm:w-[min(92vw,560px)] sm:max-w-[560px] ${eventPreviewClosing ? "animate-[previewPopOut_0.14s_ease-in_forwards]" : "animate-[previewPopIn_0.16s_ease-out]"}`}>
+              <div className="relative flex h-auto max-h-[58vh] w-full items-center justify-center overflow-hidden bg-gray-100 dark:bg-gray-950 sm:h-[min(72vh,760px)] sm:max-h-[72vh] sm:w-full">
                 {activeEventPreview.poster_url ? (
-                  <img
-                    src={activeEventPreview.poster_url}
-                    alt={`Preview poster ${activeEventPreview.title}`}
-                    className="poster-preview-motion max-h-[58vh] w-full object-contain sm:h-auto sm:max-h-[72vh] sm:w-auto sm:max-w-[min(92vw,680px)]"
-                    style={{ animation: "posterMotionBlur 420ms cubic-bezier(0.16, 1, 0.3, 1) both" }}
-                  />
+                  <>
+                    <img
+                      src={activeEventPreview.poster_url}
+                      alt=""
+                      aria-hidden="true"
+                      className="poster-preview-backdrop pointer-events-none absolute inset-0 h-full w-full object-cover"
+                      style={{ animation: "posterBackdropMotion 620ms cubic-bezier(0.16, 1, 0.3, 1) both" }}
+                    />
+                    <div className="pointer-events-none absolute inset-0 bg-black/10" />
+                    <img
+                      src={activeEventPreview.poster_url}
+                      alt={`Preview poster ${activeEventPreview.title}`}
+                      className="poster-preview-motion relative z-[1] max-h-[58vh] w-full object-contain sm:h-full sm:max-h-[72vh] sm:w-full"
+                      style={{ animation: "posterMotionBlur 420ms cubic-bezier(0.16, 1, 0.3, 1) both" }}
+                    />
+                  </>
                 ) : (
-                  <div className="flex aspect-[3/4] w-full items-center justify-center text-sm text-gray-500 sm:w-[min(70vw,560px)]">Poster tidak tersedia</div>
+                  <div className="flex aspect-[3/4] w-full items-center justify-center text-sm text-gray-500">Poster tidak tersedia</div>
                 )}
               </div>
-              <div className="w-full space-y-2 p-4 sm:w-fit sm:max-w-[min(92vw,680px)]">
+              <div className="w-full space-y-2 p-4">
                 <div className="flex flex-wrap items-center gap-2">
                   <h3 className="min-w-0 line-clamp-2 text-base font-black">{activeEventPreview.title}</h3>
                   <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide ${
