@@ -6511,7 +6511,15 @@ accept="image/jpeg,image/png,image/webp"
           }
         `}</style>
         {activeEventPreview && (currentRole === "user" || currentRole === "guest") && (
-          <div className={`pointer-events-none fixed inset-0 z-[120] flex items-center justify-center bg-black/30 p-4 backdrop-blur-md ${eventPreviewClosing ? "animate-[previewFadeOut_0.14s_ease-in_forwards]" : "animate-[fadeIn_0.12s_ease-out]"}`}>
+          <div
+            className={`pointer-events-none fixed inset-0 z-[120] flex items-center justify-center bg-black/30 p-4 backdrop-blur-md ${eventPreviewClosing ? "animate-[previewFadeOut_0.14s_ease-in_forwards]" : "animate-[fadeIn_0.12s_ease-out]"}`}
+            style={{
+              backdropFilter: "blur(12px)",
+              WebkitBackdropFilter: "blur(12px)",
+              backgroundColor: "rgba(0, 0, 0, 0.30)",
+              transform: "translateZ(0)",
+            }}
+          >
             <div className={`w-full max-w-[360px] overflow-hidden rounded-2xl border border-white/20 bg-white shadow-2xl dark:bg-gray-900 sm:w-[min(92vw,920px)] sm:max-w-[920px] ${eventPreviewClosing ? "animate-[previewPopOut_0.14s_ease-in_forwards]" : "animate-[previewPopIn_0.16s_ease-out]"}`}>
               <div className="sm:grid sm:grid-cols-2 sm:items-stretch">
                 <div className="min-w-0">
