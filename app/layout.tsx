@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   title: 'NGIPEN - Satu Hobby Satu Keseruan',
 
   description:
-    'Platform event jejepangan, cosplay, idol, market Indonesia. Temukan dan bagikan event jejepangan terlengkap di Indonesia.',
+    'Temukan berbagai event jejepangan di seluruh Indonesia melalui NGIPEN. Jelajahi jadwal event cosplay, anime, performance, market, komunitas, serta informasi menarik lainnya dalam satu platform.',
 
   icons: {
     icon: '/logo.png',
@@ -20,7 +20,7 @@ export const metadata: Metadata = {
     title: 'NGIPEN - Satu Hobby Satu Keseruan',
 
     description:
-      'Platform event jejepangan, cosplay, idol, market Indonesia. Temukan dan bagikan event jejepangan terlengkap di Indonesia.',
+      'Temukan berbagai event jejepangan di seluruh Indonesia melalui NGIPEN. Jelajahi jadwal event cosplay, anime, performance, market, komunitas, serta informasi menarik lainnya dalam satu platform.',
 
     url: BASE_URL,
     siteName: 'NGIPEN',
@@ -43,7 +43,7 @@ export const metadata: Metadata = {
     title: 'NGIPEN - Satu Hobby Satu Keseruan',
 
     description:
-      'Platform event jejepangan, cosplay, idol, toys, market Indonesia.',
+      'Temukan berbagai event jejepangan di seluruh Indonesia melalui NGIPEN. Jelajahi jadwal event cosplay, anime, performance, market, komunitas, serta informasi menarik lainnya dalam satu platform.',
 
    images: ['/ngipen-og-preview.jpg'],
   },
