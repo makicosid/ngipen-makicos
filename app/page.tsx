@@ -1261,20 +1261,27 @@ const savedUserId =
           );
         }
 
-        const { data: docsData, error: docsError } = await supabase
-          .from("event_documentations")
-          .select("*")
-          .order("created_at", { ascending: false });
+        const docsResponse = await fetch("/api/event-documentations", {
+          method: "GET",
+          cache: "no-store",
+        });
+        const docsResult = await docsResponse.json();
 
-        if (!docsError && docsData) {
-          setDocs(docsData as Doc[]);
+        if (docsResponse.ok && docsResult.success && Array.isArray(docsResult.docs)) {
+          setDocs(docsResult.docs as Doc[]);
         } else {
-          const { data: docsFallback } = await supabase
+          console.error(
+            "Gagal memuat dokumentasi melalui API:",
+            docsResult.error || "Respons API tidak valid."
+          );
+
+          // Pertahankan fallback tabel lama agar dokumentasi legacy tetap dapat ditampilkan.
+          const { data: docsFallback, error: docsFallbackError } = await supabase
             .from("documentations")
             .select("*")
             .order("created_at", { ascending: false });
 
-          if (docsFallback) {
+          if (!docsFallbackError && docsFallback) {
             setDocs(
               docsFallback.map((doc: any) => ({
                 id: doc.id,
@@ -2067,28 +2074,35 @@ if (!allowedImageTypes.includes(docFile.type)) {
     }
 
     try {
-      const imageUrl = await uploadToBucket(docFile, "documentations");
+      const formData = new FormData();
+      formData.append("eventId", String(selectedEvent.id));
+      formData.append("caption", docCaption);
+      formData.append("file", docFile);
 
-      const { data, error } = await supabase
-        .from("event_documentations")
-        .insert({
-          event_id: selectedEvent.id,
-          user_id: currentUserId,
-          username: currentUser,
-          image_url: imageUrl,
-          caption: docCaption,
-        })
-        .select()
-        .single();
+      const response = await fetch("/api/event-documentations", {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
 
-      if (error) throw error;
+      const result = await response.json();
 
-      setDocs((prev) => [data as Doc, ...prev]);
+      if (!response.ok || !result.success || !result.doc) {
+        throw new Error(
+          result.error || "Gagal mengunggah dokumentasi."
+        );
+      }
+
+      setDocs((prev) => [result.doc as Doc, ...prev]);
       setDocFile(null);
       setDocCaption("");
       setToast("Dokumentasi berhasil diunggah.");
     } catch (error: any) {
-      setToast(`Gagal mengunggah dokumentasi: ${error.message}`);
+      setToast(
+        `Gagal mengunggah dokumentasi: ${
+          error.message || "Terjadi kesalahan."
+        }`
+      );
     }
 
     setTimeout(() => setToast(""), 2500);
