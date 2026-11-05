@@ -312,11 +312,11 @@ const GUIDE_BOOK_PAGES = [
       "Caranya:"
     ],
     "bullets": [
-      "7. Login sebagai User.",
-      "8. Pilih menu Upload Event atau Publikasikan Event.",
-      "9. Lengkapi informasi event yang diminta.",
-      "10. Unggah poster event.",
-      "11. Kirim informasi untuk masuk ke proses moderasi.",
+      "1. Login sebagai User.",
+      "2. Pilih menu Upload Event atau Publikasikan Event.",
+      "3. Lengkapi informasi event yang diminta.",
+      "4. Unggah poster event.",
+      "5. Kirim informasi untuk masuk ke proses moderasi.",
       "Setelah dikirim, event akan melalui proses pemeriksaan terlebih dahulu sebelum bisa ditampilkan sebagai event yang disetujui.",
       "Dengan begitu, informasi event jejepangan bisa semakin mudah ditemukan oleh komunitas!",
       "Catatan: Saat ini User belum memiliki fitur untuk mengedit event yang sudah dikirim."
@@ -332,7 +332,7 @@ const GUIDE_BOOK_PAGES = [
       "Di sini kamu bisa:"
     ],
     "bullets": [
-      "Melihat berbagai took rental cosplay.",
+      "Melihat berbagai toko rental cosplay.",
       "Mengetahui nama rental.",
       "Melihat lokasi atau domisili rental.",
       "Mengunjungi Instagram penyedia rental.",
@@ -355,11 +355,11 @@ const GUIDE_BOOK_PAGES = [
       "Domisili — informasi provinsi dan kota rental.",
       "Instagram — link menuju profile Instagram rental.",
       "Cara melihat daftar rental:",
-      "12. Login sebagai User.",
-      "13. Buka menu Cari Costume melalui navigasi atau hamburger menu.",
-      "14. Masuk ke halaman Partner Ship Makicos.",
-      "15. Pilih rental yang ingin kamu lihat.",
-      "16. Klik tautan Instagram untuk mengunjungi akun rental tersebut.",
+      "1. Login sebagai User.",
+      "2. Buka menu Cari Costume melalui navigasi atau hamburger menu.",
+      "3. Masuk ke halaman Partner Ship Makicos.",
+      "4. Pilih rental yang ingin kamu lihat.",
+      "5. Klik tautan Instagram untuk mengunjungi akun rental tersebut.",
       "Gampang, kan? Sekarang kamu bisa mulai mencari rental costume yang sesuai kebutuhanmu!"
     ],
     "visual": "rental"
@@ -369,7 +369,7 @@ const GUIDE_BOOK_PAGES = [
     "eyebrow": "BAGAIMANA CARA RENTAL MASUK KE NGIPEN?",
     "paragraphs": [
       "Punya usaha rental costume dan ingin masuk ke daftar Partner Ship Makicos?",
-      "Saat ini, penambahan daftar rental dikelola oleh Admin",
+      "Saat ini, penambahan dan pengelolaan daftar rental hanya bisa dilakukan oleh Admin melalui menu Konfigurasi List Rentalan di Panel Admin.",
       "Data yang dibutuhkan untuk menambahkan rental:"
     ],
     "bullets": [
@@ -378,7 +378,6 @@ const GUIDE_BOOK_PAGES = [
       "Nama Rental — Nama usaha rental",
       "Domisili — Provinsi dan kota",
       "Instagram — Tautan akun Instagram rental",
-      "Nomor Rentalan",
       "Admin juga bisa melakukan beberapa pengelolaan:",
       "Menambahkan rental baru.",
       "Mengganti foto atau logo.",
@@ -386,7 +385,7 @@ const GUIDE_BOOK_PAGES = [
       "Memperbarui domisili.",
       "Mengganti tautan Instagram.",
       "Menghapus rental dari daftar.",
-      "Catatan: Penambahan dan perubahan data rental saat ini dilakukan melalui Admin, bukan melalui formulir pendaftaran mandiri di halaman publik."
+      "Catatan: Penambahan dan perubahan data rental hanya bisa dilakukan oleh Admin, bukan melalui formulir pendaftaran mandiri di halaman publik."
     ],
     "visual": "admin"
   },
@@ -4109,7 +4108,7 @@ const shareEvent = async (event: Event) => {
 )}
 
                           <span
-                            className={`absolute bottom-2 left-2 rounded-full px-2 py-1 text-[10px] font-bold text-white shadow-sm md:px-3 md:py-1.5 md:text-xs ${
+                            className={`absolute bottom-2 left-2 rounded-full px-2 py-1 text-[10px] font-bold text-white shadow-sm md:px-3 md:py-1.5 md:text-sm ${
                               event.ticket_type === "Gratis"
                                 ? "bg-green-600"
                                 : "bg-red-600"
@@ -4466,7 +4465,7 @@ const shareEvent = async (event: Event) => {
                   ))}
 
                   <span
-                    className={`rounded-full px-3 py-1 text-xs font-bold text-white ${
+                    className={`rounded-full px-3 py-1 text-xs font-bold text-white sm:px-4 sm:py-1.5 sm:text-sm ${
                       selectedEvent.ticket_type === "Gratis"
                         ? "bg-green-600"
                         : "bg-red-600"
@@ -6518,7 +6517,7 @@ accept="image/jpeg,image/png,image/webp"
                         </button>
                       </div>
 
-                      <div className="mx-auto mb-2 flex h-[22%] min-h-[104px] max-h-[180px] w-full shrink-0 items-center justify-center overflow-hidden rounded-xl border border-amber-300/80 bg-gradient-to-br from-[#fff7e7] to-[#f4dfb8] p-1.5 shadow-sm md:hidden">
+                      <div className="mx-auto mb-2 flex h-[27%] min-h-[126px] max-h-[210px] w-full shrink-0 items-center justify-center overflow-hidden rounded-xl border border-amber-300/80 bg-gradient-to-br from-[#fff7e7] to-[#f4dfb8] p-1 shadow-sm md:hidden">
                         <img
                           src={GUIDE_MOBILE_ILLUSTRATIONS[guidePage]}
                           alt={`Ilustrasi maskot panduan halaman ${guidePage + 1}`}
@@ -6527,7 +6526,8 @@ accept="image/jpeg,image/png,image/webp"
                         />
                       </div>
 
-                      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto pr-1">
+                      <div className="flex min-h-0 flex-1 flex-col pr-1">
+                      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
                       <div className="mt-2 flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-red-700 sm:mt-3 sm:text-xs">
                         <span className="h-px w-6 bg-amber-500" />
                         {GUIDE_BOOK_PAGES[guidePage].eyebrow}
@@ -6569,14 +6569,15 @@ accept="image/jpeg,image/png,image/webp"
                         </a>
                       )}
 
-                      <div className="mt-auto flex items-center justify-between pt-6 text-[10px] font-semibold text-amber-800">
+                      </div>
+                      <div className="flex shrink-0 items-center justify-between pt-2 text-[10px] font-semibold text-amber-800">
                         <span>NGIPEN · MAKICOS.ID</span>
                         <span>HALAMAN {guidePage + 1}</span>
                       </div>
                       </div>
                     </section>
 
-                    <section className="relative relative hidden min-h-0 flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-[#fff7e7] to-[#f4dfb8] p-2 sm:p-4 md:flex md:p-6">
+                    <section className="relative hidden min-h-0 flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-[#fff7e7] to-[#f4dfb8] p-2 sm:p-4 md:flex md:p-6">
                       <div className="absolute inset-4 rounded-xl border border-amber-300/70" />
                       {GUIDE_SCREENSHOTS[guidePage] ? (
                         <figure className="relative z-10 flex h-full w-full max-w-full flex-col items-center justify-center gap-2 rounded-xl border border-amber-300 bg-white/90 p-2 shadow-lg sm:p-3">
@@ -6614,7 +6615,7 @@ accept="image/jpeg,image/png,image/webp"
                           </div>
                           <p className="text-xs font-bold uppercase tracking-[0.2em] text-amber-800">Jelajahi · Temukan · Rayakan</p>
                         </div>
-                      ) : guidePage === 12 ? (
+                      ) : guidePage === 14 ? (
                         <div className="relative w-full max-w-sm rounded-2xl border border-amber-300 bg-white p-5 text-center shadow-xl">
                           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-green-100 text-3xl">☏</div>
                           <p className="mt-3 text-xs font-black uppercase tracking-widest text-red-700">Customer Service NGIPEN</p>
