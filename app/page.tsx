@@ -567,8 +567,7 @@ export default function Page() {
   const [userTab, setUserTab] =
     useState<"Semua" | "Tersimpan">("Semua");
 const [showCalendar, setShowCalendar] = useState(false);
-  const [calendarMenuHighlight, setCalendarMenuHighlight] = useState(false);
-  const calendarHighlightTimerRef = useRef<number | null>(null);
+  const [activeNav, setActiveNav] = useState<"home" | "explore" | "costume" | "calendar" | "guide">("home");
   const [isMobileCalendar, setIsMobileCalendar] = useState(false);
 
 useEffect(() => {
@@ -657,6 +656,9 @@ const sponsorCarouselPausedRef = useRef(false);
   >("Pending");
 // Data Cari Costume
 const [showCostumeDirectory, setShowCostumeDirectory] = useState(false);
+const activeNavKey = selectedEvent
+  ? (eventOpenSourceRef.current === "calendar" ? "calendar" : "explore")
+  : showCalendar ? "calendar" : showCostumeDirectory ? "costume" : showGuideBook ? "guide" : activeNav;
 const [rentals, setRentals] = useState<CostumeRental[]>([]);
 const [rentalLoading, setRentalLoading] = useState(true);
 
@@ -2874,53 +2876,6 @@ const openEvent = async (event: Event) => {
     setTimeout(() => setToast(""), 2500);
   };
 
-  // Buka Kalender setelah halaman mencapai posisi paling atas.
-  const openCalendarFromNavigation = async () => {
-    setMobileOpen(false);
-
-    if (window.scrollY > 8) {
-      await new Promise<void>((resolve) => {
-        const startedAt = Date.now();
-        let stableTopFrames = 0;
-
-        const checkScrollPosition = () => {
-          if (window.scrollY <= 2) {
-            stableTopFrames += 1;
-          } else {
-            stableTopFrames = 0;
-          }
-
-          if (stableTopFrames >= 2 || Date.now() - startedAt >= 1800) {
-            resolve();
-            return;
-          }
-
-          window.requestAnimationFrame(checkScrollPosition);
-        };
-
-        window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
-        window.requestAnimationFrame(checkScrollPosition);
-      });
-    }
-
-    setSelectedEvent(null);
-    setShowCostumeDirectory(false);
-    setShowCalendar(true);
-    setCalendarMonth(new Date());
-    setSelectedCalendarDate("");
-
-    setCalendarMenuHighlight(true);
-    if (calendarHighlightTimerRef.current !== null) {
-      window.clearTimeout(calendarHighlightTimerRef.current);
-    }
-    calendarHighlightTimerRef.current = window.setTimeout(() => {
-      setCalendarMenuHighlight(false);
-      calendarHighlightTimerRef.current = null;
-    }, 2000);
-
-    showToast("✓ Kalender berhasil dibuka!");
-  };
-
   // Bagikan tautan permanen berbasis ID event; halaman akan membuka detailnya saat link diakses.
  
 const shareEvent = async (event: Event) => {
@@ -3014,8 +2969,10 @@ const shareEvent = async (event: Event) => {
   setShowCostumeDirectory(false);
   setShowCalendar(false);
   setUserTab("Semua");
+  setActiveNav("home");
 }}
-                className="text-sm font-semibold hover:text-red-600"
+                aria-current={activeNavKey === "home" ? "page" : undefined}
+                className={`relative border-b-2 pb-2 text-sm font-semibold transition-colors duration-[250ms] ${activeNavKey === "home" ? "border-amber-400 text-amber-700 dark:text-amber-300" : "border-transparent hover:border-amber-300 hover:text-amber-600"}`}
               >
                 Beranda
               </button>
@@ -3026,6 +2983,7 @@ const shareEvent = async (event: Event) => {
   setShowCostumeDirectory(false);
   setShowCalendar(false);
   setUserTab("Semua");
+  setActiveNav("explore");
 
   window.scrollTo({ top: 0, behavior: "smooth" });
 
@@ -3035,7 +2993,8 @@ const shareEvent = async (event: Event) => {
       ?.scrollIntoView({ behavior: "smooth" });
   }, 200);
 }}
-  className="text-sm font-semibold hover:text-red-600"
+  aria-current={activeNavKey === "explore" ? "page" : undefined}
+  className={`relative border-b-2 pb-2 text-sm font-semibold transition-colors duration-[250ms] ${activeNavKey === "explore" ? "border-amber-400 text-amber-700 dark:text-amber-300" : "border-transparent hover:border-amber-300 hover:text-amber-600"}`}
 >
   Jelajahi Event
 </button>
@@ -3045,21 +3004,27 @@ const shareEvent = async (event: Event) => {
   setSelectedEvent(null);
   setShowCostumeDirectory(true);
   setShowCalendar(false);
+  setActiveNav("costume");
   window.scrollTo({ top: 0, behavior: "smooth" });
 }}
-  className="text-sm font-semibold hover:text-red-600"
+  aria-current={activeNavKey === "costume" ? "page" : undefined}
+  className={`relative border-b-2 pb-2 text-sm font-semibold transition-colors duration-[250ms] ${activeNavKey === "costume" ? "border-amber-400 text-amber-700 dark:text-amber-300" : "border-transparent hover:border-amber-300 hover:text-amber-600"}`}
 >
   Cari Costume
 </button>
 )}
 {currentRole === "user" && (
   <button
-    onClick={openCalendarFromNavigation}
-    className={`rounded-lg px-2 py-1 text-sm font-semibold transition-colors ${
-      calendarMenuHighlight
-        ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300"
-        : "hover:text-red-600"
-    }`}
+    onClick={() => {
+      setSelectedEvent(null);
+      setShowCostumeDirectory(false);
+      setShowCalendar(true);
+      setCalendarMonth(new Date());
+      setSelectedCalendarDate("");
+      setActiveNav("calendar");
+    }}
+    aria-current={activeNavKey === "calendar" ? "page" : undefined}
+    className={`relative border-b-2 pb-2 text-sm font-semibold transition-colors duration-[250ms] ${activeNavKey === "calendar" ? "border-amber-400 text-amber-700 dark:text-amber-300" : "border-transparent hover:border-amber-300 hover:text-amber-600"}`}
   >
     Kalender
   </button>
@@ -3067,7 +3032,8 @@ const shareEvent = async (event: Event) => {
               <button
                 type="button"
                 onClick={() => { setGuidePage(0); setShowGuideBook(true); }}
-                className="text-sm font-semibold hover:text-red-600"
+                aria-current={activeNavKey === "guide" ? "page" : undefined}
+                className={`relative border-b-2 pb-2 text-sm font-semibold transition-colors duration-[250ms] ${activeNavKey === "guide" ? "border-amber-400 text-amber-700 dark:text-amber-300" : "border-transparent hover:border-amber-300 hover:text-amber-600"}`}
               >
                 Buku Panduan
               </button>
@@ -3200,9 +3166,11 @@ const shareEvent = async (event: Event) => {
   setShowCalendar(false);
   setMobileOpen(false);
   setUserTab("Semua");
+  setActiveNav("home");
   window.scrollTo({ top: 0, behavior: "smooth" });
 }}
-                  className="rounded-xl px-3 py-3 text-left font-semibold hover:bg-gray-100 dark:hover:bg-gray-900"
+                  aria-current={activeNavKey === "home" ? "page" : undefined}
+                  className={`rounded-xl border-b-2 px-3 py-3 text-left font-semibold transition-colors duration-[250ms] ${activeNavKey === "home" ? "border-amber-400 text-amber-700 dark:text-amber-300" : "border-transparent hover:border-amber-300 hover:bg-gray-100 dark:hover:bg-gray-900"}`}
                 >
                   Beranda
                 </button>
@@ -3214,6 +3182,7 @@ const shareEvent = async (event: Event) => {
   setShowCalendar(false);
   setMobileOpen(false);
   setUserTab("Semua");
+  setActiveNav("explore");
 
   window.scrollTo({ top: 0, behavior: "smooth" });
 
@@ -3223,7 +3192,8 @@ const shareEvent = async (event: Event) => {
       ?.scrollIntoView({ behavior: "smooth" });
   }, 200);
 }}
-  className="rounded-xl px-3 py-3 text-left font-semibold hover:bg-gray-100 dark:hover:bg-gray-900"
+  aria-current={activeNavKey === "explore" ? "page" : undefined}
+  className={`rounded-xl border-b-2 px-3 py-3 text-left font-semibold transition-colors duration-[250ms] ${activeNavKey === "explore" ? "border-amber-400 text-amber-700 dark:text-amber-300" : "border-transparent hover:border-amber-300 hover:bg-gray-100 dark:hover:bg-gray-900"}`}
 >
   Jelajahi Event
 </button>
@@ -3234,9 +3204,11 @@ const shareEvent = async (event: Event) => {
       setSelectedEvent(null);
       setShowCostumeDirectory(true);
       setShowCalendar(false);
+      setActiveNav("costume");
       window.scrollTo({ top: 0, behavior: "smooth" });
     }}
-    className="rounded-xl px-3 py-3 text-left font-semibold hover:bg-gray-100 dark:hover:bg-gray-900"
+    aria-current={activeNavKey === "costume" ? "page" : undefined}
+    className={`rounded-xl border-b-2 px-3 py-3 text-left font-semibold transition-colors duration-[250ms] ${activeNavKey === "costume" ? "border-amber-400 text-amber-700 dark:text-amber-300" : "border-transparent hover:border-amber-300 hover:bg-gray-100 dark:hover:bg-gray-900"}`}
   >
     Cari Costume
   </button>
@@ -3244,12 +3216,17 @@ const shareEvent = async (event: Event) => {
                 
 {currentRole === "user" && (
   <button
-    onClick={openCalendarFromNavigation}
-    className={`rounded-xl px-3 py-3 text-left font-semibold transition-colors ${
-      calendarMenuHighlight
-        ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300"
-        : "hover:bg-gray-100 dark:hover:bg-gray-900"
-    }`}
+    onClick={() => {
+  setMobileOpen(false);
+  setSelectedEvent(null);
+  setShowCostumeDirectory(false);
+  setShowCalendar(true);
+  setCalendarMonth(new Date());
+  setSelectedCalendarDate("");
+  setActiveNav("calendar");
+}}
+    aria-current={activeNavKey === "calendar" ? "page" : undefined}
+    className={`rounded-xl border-b-2 px-3 py-3 text-left font-semibold transition-colors duration-[250ms] ${activeNavKey === "calendar" ? "border-amber-400 text-amber-700 dark:text-amber-300" : "border-transparent hover:border-amber-300 hover:bg-gray-100 dark:hover:bg-gray-900"}`}
   >
     Kalender
   </button>
@@ -3261,7 +3238,8 @@ const shareEvent = async (event: Event) => {
                     setGuidePage(0);
                     setShowGuideBook(true);
                   }}
-                  className="rounded-xl px-3 py-3 text-left font-semibold text-red-700 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-950/30"
+                  aria-current={activeNavKey === "guide" ? "page" : undefined}
+                  className={`rounded-xl border-b-2 px-3 py-3 text-left font-semibold transition-colors duration-[250ms] ${activeNavKey === "guide" ? "border-amber-400 text-amber-700 dark:text-amber-300" : "border-transparent text-red-700 hover:border-amber-300 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-950/30"}`}
                 >
                   Buku Panduan
                 </button>
@@ -3743,7 +3721,12 @@ const shareEvent = async (event: Event) => {
                     + Upload Poster Event
                   </button>
                   <button
-  onClick={openCalendarFromNavigation}
+  onClick={() => {
+    setSelectedEvent(null);
+    setShowCalendar(true);
+    setCalendarMonth(new Date());
+    setSelectedCalendarDate("");
+  }}
   className="shrink-0 rounded-xl border border-red-600 px-5 py-3 text-sm font-bold text-red-600 hover:bg-red-50 dark:hover:bg-gray-800"
 >
   📅 Buka Kalender Event
@@ -4412,6 +4395,7 @@ const shareEvent = async (event: Event) => {
   setShowCalendar(false);
   setSelectedEvent(null);
   setUserTab("Semua");
+  setActiveNav("home");
   window.scrollTo({ top: 0, behavior: "smooth" });
 }}
               className="mt-8 rounded-xl bg-red-600 px-5 py-3 text-sm font-bold text-white"
