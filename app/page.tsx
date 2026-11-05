@@ -1761,44 +1761,39 @@ const logout = async () => {
     setTimeout(() => setToast(""), 3000);
   };
 
-  // Moderasi event dan penandaan sponsor
+  // Moderasi event dan penandaan sponsor melalui API server.
   const handleModeration = async (
     id: string,
     status: ModStatus,
     sponsor?: boolean,
     priority?: number
   ) => {
-    const update: Record<string, any> = { moderation_status: status };
+    try {
+      const response = await fetch("/api/admin/events/moderation", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, status, sponsor, priority }),
+      });
 
-    if (sponsor !== undefined) update.is_sponsored = sponsor;
-    if (priority !== undefined) update.sponsored_priority = priority;
+      const result = await response.json();
 
-    if (sponsor) {
-      update.sponsored_start = new Date().toISOString();
+      if (!response.ok || !result.success || !result.update) {
+        throw new Error(result.error || "Gagal memperbarui event.");
+      }
 
-      const end = new Date();
-      end.setDate(end.getDate() + 30);
-      update.sponsored_end = end.toISOString();
-    }
+      setEvents((prev) =>
+        prev.map((event) =>
+          event.id === id ? { ...event, ...result.update } : event
+        )
+      );
 
-    const { error } = await supabase
-      .from("events")
-      .update(update)
-      .eq("id", id);
-
-    if (error) {
+      setToast(`Status event: ${status}`);
+    } catch (error: any) {
       setToast(`Gagal memperbarui event: ${error.message}`);
-      return;
     }
 
-    setEvents((prev) =>
-      prev.map((event) =>
-        event.id === id ? { ...event, ...update } : event
-      )
-    );
-
-    setToast(`Status event: ${status}`);
-    setTimeout(() => setToast(""), 2000);
+    setTimeout(() => setToast(""), 2500);
   };
 
   // Hapus event yang sudah selesai secara permanen setelah konfirmasi admin.
