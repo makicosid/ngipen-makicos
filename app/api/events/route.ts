@@ -66,9 +66,10 @@ export async function GET(request: NextRequest) {
       .order("created_at", { ascending: false });
 
     if (!isAdmin) {
-      query = query.eq("moderation_status", "Approved");
-    }
-
+  query = query
+    .eq("moderation_status", "Approved")
+    .eq("is_hidden", false);
+}
     const { data: events, error } = await query;
 
     if (error) {
