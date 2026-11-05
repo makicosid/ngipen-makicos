@@ -567,6 +567,8 @@ export default function Page() {
   const [userTab, setUserTab] =
     useState<"Semua" | "Tersimpan">("Semua");
 const [showCalendar, setShowCalendar] = useState(false);
+  const [calendarMenuHighlight, setCalendarMenuHighlight] = useState(false);
+  const calendarHighlightTimerRef = useRef<number | null>(null);
   const [isMobileCalendar, setIsMobileCalendar] = useState(false);
 
 useEffect(() => {
@@ -2872,6 +2874,53 @@ const openEvent = async (event: Event) => {
     setTimeout(() => setToast(""), 2500);
   };
 
+  // Buka Kalender setelah halaman mencapai posisi paling atas.
+  const openCalendarFromNavigation = async () => {
+    setMobileOpen(false);
+
+    if (window.scrollY > 8) {
+      await new Promise<void>((resolve) => {
+        const startedAt = Date.now();
+        let stableTopFrames = 0;
+
+        const checkScrollPosition = () => {
+          if (window.scrollY <= 2) {
+            stableTopFrames += 1;
+          } else {
+            stableTopFrames = 0;
+          }
+
+          if (stableTopFrames >= 2 || Date.now() - startedAt >= 1800) {
+            resolve();
+            return;
+          }
+
+          window.requestAnimationFrame(checkScrollPosition);
+        };
+
+        window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+        window.requestAnimationFrame(checkScrollPosition);
+      });
+    }
+
+    setSelectedEvent(null);
+    setShowCostumeDirectory(false);
+    setShowCalendar(true);
+    setCalendarMonth(new Date());
+    setSelectedCalendarDate("");
+
+    setCalendarMenuHighlight(true);
+    if (calendarHighlightTimerRef.current !== null) {
+      window.clearTimeout(calendarHighlightTimerRef.current);
+    }
+    calendarHighlightTimerRef.current = window.setTimeout(() => {
+      setCalendarMenuHighlight(false);
+      calendarHighlightTimerRef.current = null;
+    }, 2000);
+
+    showToast("✓ Kalender berhasil dibuka!");
+  };
+
   // Bagikan tautan permanen berbasis ID event; halaman akan membuka detailnya saat link diakses.
  
 const shareEvent = async (event: Event) => {
@@ -3005,14 +3054,12 @@ const shareEvent = async (event: Event) => {
 )}
 {currentRole === "user" && (
   <button
-    onClick={() => {
-      setSelectedEvent(null);
-      setShowCostumeDirectory(false);
-      setShowCalendar(true);
-      setCalendarMonth(new Date());
-      setSelectedCalendarDate("");
-    }}
-    className="text-sm font-semibold hover:text-red-600"
+    onClick={openCalendarFromNavigation}
+    className={`rounded-lg px-2 py-1 text-sm font-semibold transition-colors ${
+      calendarMenuHighlight
+        ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300"
+        : "hover:text-red-600"
+    }`}
   >
     Kalender
   </button>
@@ -3197,15 +3244,12 @@ const shareEvent = async (event: Event) => {
                 
 {currentRole === "user" && (
   <button
-    onClick={() => {
-  setMobileOpen(false);
-  setSelectedEvent(null);
-  setShowCostumeDirectory(false);
-  setShowCalendar(true);
-  setCalendarMonth(new Date());
-  setSelectedCalendarDate("");
-}}
-    className="rounded-xl px-3 py-3 text-left font-semibold hover:bg-gray-100 dark:hover:bg-gray-900"
+    onClick={openCalendarFromNavigation}
+    className={`rounded-xl px-3 py-3 text-left font-semibold transition-colors ${
+      calendarMenuHighlight
+        ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300"
+        : "hover:bg-gray-100 dark:hover:bg-gray-900"
+    }`}
   >
     Kalender
   </button>
@@ -3699,12 +3743,7 @@ const shareEvent = async (event: Event) => {
                     + Upload Poster Event
                   </button>
                   <button
-  onClick={() => {
-    setSelectedEvent(null);
-    setShowCalendar(true);
-    setCalendarMonth(new Date());
-    setSelectedCalendarDate("");
-  }}
+  onClick={openCalendarFromNavigation}
   className="shrink-0 rounded-xl border border-red-600 px-5 py-3 text-sm font-bold text-red-600 hover:bg-red-50 dark:hover:bg-gray-800"
 >
   📅 Buka Kalender Event
