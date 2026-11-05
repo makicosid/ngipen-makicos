@@ -276,7 +276,92 @@ export async function POST(request: NextRequest) {
 
       return response;
     }
+    /* -----------------------------------------------------
+       UPDATE USER PROFILE
+    ----------------------------------------------------- */
 
+    if (action === "update_profile") {
+      const session = await getSession(request);
+
+      if (!session) {
+        return json(
+          { error: "Sesi login tidak valid. Silakan login kembali." },
+          401
+        );
+      }
+
+      const displayName =
+        typeof body.displayName === "string"
+          ? body.displayName.trim()
+          : "";
+
+      const bio =
+        typeof body.bio === "string"
+          ? body.bio.trim()
+          : "";
+
+      const avatarUrl =
+        typeof body.avatarUrl === "string"
+          ? body.avatarUrl.trim()
+          : "";
+
+      if (!displayName || displayName.length > 50) {
+        return json(
+          { error: "Nama tampilan wajib diisi dan maksimal 50 karakter." },
+          400
+        );
+      }
+
+      if (bio.length > 300) {
+        return json(
+          { error: "Bio maksimal 300 karakter." },
+          400
+        );
+      }
+
+      if (avatarUrl.length > 2048) {
+        return json(
+          { error: "URL avatar terlalu panjang." },
+          400
+        );
+      }
+
+      const { data: updatedUser, error: updateError } =
+        await getSupabaseAdmin()
+          .from("users")
+          .update({
+            display_name: displayName,
+            bio,
+            avatar_url: avatarUrl,
+          })
+          .eq("id", session.user_id)
+          .select(
+            "id,username,display_name,bio,avatar_url,created_at"
+          )
+          .maybeSingle();
+
+      if (updateError) {
+        console.error("Update user profile error:", updateError);
+
+        return json(
+          { error: "Gagal menyimpan perubahan profil." },
+          500
+        );
+      }
+
+      if (!updatedUser) {
+        return json(
+          { error: "Data akun tidak ditemukan." },
+          404
+        );
+      }
+
+      return json({
+        success: true,
+        user: updatedUser,
+      });
+    }
+    
     /* -----------------------------------------------------
        CHANGE PASSWORD
     ----------------------------------------------------- */
