@@ -1718,45 +1718,36 @@ const logout = async () => {
     }
 
     try {
-      const posterUrl = await uploadToBucket(posterFile!, "posters");
+      const formData = new FormData();
+      formData.append("title", title);
+      formData.append("description", description);
+      formData.append("categories", JSON.stringify(newCategories));
+      formData.append("province", province);
+      formData.append("city", city);
+      formData.append("venue_address", venue);
+      formData.append("start_date", startDate);
+      formData.append("end_date", endDate);
+      formData.append("start_time", startTime);
+      formData.append("end_time", endTime);
+      formData.append("ticket_type", newTicketType);
+      formData.append("ticket_url", ticketUrl || "");
+      formData.append("registration_url", registrationUrl || "");
+      formData.append("social_link", socialLink || "");
+      formData.append("poster", posterFile);
 
-      const payload = {
-        organizer_id: currentUserId,
-        title,
-        slug: slugify(title),
-        description,
-        poster_url: posterUrl,
-        categories: newCategories,
-        province,
-        city,
-        venue_address: venue,
-        start_date: startDate,
-        end_date: endDate,
-        start_time: startTime,
-        end_time: endTime,
-        ticket_type: newTicketType,
-        ticket_url: ticketUrl || null,
-        registration_url: registrationUrl || null,
-        social_link: socialLink || null,
-        moderation_status: "Pending",
-        is_sponsored: false,
-        sponsored_priority: 0,
-        views: 0,
-        saves_count: 0,
-        avg_rating: 0,
-        rating_count: 0,
-        organizer_name: currentUser,
-      };
+      const response = await fetch("/api/events", {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
 
-      const { data, error } = await supabase
-        .from("events")
-        .insert(payload)
-        .select()
-        .single();
+      const result = await response.json();
 
-      if (error) throw error;
+      if (!response.ok || !result.success || !result.event) {
+        throw new Error(result.error || "Gagal menyimpan event.");
+      }
 
-      setEvents((prev) => [data as Event, ...prev]);
+      setEvents((prev) => [result.event as Event, ...prev]);
       setToast("Event dikirim dan menunggu persetujuan admin.");
 
       setEventFormOpen(false);
