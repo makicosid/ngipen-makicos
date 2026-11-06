@@ -708,6 +708,8 @@ const sponsorCarouselPausedRef = useRef(false);
   const [adminEventSponsorFilter, setAdminEventSponsorFilter] = useState<"Semua" | "Sponsor" | "Non-Sponsor">("Semua");
   const [selectedPendingEventIds, setSelectedPendingEventIds] = useState<string[]>([]);
   const [bulkApproveLoading, setBulkApproveLoading] = useState(false);
+  const [selectedDeleteEventIds, setSelectedDeleteEventIds] = useState<string[]>([]);
+  const [bulkDeleteLoading, setBulkDeleteLoading] = useState(false);
 // Data Cari Costume
 const [showCostumeDirectory, setShowCostumeDirectory] = useState(false);
 const activeNavKey = selectedEvent
@@ -1919,6 +1921,50 @@ const logout = async () => {
     setTimeout(() => setToast(""), 2500);
   };
 
+  const handleBulkDelete = async (ids: string[], target: "Rejected" | "Completed") => {
+    const uniqueIds = Array.from(new Set(ids));
+    if (uniqueIds.length === 0) {
+      setToast("Pilih minimal satu event untuk dihapus.");
+      window.setTimeout(() => setToast(""), 2500);
+      return;
+    }
+
+    const targetLabel = target === "Rejected" ? "Rejected (Ditolak)" : "Completed (Selesai)";
+    const confirmed = window.confirm(
+      `Hapus ${uniqueIds.length} event ${targetLabel} secara permanen? Event yang masih memiliki data terkait tidak akan dihapus. Tindakan ini tidak dapat dibatalkan.`
+    );
+    if (!confirmed) return;
+
+    setBulkDeleteLoading(true);
+    try {
+      const response = await fetch("/api/admin/events/bulk-delete", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: uniqueIds, target }),
+      });
+      const result = await response.json().catch(() => null);
+      if (!response.ok || !result?.success) {
+        throw new Error(result?.error || "Gagal menghapus event secara massal.");
+      }
+
+      const deletedIds = new Set((result.deletedIds || []).map((id: string) => String(id)));
+      setEvents((prev) => prev.filter((event) => !deletedIds.has(String(event.id))));
+      setSavedIds((prev) => prev.filter((id) => !deletedIds.has(String(id))));
+      if (selectedEvent && deletedIds.has(String(selectedEvent.id))) setSelectedEvent(null);
+      setSelectedDeleteEventIds([]);
+
+      const blockedCount = Array.isArray(result.blocked) ? result.blocked.length : 0;
+      const skippedCount = Number(result.skipped || 0);
+      setToast(`${deletedIds.size} event berhasil dihapus. ${blockedCount} tertahan karena masih memiliki data terkait. ${skippedCount} dilewati karena status tidak sesuai atau sudah berubah.`);
+    } catch (error) {
+      setToast(`Bulk Delete gagal: ${error instanceof Error ? error.message : "Terjadi kesalahan."}`);
+    } finally {
+      setBulkDeleteLoading(false);
+      window.setTimeout(() => setToast(""), 6000);
+    }
+  };
+
   // Hapus event yang sudah selesai secara permanen setelah konfirmasi admin.
   // Penghapusan dilakukan melalui API server agar sesi admin dan status Completed
   // diverifikasi kembali di server, bukan menghapus langsung dari browser.
@@ -2830,6 +2876,7 @@ return {
 
   useEffect(() => {
     setSelectedPendingEventIds([]);
+    setSelectedDeleteEventIds([]);
   }, [adminEventTab, adminEventSearch, adminEventCategoryFilter, adminEventProvinceFilter, adminEventSponsorFilter]);
 
   const adminFilteredEvents = useMemo(() => {
@@ -5620,6 +5667,39 @@ accept="image/jpeg,image/png,image/webp"
                         </div>
                       )}
 
+                      {(adminEventTab === "Rejected" || adminEventTab === "Completed") && (
+                        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 p-3 dark:border-red-900 dark:bg-red-950/20">
+                          <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-gray-800 dark:text-gray-100">
+                            <input
+                              type="checkbox"
+                              checked={adminFilteredEvents.length > 0 && adminFilteredEvents.every((event) => selectedDeleteEventIds.includes(String(event.id)))}
+                              onChange={(e) => setSelectedDeleteEventIds(e.target.checked ? adminFilteredEvents.map((event) => String(event.id)) : [])}
+                              className="h-4 w-4 accent-red-600"
+                            />
+                            Pilih semua hasil filter ({adminFilteredEvents.length})
+                          </label>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-xs font-bold text-gray-600 dark:text-gray-300">Dipilih: {selectedDeleteEventIds.length}</span>
+                            <button
+                              type="button"
+                              disabled={bulkDeleteLoading || selectedDeleteEventIds.length === 0}
+                              onClick={() => void handleBulkDelete(selectedDeleteEventIds, adminEventTab as "Rejected" | "Completed")}
+                              className="rounded-lg bg-red-600 px-4 py-2 text-xs font-bold text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              {bulkDeleteLoading ? "Memproses..." : "Hapus yang dipilih"}
+                            </button>
+                            <button
+                              type="button"
+                              disabled={bulkDeleteLoading || adminFilteredEvents.length === 0}
+                              onClick={() => void handleBulkDelete(adminFilteredEvents.map((event) => String(event.id)), adminEventTab as "Rejected" | "Completed")}
+                              className="rounded-lg border border-red-700 px-4 py-2 text-xs font-bold text-red-700 disabled:opacity-50 dark:text-red-300"
+                            >
+                              Hapus semua hasil filter
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
                       {adminFilteredEvents.length === 0 ? (
                         <div className="rounded-2xl border border-dashed border-gray-300 px-5 py-12 text-center dark:border-gray-700">
                           <p className="font-bold">Belum ada event di kategori ini.</p>
@@ -5632,6 +5712,9 @@ accept="image/jpeg,image/png,image/webp"
                               <div className="flex min-w-0 gap-3">
                                 {adminEventTab === "Pending" && (
                                   <input aria-label={`Pilih event ${event.title}`} type="checkbox" checked={selectedPendingEventIds.includes(String(event.id))} onChange={(e) => setSelectedPendingEventIds((prev) => e.target.checked ? Array.from(new Set([...prev, String(event.id)])) : prev.filter((id) => id !== String(event.id)))} className="mt-1 h-4 w-4 shrink-0 accent-red-600" />
+                                )}
+                                {(adminEventTab === "Rejected" || adminEventTab === "Completed") && (
+                                  <input aria-label={`Pilih event ${event.title} untuk dihapus`} type="checkbox" checked={selectedDeleteEventIds.includes(String(event.id))} onChange={(e) => setSelectedDeleteEventIds((prev) => e.target.checked ? Array.from(new Set([...prev, String(event.id)])) : prev.filter((id) => id !== String(event.id)))} className="mt-1 h-4 w-4 shrink-0 accent-red-600" />
                                 )}
                                 {event.poster_url ? (
                                   <img src={event.poster_url} alt={`Poster ${event.title}`} className="h-24 w-16 shrink-0 rounded-xl border border-gray-100 object-cover dark:border-gray-700 sm:h-28 sm:w-[76px]" />
