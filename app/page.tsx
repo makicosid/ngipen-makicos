@@ -1860,7 +1860,12 @@ const logout = async () => {
 
   const openApprovedEventEditor = (event: Event) => {
     setEditingApprovedEvent(event);
-    setAdminEditDraft({ ...event });
+    // Normalisasi nilai time dari Supabase (HH:mm:ss) untuk input type=time.
+    setAdminEditDraft({
+      ...event,
+      start_time: String(event.start_time || "09:00").slice(0, 5),
+      end_time: String(event.end_time || "18:00").slice(0, 5),
+    });
     setAdminEditCategories((event.categories || []).filter((item) => eventCategoryOptions.includes(item)));
     setAdminEditPoster(null);
     setAdminEditPosterPreview(event.poster_url || "");
