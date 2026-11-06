@@ -1,4 +1,3 @@
-
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { createHash } from "crypto";
@@ -112,7 +111,7 @@ export async function POST(request: NextRequest) {
       return json({ error: "ID event tidak valid." }, 400);
     }
 
-    // Ambil tanggal event dari database, bukan dari data browser.
+    // Ambil tanggal dan waktu event dari database, bukan dari data browser.
     const { data: event, error: fetchError } = await supabase
       .from("events")
       .select("id, start_date, end_date, start_time, end_time")
@@ -131,6 +130,56 @@ export async function POST(request: NextRequest) {
     if (!isEventCompleted(event)) {
       return json(
         { error: "Event belum selesai dan tidak dapat dihapus." },
+        409
+      );
+    }
+
+    // FK terkait menggunakan ON DELETE CASCADE.
+    // Karena itu, blokir penghapusan jika masih ada data terkait.
+    const [docs, saves, views] = await Promise.all([
+      supabase
+        .from("event_documentations")
+        .select("id", { count: "exact", head: true })
+        .eq("event_id", eventId),
+      supabase
+        .from("event_saves")
+        .select("id", { count: "exact", head: true })
+        .eq("event_id", eventId),
+      supabase
+        .from("event_views")
+        .select("id", { count: "exact", head: true })
+        .eq("event_id", eventId),
+    ]);
+
+    if (docs.error || saves.error || views.error) {
+      console.error(
+        "Completed event dependency check error:",
+        docs.error || saves.error || views.error
+      );
+      return json(
+        { error: "Gagal memeriksa data terkait. Event tidak dihapus." },
+        500
+      );
+    }
+
+    const dependencies = {
+      documentations: docs.count || 0,
+      saves: saves.count || 0,
+      views: views.count || 0,
+    };
+
+    if (
+      dependencies.documentations +
+        dependencies.saves +
+        dependencies.views >
+      0
+    ) {
+      return json(
+        {
+          error:
+            "Event belum dapat dihapus karena masih memiliki data terkait.",
+          dependencies,
+        },
         409
       );
     }
