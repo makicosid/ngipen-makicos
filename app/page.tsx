@@ -706,6 +706,8 @@ const sponsorCarouselPausedRef = useRef(false);
   const [adminEventCategoryFilter, setAdminEventCategoryFilter] = useState("Semua");
   const [adminEventProvinceFilter, setAdminEventProvinceFilter] = useState("Semua");
   const [adminEventSponsorFilter, setAdminEventSponsorFilter] = useState<"Semua" | "Sponsor" | "Non-Sponsor">("Semua");
+  const [selectedPendingEventIds, setSelectedPendingEventIds] = useState<string[]>([]);
+  const [bulkApproveLoading, setBulkApproveLoading] = useState(false);
 // Data Cari Costume
 const [showCostumeDirectory, setShowCostumeDirectory] = useState(false);
 const activeNavKey = selectedEvent
@@ -1848,6 +1850,40 @@ const logout = async () => {
     setTimeout(() => setToast(""), 3000);
   };
 
+  const handleBulkApprove = async (ids: string[]) => {
+    const uniqueIds = Array.from(new Set(ids));
+    if (uniqueIds.length === 0) {
+      setToast("Pilih minimal satu event Pending.");
+      setTimeout(() => setToast(""), 2500);
+      return;
+    }
+    const confirmed = window.confirm(`Setujui ${uniqueIds.length} event Pending? Event akan disetujui tanpa mengaktifkan Sponsor.`);
+    if (!confirmed) return;
+
+    setBulkApproveLoading(true);
+    try {
+      const response = await fetch("/api/admin/events/bulk-approve", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: uniqueIds }),
+      });
+      const result = await response.json().catch(() => null);
+      if (!response.ok || !result?.success) {
+        throw new Error(result?.error || "Gagal menyetujui event secara massal.");
+      }
+      const updatedIds = new Set((result.updatedEvents || []).map((event: Event) => String(event.id)));
+      setEvents((prev) => prev.map((event) => updatedIds.has(String(event.id)) ? { ...event, moderation_status: "Approved" as ModStatus } : event));
+      setSelectedPendingEventIds([]);
+      setToast(`${result.updated || 0} event berhasil disetujui. ${result.skipped || 0} dilewati karena statusnya sudah berubah.`);
+    } catch (error) {
+      setToast(`Bulk Approve gagal: ${error instanceof Error ? error.message : "Terjadi kesalahan."}`);
+    } finally {
+      setBulkApproveLoading(false);
+      setTimeout(() => setToast(""), 4500);
+    }
+  };
+
   // Moderasi event dan penandaan sponsor melalui API server.
   const handleModeration = async (
     id: string,
@@ -2791,6 +2827,10 @@ return {
     realTimeTick,
     sortMode,
   ]);
+
+  useEffect(() => {
+    setSelectedPendingEventIds([]);
+  }, [adminEventTab, adminEventSearch, adminEventCategoryFilter, adminEventProvinceFilter, adminEventSponsorFilter]);
 
   const adminFilteredEvents = useMemo(() => {
     const query = adminEventSearch.trim().toLocaleLowerCase("id-ID");
@@ -5566,6 +5606,20 @@ accept="image/jpeg,image/png,image/webp"
                         </div>
                       </div>
 
+                      {adminEventTab === "Pending" && (
+                        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 p-3 dark:border-amber-900 dark:bg-amber-950/20">
+                          <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-gray-800 dark:text-gray-100">
+                            <input type="checkbox" checked={adminFilteredEvents.length > 0 && adminFilteredEvents.every((event) => selectedPendingEventIds.includes(String(event.id)))} onChange={(e) => setSelectedPendingEventIds(e.target.checked ? adminFilteredEvents.map((event) => String(event.id)) : [])} className="h-4 w-4 accent-red-600" />
+                            Pilih semua hasil filter ({adminFilteredEvents.length})
+                          </label>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-xs font-bold text-gray-600 dark:text-gray-300">Dipilih: {selectedPendingEventIds.length}</span>
+                            <button type="button" disabled={bulkApproveLoading || selectedPendingEventIds.length === 0} onClick={() => void handleBulkApprove(selectedPendingEventIds)} className="rounded-lg bg-green-600 px-4 py-2 text-xs font-bold text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50">{bulkApproveLoading ? "Memproses..." : "Setujui yang dipilih"}</button>
+                            <button type="button" disabled={bulkApproveLoading || adminFilteredEvents.length === 0} onClick={() => void handleBulkApprove(adminFilteredEvents.map((event) => String(event.id)))} className="rounded-lg border border-green-700 px-4 py-2 text-xs font-bold text-green-700 disabled:opacity-50 dark:text-green-300">Setujui semua hasil filter</button>
+                          </div>
+                        </div>
+                      )}
+
                       {adminFilteredEvents.length === 0 ? (
                         <div className="rounded-2xl border border-dashed border-gray-300 px-5 py-12 text-center dark:border-gray-700">
                           <p className="font-bold">Belum ada event di kategori ini.</p>
@@ -5576,6 +5630,9 @@ accept="image/jpeg,image/png,image/webp"
                           {adminFilteredEvents.map((event) => (
                             <article key={event.id} className="flex min-w-0 flex-col rounded-2xl border border-gray-200 bg-white p-3 shadow-sm dark:border-gray-700 dark:bg-gray-900 sm:p-4">
                               <div className="flex min-w-0 gap-3">
+                                {adminEventTab === "Pending" && (
+                                  <input aria-label={`Pilih event ${event.title}`} type="checkbox" checked={selectedPendingEventIds.includes(String(event.id))} onChange={(e) => setSelectedPendingEventIds((prev) => e.target.checked ? Array.from(new Set([...prev, String(event.id)])) : prev.filter((id) => id !== String(event.id)))} className="mt-1 h-4 w-4 shrink-0 accent-red-600" />
+                                )}
                                 {event.poster_url ? (
                                   <img src={event.poster_url} alt={`Poster ${event.title}`} className="h-24 w-16 shrink-0 rounded-xl border border-gray-100 object-cover dark:border-gray-700 sm:h-28 sm:w-[76px]" />
                                 ) : (
