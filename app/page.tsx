@@ -102,6 +102,8 @@ interface RegUser {
   bio?: string;
   avatar_url?: string;
   created_at: string;
+  savedEventsCount?: number;
+  totalClicks?: number;
 }
 
 const ALL_PROVINCES = [
@@ -675,6 +677,8 @@ const sponsorCarouselPausedRef = useRef(false);
 
   const [registeredUsers, setRegisteredUsers] = useState<RegUser[]>([]);
   const [usersLoadError, setUsersLoadError] = useState("");
+  const [adminUsersLoading, setAdminUsersLoading] = useState(false);
+  const [adminUsersLoadError, setAdminUsersLoadError] = useState("");
 
   const [savedIds, setSavedIds] = useState<string[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -1149,6 +1153,55 @@ const handleRentalImage = (file: File | null) => {
     eventStatusTab,
     showThisWeekOnly,
   ]);
+
+  // Statistik pengguna khusus Admin — data dihitung oleh API server.
+  useEffect(() => {
+    if (currentRole !== "admin" || !showAdmin || adminTab !== "users") {
+      return;
+    }
+
+    let active = true;
+
+    const loadAdminUsers = async () => {
+      setAdminUsersLoading(true);
+      setAdminUsersLoadError("");
+
+      try {
+        const response = await fetch("/api/admin-users", {
+          method: "GET",
+          credentials: "include",
+          cache: "no-store",
+        });
+        const result = await response.json();
+
+        if (!response.ok || !Array.isArray(result.users)) {
+          throw new Error(result.error || "Gagal memuat statistik pengguna.");
+        }
+
+        if (active) {
+          setRegisteredUsers(result.users as RegUser[]);
+          setUsersLoadError("");
+        }
+      } catch (error) {
+        console.error("Admin users load error:", error);
+        if (active) {
+          setAdminUsersLoadError(
+            error instanceof Error
+              ? error.message
+              : "Gagal memuat statistik pengguna."
+          );
+        }
+      } finally {
+        if (active) setAdminUsersLoading(false);
+      }
+    };
+
+    void loadAdminUsers();
+
+    return () => {
+      active = false;
+    };
+  }, [currentRole, showAdmin, adminTab]);
 
   // Pintasan admin: Ctrl + Shift + A
   useEffect(() => {
@@ -5523,47 +5576,77 @@ accept="image/jpeg,image/png,image/webp"
                       <div className="mb-3 rounded-xl bg-gray-50 p-3 text-sm font-bold dark:bg-gray-950">
                         Total {registeredUsers.length} pengguna terdaftar
                       </div>
-                      {usersLoadError && (
+
+                      {adminUsersLoadError && (
+                        <p className="mb-3 rounded-xl bg-red-50 p-3 text-xs text-red-700 dark:bg-red-950 dark:text-red-300">
+                          Statistik pengguna tidak dapat dimuat: {adminUsersLoadError}
+                        </p>
+                      )}
+
+                      {usersLoadError && !adminUsersLoadError && (
                         <p className="mb-3 rounded-xl bg-red-50 p-3 text-xs text-red-700 dark:bg-red-950 dark:text-red-300">
                           Data pengguna tidak dapat dimuat: {usersLoadError}
                         </p>
                       )}
 
-                      {registeredUsers.length === 0 ? (
+                      {adminUsersLoading ? (
+                        <p className="py-8 text-center text-sm text-gray-500">
+                          Memuat statistik pengguna...
+                        </p>
+                      ) : registeredUsers.length === 0 ? (
                         <p className="py-8 text-center text-sm text-gray-500">
                           Belum ada data pengguna.
                         </p>
                       ) : (
-                                      
-                    registeredUsers.map((user) => (
-                      <div
-                        key={user.id}
-                        className="flex items-center gap-3 border-b border-gray-100 py-3 dark:border-gray-800"
-                      >
-                        {user.avatar_url ? (
-                          <img
-                            src={user.avatar_url}
-                            alt=""
-                            className="h-10 w-10 rounded-full object-cover"
-                          />
-                        ) : (
-                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 font-bold text-red-700">
-                            {(user.display_name || user.username)[0].toUpperCase()}
-                          </div>
-                        )}
+                        registeredUsers.map((user) => (
+                          <div
+                            key={user.id}
+                            className="border-b border-gray-100 py-4 dark:border-gray-800"
+                          >
+                            <div className="flex items-center gap-3">
+                              {user.avatar_url ? (
+                                <img
+                                  src={user.avatar_url}
+                                  alt=""
+                                  className="h-10 w-10 rounded-full object-cover"
+                                />
+                              ) : (
+                                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 font-bold text-red-700">
+                                  {(user.display_name || user.username || "?")[0].toUpperCase()}
+                                </div>
+                              )}
 
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-bold">
-                            {user.display_name || user.username}
-                          </p>
-                          <p className="truncate text-xs text-gray-500">
-                            @{user.username}
-                          </p>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="truncate text-sm font-bold">
+                                  {user.display_name || user.username}
+                                </p>
+                                <p className="truncate text-xs text-gray-500">
+                                  @{user.username}
+                                </p>
+                                <p className="mt-1 whitespace-pre-wrap break-words text-xs text-gray-600 dark:text-gray-400">
+                                  {user.bio?.trim() || "Belum mengisi bio."}
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="mt-3 grid grid-cols-2 gap-2">
+                              <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-950">
+                                <p className="text-xs text-gray-500">Event tersimpan</p>
+                                <p className="mt-1 text-lg font-black">
+                                  {user.savedEventsCount ?? 0}
+                                </p>
+                              </div>
+                              <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-950">
+                                <p className="text-xs text-gray-500">Total klik unik</p>
+                                <p className="mt-1 text-lg font-black">
+                                  {user.totalClicks ?? 0}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
               ) : (
                 <div className="mt-4 space-y-5">
                   <div id="admin-rental-form" className={`rounded-2xl border p-4 transition-all duration-500 dark:border-gray-800 ${rentalFormHighlight ? "border-red-500 bg-red-50 shadow-lg shadow-red-200/60 ring-2 ring-red-300 dark:bg-red-950/30 dark:shadow-red-950/40" : "border-gray-200"}`}>
