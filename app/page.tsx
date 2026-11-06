@@ -805,7 +805,7 @@ formData.append("name", rentalName.trim());
 // Kolom region tetap dikirim untuk kompatibilitas database lama,
 // tetapi tidak lagi ditampilkan sebagai input Domisili di form Admin.
 const regionValue =
-  rentalRegion.trim() || `${rentalProvince.trim()}, ${rentalCity.trim()}`;
+  const regionValue = `${rentalProvince.trim()}, ${rentalCity.trim()}`;
 formData.append("region", regionValue);
 formData.append("province", rentalProvince.trim());
 formData.append("city", rentalCity.trim());
