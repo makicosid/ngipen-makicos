@@ -633,6 +633,12 @@ const sponsorCarouselPausedRef = useRef(false);
   const [currentUserId, setCurrentUserId] = useState("");
 
   const [toast, setToast] = useState("");
+  const [editingApprovedEvent, setEditingApprovedEvent] = useState<Event | null>(null);
+  const [adminEditDraft, setAdminEditDraft] = useState<Partial<Event>>({});
+  const [adminEditCategories, setAdminEditCategories] = useState<Category[]>([]);
+  const [adminEditPoster, setAdminEditPoster] = useState<File | null>(null);
+  const [adminEditPosterPreview, setAdminEditPosterPreview] = useState("");
+  const [adminEditSaving, setAdminEditSaving] = useState(false);
 
   // Buka Kalender setelah halaman selesai scroll ke posisi paling atas.
   const openCalendarFromNavigation = async () => {
@@ -1850,6 +1856,47 @@ const logout = async () => {
     }
 
     setTimeout(() => setToast(""), 3000);
+  };
+
+  const openApprovedEventEditor = (event: Event) => {
+    setEditingApprovedEvent(event);
+    setAdminEditDraft({ ...event });
+    setAdminEditCategories((event.categories || []).filter((item) => eventCategoryOptions.includes(item)));
+    setAdminEditPoster(null);
+    setAdminEditPosterPreview(event.poster_url || "");
+  };
+
+  const handleAdminEditEvent = async () => {
+    if (!editingApprovedEvent) return;
+    if (adminEditCategories.length === 0) {
+      setToast("Pilih minimal satu kategori event.");
+      return;
+    }
+    setAdminEditSaving(true);
+    try {
+      const formData = new FormData();
+      const fields = ["title", "description", "province", "city", "venue_address", "start_date", "end_date", "start_time", "end_time", "ticket_type", "ticket_url", "registration_url", "social_link"] as const;
+      formData.append("id", editingApprovedEvent.id);
+      fields.forEach((key) => formData.append(key, String(adminEditDraft[key] ?? "")));
+      formData.append("categories", JSON.stringify(adminEditCategories));
+      if (adminEditPoster) formData.append("poster", adminEditPoster);
+      const response = await fetch("/api/admin/events/update", {
+        method: "POST", credentials: "include", body: formData,
+      });
+      const result = await response.json().catch(() => null);
+      if (!response.ok || !result?.success || !result.event) {
+        throw new Error(result?.error || "Gagal menyimpan perubahan event.");
+      }
+      setEvents((prev) => prev.map((item) => item.id === editingApprovedEvent.id ? result.event as Event : item));
+      setEditingApprovedEvent(null);
+      setAdminEditPoster(null);
+      setToast("Informasi event berhasil diperbarui. Status persetujuan dan sponsor tetap.");
+    } catch (error) {
+      setToast(`Gagal mengedit event: ${error instanceof Error ? error.message : "Terjadi kesalahan."}`);
+    } finally {
+      setAdminEditSaving(false);
+      window.setTimeout(() => setToast(""), 4000);
+    }
   };
 
   const handleBulkApprove = async (ids: string[]) => {
@@ -5706,6 +5753,7 @@ accept="image/jpeg,image/png,image/webp"
                           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Event yang sesuai akan muncul di sini.</p>
                         </div>
                       ) : (
+                        <div className={(adminEventTab === "Approved" || adminEventTab === "Sponsored") ? "max-h-[68vh] overflow-y-auto overscroll-contain pr-1" : ""}>
                         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
                           {adminFilteredEvents.map((event) => (
                             <article key={event.id} className="flex min-w-0 flex-col rounded-2xl border border-gray-200 bg-white p-3 shadow-sm dark:border-gray-700 dark:bg-gray-900 sm:p-4">
@@ -5752,6 +5800,7 @@ accept="image/jpeg,image/png,image/webp"
                                 )}
                                 {adminEventTab === "Approved" && (
                                   <>
+                                    <button type="button" onClick={() => openApprovedEventEditor(event)} className="rounded-lg border border-blue-300 bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700 hover:bg-blue-100 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-300">Edit Event</button>
                                     <button type="button" onClick={() => void handleModeration(event.id, "Rejected", false, 0)} className="rounded-lg bg-red-600 px-3 py-2 text-xs font-bold text-white hover:bg-red-700">Tolak</button>
                                     <button type="button" onClick={() => void handleModeration(event.id, "Approved", true, 1)} className="rounded-lg bg-amber-400 px-3 py-2 text-xs font-bold text-gray-950 hover:bg-amber-500">Jadikan Sponsor</button>
                                     <button type="button" onClick={() => void handleModeration(event.id, "Hidden")} className="rounded-lg bg-gray-100 px-3 py-2 text-xs font-bold text-gray-800 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700">Sembunyikan</button>
@@ -5765,6 +5814,7 @@ accept="image/jpeg,image/png,image/webp"
                                 )}
                                 {adminEventTab === "Sponsored" && (
                                   <>
+                                    <button type="button" onClick={() => openApprovedEventEditor(event)} className="rounded-lg border border-blue-300 bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700 hover:bg-blue-100 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-300">Edit Event</button>
                                     <button type="button" onClick={() => void handleModeration(event.id, "Approved", false, 0)} className="rounded-lg border border-gray-300 px-3 py-2 text-xs font-bold dark:border-gray-700">Hapus Sponsor</button>
                                     <button type="button" onClick={() => void handleModeration(event.id, "Rejected", false, 0)} className="rounded-lg bg-red-600 px-3 py-2 text-xs font-bold text-white hover:bg-red-700">Tolak Event</button>
                                   </>
@@ -5781,8 +5831,38 @@ accept="image/jpeg,image/png,image/webp"
                             </article>
                           ))}
                         </div>
+                        </div>
                       )}
-                      
+                        {editingApprovedEvent && (
+                          <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/60 p-3 sm:p-5" role="dialog" aria-modal="true" aria-label="Edit event disetujui">
+                            <div className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-gray-900">
+                              <div className="flex items-center justify-between gap-3 border-b border-gray-200 p-4 dark:border-gray-800">
+                                <div><h3 className="font-bold">Edit Informasi Event</h3><p className="mt-1 text-xs text-gray-500">Status Disetujui dan Sponsor tetap dipertahankan.</p></div>
+                                <button type="button" disabled={adminEditSaving} onClick={() => setEditingApprovedEvent(null)} className="rounded-lg px-3 py-2 text-sm font-bold hover:bg-gray-100">Tutup ✕</button>
+                              </div>
+                              <div className="overflow-y-auto p-4">
+                                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                  <label className="text-xs font-semibold sm:col-span-2">Judul Event<input value={String(adminEditDraft.title || "")} onChange={(e) => setAdminEditDraft((d) => ({...d,title:e.target.value}))} className="mt-1 w-full rounded-lg border bg-transparent p-2 text-sm" /></label>
+                                  <label className="text-xs font-semibold sm:col-span-2">Deskripsi<textarea rows={5} value={String(adminEditDraft.description || "")} onChange={(e) => setAdminEditDraft((d) => ({...d,description:e.target.value}))} className="mt-1 w-full rounded-lg border bg-transparent p-2 text-sm" /></label>
+                                  <label className="text-xs font-semibold">Provinsi<select value={String(adminEditDraft.province || "")} onChange={(e) => setAdminEditDraft((d) => ({...d,province:e.target.value}))} className="mt-1 w-full rounded-lg border bg-transparent p-2 text-sm">{ALL_PROVINCES.map((v)=><option key={v} value={v}>{v}</option>)}</select></label>
+                                  <label className="text-xs font-semibold">Kota/Kabupaten<input value={String(adminEditDraft.city || "")} onChange={(e) => setAdminEditDraft((d) => ({...d,city:e.target.value}))} className="mt-1 w-full rounded-lg border bg-transparent p-2 text-sm" /></label>
+                                  <label className="text-xs font-semibold sm:col-span-2">Alamat / Tempat<input value={String(adminEditDraft.venue_address || "")} onChange={(e) => setAdminEditDraft((d) => ({...d,venue_address:e.target.value}))} className="mt-1 w-full rounded-lg border bg-transparent p-2 text-sm" /></label>
+                                  <label className="text-xs font-semibold">Tanggal Mulai<input type="date" value={String(adminEditDraft.start_date || "")} onChange={(e) => setAdminEditDraft((d) => ({...d,start_date:e.target.value}))} className="mt-1 w-full rounded-lg border bg-transparent p-2 text-sm" /></label>
+                                  <label className="text-xs font-semibold">Tanggal Selesai<input type="date" value={String(adminEditDraft.end_date || "")} onChange={(e) => setAdminEditDraft((d) => ({...d,end_date:e.target.value}))} className="mt-1 w-full rounded-lg border bg-transparent p-2 text-sm" /></label>
+                                  <label className="text-xs font-semibold">Jam Mulai<input type="time" value={String(adminEditDraft.start_time || "09:00").slice(0,5)} onChange={(e) => setAdminEditDraft((d) => ({...d,start_time:e.target.value}))} className="mt-1 w-full rounded-lg border bg-transparent p-2 text-sm" /></label>
+                                  <label className="text-xs font-semibold">Jam Selesai<input type="time" value={String(adminEditDraft.end_time || "18:00").slice(0,5)} onChange={(e) => setAdminEditDraft((d) => ({...d,end_time:e.target.value}))} className="mt-1 w-full rounded-lg border bg-transparent p-2 text-sm" /></label>
+                                  <div className="sm:col-span-2"><p className="mb-2 text-xs font-semibold">Kategori Event</p><div className="flex flex-wrap gap-3">{eventCategoryOptions.map((cat)=><label key={cat} className="flex items-center gap-2 text-sm"><input type="checkbox" checked={adminEditCategories.includes(cat)} onChange={(e)=>setAdminEditCategories((prev)=>e.target.checked?[...prev,cat]:prev.filter((x)=>x!==cat))} className="accent-red-600" />{cat}</label>)}</div></div>
+                                  <label className="text-xs font-semibold">Jenis Tiket<select value={String(adminEditDraft.ticket_type || "Gratis")} onChange={(e)=>setAdminEditDraft((d)=>({...d,ticket_type:e.target.value as TicketType}))} className="mt-1 w-full rounded-lg border bg-transparent p-2 text-sm"><option>Gratis</option><option>Berbayar</option></select></label>
+                                  <label className="text-xs font-semibold">Link Tiket<input value={String(adminEditDraft.ticket_url || "")} onChange={(e)=>setAdminEditDraft((d)=>({...d,ticket_url:e.target.value}))} className="mt-1 w-full rounded-lg border bg-transparent p-2 text-sm" /></label>
+                                  <label className="text-xs font-semibold">Link Registrasi<input value={String(adminEditDraft.registration_url || "")} onChange={(e)=>setAdminEditDraft((d)=>({...d,registration_url:e.target.value}))} className="mt-1 w-full rounded-lg border bg-transparent p-2 text-sm" /></label>
+                                  <label className="text-xs font-semibold">Link Sosial / Info<input value={String(adminEditDraft.social_link || "")} onChange={(e)=>setAdminEditDraft((d)=>({...d,social_link:e.target.value}))} className="mt-1 w-full rounded-lg border bg-transparent p-2 text-sm" /></label>
+                                  <div className="sm:col-span-2"><p className="mb-2 text-xs font-semibold">Poster (opsional, tidak perlu pilih jika tetap)</p><div className="flex flex-wrap items-center gap-3">{adminEditPosterPreview && <img src={adminEditPosterPreview} alt="Preview poster" className="h-28 w-20 rounded-lg object-cover" />}<input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e)=>{const f=e.target.files?.[0]||null;setAdminEditPoster(f);if(f)setAdminEditPosterPreview(URL.createObjectURL(f));}} className="min-w-0 text-xs" /></div><p className="mt-1 text-[11px] text-gray-500">Maksimal 3 MB. Rasio 3:4, 1:1, 4:5, atau 9:16.</p></div>
+                                </div>
+                              </div>
+                              <div className="flex justify-end gap-2 border-t p-4"><button type="button" disabled={adminEditSaving} onClick={()=>setEditingApprovedEvent(null)} className="rounded-lg border px-4 py-2 text-sm font-bold">Batal</button><button type="button" disabled={adminEditSaving} onClick={()=>void handleAdminEditEvent()} className="rounded-lg bg-red-600 px-4 py-2 text-sm font-bold text-white disabled:opacity-50">{adminEditSaving?"Menyimpan...":"Simpan Perubahan"}</button></div>
+                            </div>
+                          </div>
+                        )}
                                         </div>
                   ) : adminTab === "users" ? (
                     <>
