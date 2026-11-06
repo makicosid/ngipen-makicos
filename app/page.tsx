@@ -679,6 +679,10 @@ const sponsorCarouselPausedRef = useRef(false);
   const [usersLoadError, setUsersLoadError] = useState("");
   const [adminUsersLoading, setAdminUsersLoading] = useState(false);
   const [adminUsersLoadError, setAdminUsersLoadError] = useState("");
+  const [savedEventsUser, setSavedEventsUser] = useState<RegUser | null>(null);
+  const [savedEventsList, setSavedEventsList] = useState<{ savedAt: string; event: Event }[]>([]);
+  const [savedEventsLoading, setSavedEventsLoading] = useState(false);
+  const [savedEventsError, setSavedEventsError] = useState("");
 
   const [savedIds, setSavedIds] = useState<string[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -1153,6 +1157,32 @@ const handleRentalImage = (file: File | null) => {
     eventStatusTab,
     showThisWeekOnly,
   ]);
+
+  const openUserSavedEvents = async (user: RegUser) => {
+    setSavedEventsUser(user);
+    setSavedEventsList([]);
+    setSavedEventsError("");
+    setSavedEventsLoading(true);
+
+    try {
+      const response = await fetch(
+        `/api/admin-users/saved-events?userId=${encodeURIComponent(user.id)}`,
+        { method: "GET", credentials: "include", cache: "no-store" }
+      );
+      const result = await response.json();
+      if (!response.ok || !Array.isArray(result.savedEvents)) {
+        throw new Error(result.error || "Gagal memuat event tersimpan.");
+      }
+      setSavedEventsList(result.savedEvents as { savedAt: string; event: Event }[]);
+    } catch (error) {
+      console.error("Admin saved events load error:", error);
+      setSavedEventsError(
+        error instanceof Error ? error.message : "Gagal memuat event tersimpan."
+      );
+    } finally {
+      setSavedEventsLoading(false);
+    }
+  };
 
   // Statistik pengguna khusus Admin — data dihitung oleh API server.
   useEffect(() => {
@@ -5572,6 +5602,7 @@ accept="image/jpeg,image/png,image/webp"
                       
                                         </div>
                   ) : adminTab === "users" ? (
+                    <>
                     <div className="mt-4 max-h-[55vh] overflow-y-auto">
                       <div className="mb-3 rounded-xl bg-gray-50 p-3 text-sm font-bold dark:bg-gray-950">
                         Total {registeredUsers.length} pengguna terdaftar
@@ -5632,9 +5663,14 @@ accept="image/jpeg,image/png,image/webp"
                             <div className="mt-3 grid grid-cols-2 gap-2">
                               <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-950">
                                 <p className="text-xs text-gray-500">Event tersimpan</p>
-                                <p className="mt-1 text-lg font-black">
+                                <button
+                                  type="button"
+                                  onClick={() => void openUserSavedEvents(user)}
+                                  className="mt-1 text-left text-lg font-black text-red-600 underline-offset-2 hover:underline focus:outline-none focus:ring-2 focus:ring-red-400"
+                                  aria-label={`Lihat ${user.savedEventsCount ?? 0} event tersimpan milik ${user.username}`}
+                                >
                                   {user.savedEventsCount ?? 0}
-                                </p>
+                                </button>
                               </div>
                               <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-950">
                                 <p className="text-xs text-gray-500">Total klik unik</p>
@@ -5647,6 +5683,49 @@ accept="image/jpeg,image/png,image/webp"
                         ))
                       )}
                     </div>
+                    {savedEventsUser && (
+                      <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 p-3 sm:p-5" role="dialog" aria-modal="true" aria-label="Daftar event tersimpan">
+                        <div className="flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-gray-900">
+                          <div className="flex items-start justify-between gap-3 border-b border-gray-200 p-4 dark:border-gray-800">
+                            <div className="min-w-0">
+                              <h3 className="font-bold text-gray-900 dark:text-white">Event Tersimpan</h3>
+                              <p className="mt-1 truncate text-xs text-gray-500">@{savedEventsUser.username} · {savedEventsList.length} event</p>
+                            </div>
+                            <button type="button" onClick={() => setSavedEventsUser(null)} className="rounded-lg px-3 py-2 text-sm font-bold text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800">Tutup ✕</button>
+                          </div>
+                          <div className="overflow-y-auto p-4">
+                            {savedEventsLoading ? (
+                              <p className="py-10 text-center text-sm text-gray-500">Memuat daftar event...</p>
+                            ) : savedEventsError ? (
+                              <p className="rounded-xl bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">{savedEventsError}</p>
+                            ) : savedEventsList.length === 0 ? (
+                              <p className="py-10 text-center text-sm text-gray-500">Pengguna ini belum menyimpan event.</p>
+                            ) : (
+                              <div className="space-y-3">
+                                {savedEventsList.map((item, index) => (
+                                  <div key={`${item.event?.id || "event"}-${index}`} className="flex gap-3 rounded-xl border border-gray-200 p-3 dark:border-gray-800">
+                                    {item.event?.poster_url ? (
+                                      <img src={item.event.poster_url} alt={`Poster ${item.event.title || "event"}`} className="h-20 w-14 shrink-0 rounded-lg object-cover" />
+                                    ) : (
+                                      <div className="flex h-20 w-14 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-[10px] text-gray-400 dark:bg-gray-800">No poster</div>
+                                    )}
+                                    <div className="min-w-0 flex-1">
+                                      <p className="break-words text-sm font-bold text-gray-900 dark:text-white">{item.event?.title || "Event tidak tersedia"}</p>
+                                      {item.event && <>
+                                        <p className="mt-1 text-xs text-gray-500">{item.event.start_date || "Tanggal belum tersedia"}{item.event.city ? ` · ${item.event.city}` : ""}</p>
+                                        <p className="mt-1 text-xs text-gray-500">Status: {item.event.moderation_status || "Tidak diketahui"}</p>
+                                      </>}
+                                      <p className="mt-1 text-[11px] text-gray-400">Disimpan: {item.savedAt ? new Date(item.savedAt).toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" }) : "—"}</p>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    </>
               ) : (
                 <div className="mt-4 space-y-5">
                   <div id="admin-rental-form" className={`rounded-2xl border p-4 transition-all duration-500 dark:border-gray-800 ${rentalFormHighlight ? "border-red-500 bg-red-50 shadow-lg shadow-red-200/60 ring-2 ring-red-300 dark:bg-red-950/30 dark:shadow-red-950/40" : "border-gray-200"}`}>
