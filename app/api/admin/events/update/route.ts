@@ -139,8 +139,13 @@ export async function POST(request: NextRequest) {
     const venue = value("venue_address");
     const startDate = value("start_date");
     const endDate = value("end_date");
-    const startTime = value("start_time");
-    const endTime = value("end_time");
+    // Terima HH:mm maupun HH:mm:ss, lalu simpan dalam format HH:mm.
+    const normalizeTime = (raw: string) => {
+      const match = raw.trim().match(/^([01]\\d|2[0-3]):([0-5]\\d)(?::[0-5]\\d)?$/);
+      return match ? `${match[1]}:${match[2]}` : "";
+    };
+    const startTime = normalizeTime(value("start_time"));
+    const endTime = normalizeTime(value("end_time"));
     const ticketType = value("ticket_type");
     const ticketUrl = value("ticket_url");
     const registrationUrl = value("registration_url");
@@ -152,7 +157,7 @@ export async function POST(request: NextRequest) {
     if (!city || city.length > 100) return json({ error: "Kota/kabupaten wajib diisi (maksimal 100 karakter)." }, 400);
     if (!venue || venue.length > 300) return json({ error: "Alamat/tempat acara wajib diisi (maksimal 300 karakter)." }, 400);
     if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate) || !/^\d{4}-\d{2}-\d{2}$/.test(endDate) || endDate < startDate) return json({ error: "Tanggal event tidak valid." }, 400);
-    if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(startTime) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(endTime)) return json({ error: "Jam event tidak valid." }, 400);
+    if (!startTime || !endTime) return json({ error: "Jam event tidak valid. Gunakan format HH:mm." }, 400);
     if (ticketType !== "Gratis" && ticketType !== "Berbayar") return json({ error: "Jenis tiket tidak valid." }, 400);
     if (ticketType === "Berbayar" && !ticketUrl) return json({ error: "Link tiket wajib untuk event berbayar." }, 400);
     if (![ticketUrl, registrationUrl, socialLink].every(isValidUrl)) return json({ error: "Link harus menggunakan http:// atau https:// yang valid." }, 400);
