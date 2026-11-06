@@ -141,7 +141,7 @@ export async function POST(request: NextRequest) {
     const endDate = value("end_date");
     // Terima HH:mm maupun HH:mm:ss, lalu simpan dalam format HH:mm.
     const normalizeTime = (raw: string) => {
-      const match = raw.trim().match(/^([01]\\d|2[0-3]):([0-5]\\d)(?::[0-5]\\d)?$/);
+      const match = raw.trim().match(/^([01]\d|2[0-3]):([0-5]\d)(?::[0-5]\d)?$/);
       return match ? `${match[1]}:${match[2]}` : "";
     };
     const startTime = normalizeTime(value("start_time"));
