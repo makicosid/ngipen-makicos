@@ -702,6 +702,10 @@ const sponsorCarouselPausedRef = useRef(false);
   const [adminEventTab, setAdminEventTab] = useState<
     "Pending" | "Approved" | "Rejected" | "Sponsored" | "Completed" | "Hidden"
   >("Pending");
+  const [adminEventSearch, setAdminEventSearch] = useState("");
+  const [adminEventCategoryFilter, setAdminEventCategoryFilter] = useState("Semua");
+  const [adminEventProvinceFilter, setAdminEventProvinceFilter] = useState("Semua");
+  const [adminEventSponsorFilter, setAdminEventSponsorFilter] = useState<"Semua" | "Sponsor" | "Non-Sponsor">("Semua");
 // Data Cari Costume
 const [showCostumeDirectory, setShowCostumeDirectory] = useState(false);
 const activeNavKey = selectedEvent
@@ -2789,28 +2793,34 @@ return {
   ]);
 
   const adminFilteredEvents = useMemo(() => {
+    const query = adminEventSearch.trim().toLocaleLowerCase("id-ID");
     return events.filter((event) => {
       const completed = getTimeStatus(event) === "Completed";
+      let matchesTab = false;
 
-      if (adminEventTab === "Completed") return completed;
-      if (completed) return false;
-
-      switch (adminEventTab) {
-        case "Pending":
-          return event.moderation_status === "Pending";
-        case "Approved":
-          return event.moderation_status === "Approved" && !event.is_sponsored;
-        case "Rejected":
-          return event.moderation_status === "Rejected";
-        case "Sponsored":
-          return event.moderation_status === "Approved" && event.is_sponsored;
-        case "Hidden":
-          return event.moderation_status === "Hidden";
-        default:
-          return false;
+      if (adminEventTab === "Completed") {
+        matchesTab = completed;
+      } else if (!completed) {
+        switch (adminEventTab) {
+          case "Pending": matchesTab = event.moderation_status === "Pending"; break;
+          case "Approved": matchesTab = event.moderation_status === "Approved" && !event.is_sponsored; break;
+          case "Rejected": matchesTab = event.moderation_status === "Rejected"; break;
+          case "Sponsored": matchesTab = event.moderation_status === "Approved" && event.is_sponsored; break;
+          case "Hidden": matchesTab = event.moderation_status === "Hidden"; break;
+        }
       }
+      if (!matchesTab) return false;
+
+      const searchable = [event.title, event.organizer_name, event.organizer_id, event.city, event.province, event.venue_address]
+        .filter(Boolean).join(" ").toLocaleLowerCase("id-ID");
+      if (query && !searchable.includes(query)) return false;
+      if (adminEventCategoryFilter !== "Semua" && !(event.categories || []).includes(adminEventCategoryFilter as Category)) return false;
+      if (adminEventProvinceFilter !== "Semua" && event.province !== adminEventProvinceFilter) return false;
+      if (adminEventSponsorFilter === "Sponsor" && !event.is_sponsored) return false;
+      if (adminEventSponsorFilter === "Non-Sponsor" && event.is_sponsored) return false;
+      return true;
     });
-  }, [events, adminEventTab, realTimeTick]);
+  }, [events, adminEventTab, adminEventSearch, adminEventCategoryFilter, adminEventProvinceFilter, adminEventSponsorFilter, realTimeTick]);
 
   const totalEventPages = Math.max(
     1,
@@ -5522,6 +5532,39 @@ accept="image/jpeg,image/png,image/webp"
                           Event pada daftar ini sudah melewati tanggal dan waktu selesai. Penghapusan bersifat permanen dan memerlukan konfirmasi.
                         </div>
                       )}
+
+                      <div className="rounded-2xl border border-gray-200 bg-gray-50 p-3 dark:border-gray-800 dark:bg-gray-950">
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                          <label className="text-xs font-bold text-gray-600 dark:text-gray-300 sm:col-span-2 xl:col-span-1">
+                            Cari event / pengguna / lokasi
+                            <input value={adminEventSearch} onChange={(e) => setAdminEventSearch(e.target.value)} placeholder="Judul, username, kota, alamat..." className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm font-normal outline-none focus:border-red-500 dark:border-gray-700 dark:bg-gray-900" />
+                          </label>
+                          <label className="text-xs font-bold text-gray-600 dark:text-gray-300">
+                            Kategori
+                            <select value={adminEventCategoryFilter} onChange={(e) => setAdminEventCategoryFilter(e.target.value)} className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm font-normal dark:border-gray-700 dark:bg-gray-900">
+                              <option value="Semua">Semua kategori</option>
+                              {eventCategoryOptions.map((category) => <option key={category} value={category}>{category}</option>)}
+                            </select>
+                          </label>
+                          <label className="text-xs font-bold text-gray-600 dark:text-gray-300">
+                            Provinsi
+                            <select value={adminEventProvinceFilter} onChange={(e) => setAdminEventProvinceFilter(e.target.value)} className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm font-normal dark:border-gray-700 dark:bg-gray-900">
+                              <option value="Semua">Semua provinsi</option>
+                              {ALL_PROVINCES.map((province) => <option key={province} value={province}>{province}</option>)}
+                            </select>
+                          </label>
+                          <label className="text-xs font-bold text-gray-600 dark:text-gray-300">
+                            Sponsor
+                            <select value={adminEventSponsorFilter} onChange={(e) => setAdminEventSponsorFilter(e.target.value as "Semua" | "Sponsor" | "Non-Sponsor")} className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm font-normal dark:border-gray-700 dark:bg-gray-900">
+                              <option value="Semua">Semua</option><option value="Sponsor">Sponsor</option><option value="Non-Sponsor">Non-Sponsor</option>
+                            </select>
+                          </label>
+                        </div>
+                        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs">
+                          <span className="font-bold text-gray-600 dark:text-gray-300">Menampilkan {adminFilteredEvents.length} event</span>
+                          <button type="button" onClick={() => { setAdminEventSearch(""); setAdminEventCategoryFilter("Semua"); setAdminEventProvinceFilter("Semua"); setAdminEventSponsorFilter("Semua"); }} className="rounded-lg border border-gray-300 bg-white px-3 py-2 font-bold text-gray-700 hover:border-red-400 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200">Reset filter</button>
+                        </div>
+                      </div>
 
                       {adminFilteredEvents.length === 0 ? (
                         <div className="rounded-2xl border border-dashed border-gray-300 px-5 py-12 text-center dark:border-gray-700">
