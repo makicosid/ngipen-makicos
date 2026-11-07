@@ -102,68 +102,72 @@ body {
 }
 
 
-/* Identitas rubah MAKICOS: aksen dekoratif, tidak menggantikan logo NGIPEN. */
-.fox-header-accent {
-  position: sticky;
+/* NGIPEN Japanese Kitsune visual layer — presentation only */
+.ngipen-jp-header {
   isolation: isolate;
 }
-.fox-header-accent::after {
+.ngipen-jp-header::before {
   content: "";
   position: absolute;
+  inset: 0;
   z-index: -1;
-  right: 31%;
+  pointer-events: none;
+  opacity: .38;
+  background-image: url("/ngipen-japanese-trim.svg");
+  background-repeat: repeat-x;
+  background-position: right center;
+  background-size: auto 100%;
+}
+.ngipen-jp-header::after {
+  content: "";
+  position: absolute;
+  right: clamp(12rem, 24vw, 25rem);
   top: 50%;
-  width: 30px;
-  height: 30px;
+  width: 42px;
+  height: 42px;
   transform: translateY(-50%);
-  background: url("/fox-mark.png") center / contain no-repeat;
-  opacity: 0.07;
   pointer-events: none;
+  opacity: .12;
+  background: url("/ngipen-fox-duo.png") 24% 28% / 260% auto no-repeat;
+  border-radius: 50%;
 }
-.fox-state-panel {
-  position: relative;
-  overflow: hidden;
-  background-image: radial-gradient(circle at 50% 0%, rgba(229, 57, 53, 0.045), transparent 58%);
-}
-.fox-event-card {
-  position: relative;
-}
-.fox-event-card::after {
+.ngipen-hero::before {
   content: "";
   position: absolute;
-  right: 8px;
-  bottom: 8px;
-  width: 22px;
-  height: 22px;
-  background: url("/fox-mark.png") center / contain no-repeat;
-  opacity: 0.13;
-  pointer-events: none;
-}
-.fox-site-footer {
-  position: relative;
-  isolation: isolate;
-  overflow: hidden;
-}
-.fox-site-footer::after {
-  content: "";
-  position: absolute;
+  inset: 0;
   z-index: -1;
-  right: 7%;
-  top: 50%;
-  width: 76px;
-  height: 76px;
-  transform: translateY(-50%);
-  background: url("/fox-mark.png") center / contain no-repeat;
-  opacity: 0.07;
+  opacity: .22;
   pointer-events: none;
+  background-image: url("/ngipen-japanese-trim.svg");
+  background-position: right bottom;
+  background-repeat: no-repeat;
+  background-size: auto 72%;
+}
+.ngipen-hero-cloud {
+  position: absolute;
+  width: 180px;
+  height: 72px;
+  border: 1px solid rgba(255,255,255,.22);
+  border-radius: 999px;
+  pointer-events: none;
+  opacity: .38;
+}
+.ngipen-hero-cloud-one { right: 32%; top: 12%; }
+.ngipen-hero-cloud-two { right: 4%; bottom: 8%; transform: scale(.7); }
+.ngipen-fox-sticker { transform: rotate(8deg); transition: transform .2s ease; }
+.group:hover .ngipen-fox-sticker { transform: rotate(0deg) scale(1.06); }
+.ngipen-jp-footer {
+  background-image: url("/ngipen-japanese-trim.svg");
+  background-repeat: repeat-x;
+  background-position: center bottom;
+  background-size: auto 42px;
 }
 @media (max-width: 767px) {
-  .fox-header-accent::after {
-    display: none;
-  }
-  .fox-site-footer::after {
-    right: 2%;
-    width: 52px;
-    height: 52px;
-  }
+  .ngipen-jp-header::after { display: none; }
+  .ngipen-jp-header::before { opacity: .22; background-position: 70% center; }
+  .ngipen-hero-cloud-one { right: -2rem; top: 2%; }
+  .ngipen-hero-cloud-two { right: -2rem; bottom: 34%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ngipen-fox-sticker { transition: none; }
 }
