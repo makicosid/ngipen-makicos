@@ -1277,7 +1277,7 @@ const handleRentalImage = (file: File | null) => {
   try {
      const { data: usersData, error: usersError } = await supabase
       .from("public_users")
-      .select("id,username,display_name,bio,avatar_url,created_at")
+      .select("id,username,display_name,avatar_url,created_at")
       .order("created_at", { ascending: false });
 
     if (usersError) {
@@ -1314,6 +1314,18 @@ const handleRentalImage = (file: File | null) => {
 });
 
 const sessionResult = await sessionResponse.json();
+
+// Bio hanya dimuat dari endpoint sesi untuk akun yang sedang login.
+// Daftar public_users tetap tidak menerima kolom bio.
+if (sessionResponse.ok && sessionResult.user) {
+  setRegisteredUsers((prev) =>
+    prev.map((user) =>
+      String(user.id) === String(sessionResult.user.id)
+        ? { ...user, bio: sessionResult.user.bio || "" }
+        : user
+    )
+  );
+}
 
 const savedUserId =
   sessionResponse.ok && sessionResult.user
