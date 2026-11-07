@@ -90,7 +90,7 @@ export async function GET(request: NextRequest) {
     const supabase = getSupabaseAdmin();
 
     const { data: users, error: usersError } = await supabase
-      .from("public_users")
+      .from("users")
       .select("id,username,display_name,bio,avatar_url,created_at")
       .order("created_at", { ascending: false });
 
