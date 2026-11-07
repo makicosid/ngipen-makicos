@@ -78,7 +78,19 @@ export async function GET(request: NextRequest) {
       return json({ error: "Gagal memuat data event." }, 500);
     }
 
-    return json({ success: true, events: events || [] });
+    // Jangan kirim identitas profil penyelenggara kepada guest/pengguna biasa.
+    // Admin tetap menerima data lengkap untuk kebutuhan moderasi.
+    const safeEvents = (events || []).map((event) => {
+      if (isAdmin) return event;
+
+      return {
+        ...event,
+        organizer_id: null,
+        organizer_name: "Penyelenggara",
+      };
+    });
+
+    return json({ success: true, events: safeEvents });
   } catch (error) {
     console.error("Events API error:", error);
     return json({ error: "Terjadi kesalahan pada server." }, 500);
