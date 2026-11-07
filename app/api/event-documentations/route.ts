@@ -41,6 +41,28 @@ function hashToken(token: string) {
   return createHash("sha256").update(token).digest("hex");
 }
 
+
+const ADMIN_COOKIE_NAME = "ngipen_admin_session";
+
+async function hasValidAdminSession(request: NextRequest, supabase: ReturnType<typeof getSupabaseAdmin>) {
+  const token = request.cookies.get(ADMIN_COOKIE_NAME)?.value;
+  if (!token) return false;
+
+  const { data, error } = await supabase
+    .from("admin_sessions")
+    .select("token_hash")
+    .eq("token_hash", hashToken(token))
+    .gt("expires_at", new Date().toISOString())
+    .maybeSingle();
+
+  if (error) {
+    console.error("Documentation admin session check error:", error);
+    return false;
+  }
+
+  return Boolean(data);
+}
+
 async function getSession(request: NextRequest) {
   const token = request.cookies.get(COOKIE_NAME)?.value;
 
@@ -123,9 +145,11 @@ function getEventTimeStatus(event: {
 }
 
 // GET: Dokumentasi dapat dilihat publik.
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const supabase = getSupabaseAdmin();
+    const session = await getSession(request);
+    const isAdmin = await hasValidAdminSession(request, supabase);
 
     const { data, error } = await supabase
       .from("event_documentations")
@@ -163,11 +187,29 @@ export async function GET() {
       });
     }
 
+    const visibleDocs = (data || []).filter((doc) =>
+      visibleCompletedEventIds.has(String(doc.event_id))
+    );
+
+    // Identitas pembuat dokumentasi hanya dikirim kepada admin
+    // atau pemilik dokumentasi itu sendiri.
+    const privacySafeDocs = visibleDocs.map((doc: any) => {
+      const isOwner =
+        Boolean(session) &&
+        String(doc.user_id) === String(session!.user_id);
+
+      if (isAdmin || isOwner) return doc;
+
+      return {
+        ...doc,
+        user_id: null,
+        username: null,
+      };
+    });
+
     return json({
       success: true,
-      docs: (data || []).filter((doc) =>
-        visibleCompletedEventIds.has(String(doc.event_id))
-      ),
+      docs: privacySafeDocs,
     });
   } catch (error) {
     console.error("Event documentations GET error:", error);
