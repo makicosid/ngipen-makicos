@@ -68,7 +68,11 @@ export default function TentangKamiPage() {
           <div className="relative max-w-3xl"><p className="text-xs font-black uppercase tracking-[0.24em] text-red-100">Satu Hobby, Satu Keseruan.</p><h1 className="mt-3 text-4xl font-black tracking-tight sm:text-6xl">Tentang Kami</h1><p className="mt-5 max-w-2xl text-sm leading-7 text-red-50 sm:text-base sm:leading-8">NGIPEN adalah platform informasi dan eksplorasi event jejepangan di Indonesia yang dikembangkan oleh <strong>@makicos.id</strong>. Kami ingin membuat komunitas lebih mudah menemukan event, terhubung, dan tumbuh bersama.</p>
             <div className="mt-7 flex flex-wrap items-center gap-3">{/* eslint-disable-next-line @next/next/no-img-element */}<img src="/about/ecosystem/makicos-id.jpg" alt="Logo MAKICOS" className="h-14 w-14 rounded-2xl bg-white object-contain p-1" /><div><p className="font-black tracking-wide">NGIPEN – MAKICOS</p><p className="text-xs text-red-100">Dikembangkan oleh @makicos.id</p></div></div>
           </div>
-          <div className="relative mx-auto w-full max-w-[360px] rounded-[1.6rem] border border-white/60 bg-white p-2 shadow-2xl shadow-red-950/20"><img src="/ngipen-fox-duo.png" alt="Dua maskot NGIPEN" className="w-full rounded-[1.2rem] object-contain" /><span className="absolute -bottom-3 -left-3 rounded-full border border-red-100 bg-white px-3 py-1 text-[9px] font-black uppercase tracking-[0.18em] text-red-700 shadow">Kitsune friends</span></div>
+          <div className="relative mx-auto flex h-[250px] w-full max-w-[360px] items-end justify-center sm:h-[310px]">
+            <img src="/mascots/kitsune-kun.png" alt="Kitsune-kun, maskot laki-laki NGIPEN" className="h-[94%] w-[52%] -mr-4 object-contain object-bottom drop-shadow-[0_10px_14px_rgba(80,0,0,.18)]" />
+            <img src="/mascots/kitsune-chan.png" alt="Kitsune-chan, maskot perempuan NGIPEN" className="h-full w-[56%] -ml-4 object-contain object-bottom drop-shadow-[0_10px_14px_rgba(80,0,0,.18)]" />
+            <span aria-hidden="true" className="absolute right-2 top-3 text-3xl text-amber-200">✿</span>
+          </div>
           </div>
         </section>
 
@@ -79,11 +83,11 @@ export default function TentangKamiPage() {
 
         <section className="mt-8 grid gap-4 sm:grid-cols-2">
           <article className="overflow-hidden rounded-3xl border border-red-100 bg-white shadow-sm dark:border-red-950 dark:bg-gray-900">
-            <div className="relative h-48 overflow-hidden bg-gradient-to-br from-red-50 to-white dark:from-red-950/30 dark:to-gray-900"><img src="/ngipen-fox-duo.png" alt="Maskot rubah merah NGIPEN" className="absolute inset-0 h-full w-full scale-[1.9] object-cover object-[24%_28%]" /></div>
+            <div className="relative flex h-48 items-end justify-center overflow-hidden bg-gradient-to-br from-red-50 via-white to-rose-50 dark:from-red-950/30 dark:to-gray-900"><img src="/mascots/kitsune-kun.png" alt="Kitsune-kun, maskot rubah merah NGIPEN" className="h-[94%] max-w-full object-contain object-bottom" /></div>
             <div className="border-t border-red-100 p-5 dark:border-red-950"><p className="text-[10px] font-black uppercase tracking-[0.2em] text-red-600">Kreativitas</p><h2 className="mt-1 text-lg font-black">Berani berkarya, berani tampil.</h2><p className="mt-2 text-sm leading-6 text-gray-600 dark:text-gray-300">Ruang untuk memperkenalkan karya dan merayakan kreativitas komunitas.</p></div>
           </article>
           <article className="overflow-hidden rounded-3xl border border-red-100 bg-white shadow-sm dark:border-red-950 dark:bg-gray-900">
-            <div className="relative h-48 overflow-hidden bg-gradient-to-br from-rose-50 to-white dark:from-red-950/30 dark:to-gray-900"><img src="/ngipen-fox-duo.png" alt="Maskot rubah perempuan NGIPEN" className="absolute inset-0 h-full w-full scale-[1.9] object-cover object-[77%_28%]" /></div>
+            <div className="relative flex h-48 items-end justify-center overflow-hidden bg-gradient-to-br from-rose-50 via-white to-red-50 dark:from-red-950/30 dark:to-gray-900"><img src="/mascots/kitsune-chan.png" alt="Kitsune-chan, maskot rubah perempuan NGIPEN" className="h-[94%] max-w-full object-contain object-bottom" /></div>
             <div className="border-t border-red-100 p-5 dark:border-red-950"><p className="text-[10px] font-black uppercase tracking-[0.2em] text-red-600">Kebersamaan</p><h2 className="mt-1 text-lg font-black">Tumbuh bersama komunitas.</h2><p className="mt-2 text-sm leading-6 text-gray-600 dark:text-gray-300">Menghubungkan cosplayer, penyelenggara, dan teman-teman jejepangan.</p></div>
           </article>
         </section>
