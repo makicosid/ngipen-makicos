@@ -4457,23 +4457,6 @@ const shareEvent = async (event: Event) => {
                             {event.title}
                           </h3>
 
-                          <div className="mt-2 flex min-w-0 items-center gap-2">
-                            {event.organizer_avatar ? (
-                              <img
-                                src={event.organizer_avatar}
-                                alt=""
-                                className="h-6 w-6 shrink-0 rounded-full object-cover"
-                              />
-                            ) : (
-                              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-red-100 text-[10px] font-bold text-red-700">
-                                {(event.organizer_name || "P")[0].toUpperCase()}
-                              </span>
-                            )}
-                            <span className="truncate text-xs font-semibold text-gray-700 dark:text-gray-300">
-                              {event.organizer_name || "Penyelenggara"}
-                            </span>
-                          </div>
-
                           <p className="mt-2 truncate text-xs text-gray-500 dark:text-gray-400">
                             📍 {event.city}, {event.province}
                           </p>
