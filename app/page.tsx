@@ -1275,18 +1275,9 @@ const handleRentalImage = (file: File | null) => {
   setLoading(true);
 
   try {
-     const { data: usersData, error: usersError } = await supabase
-      .from("public_users")
-      .select("id,username,display_name,avatar_url,created_at")
-      .order("created_at", { ascending: false });
-
-    if (usersError) {
-      setUsersLoadError(usersError.message);
-      console.error("Gagal memuat user:", usersError.message);
-    } else if (usersData) {
-      setRegisteredUsers(usersData as RegUser[]);
-      setUsersLoadError("");
-    }
+     // Profil pengguna tidak lagi diambil dari public_users.
+     // Data profil hanya dimuat dari endpoint sesi untuk pemilik akun.
+     setUsersLoadError("");
         const eventsResponse = await fetch("/api/events", {
           method: "GET",
           credentials: "include",
@@ -1315,16 +1306,12 @@ const handleRentalImage = (file: File | null) => {
 
 const sessionResult = await sessionResponse.json();
 
-// Bio hanya dimuat dari endpoint sesi untuk akun yang sedang login.
-// Daftar public_users tetap tidak menerima kolom bio.
+// Hanya profil milik akun yang sedang login yang disimpan di state pengguna.
+// Guest tidak memuat profil siapa pun.
 if (sessionResponse.ok && sessionResult.user) {
-  setRegisteredUsers((prev) =>
-    prev.map((user) =>
-      String(user.id) === String(sessionResult.user.id)
-        ? { ...user, bio: sessionResult.user.bio || "" }
-        : user
-    )
-  );
+  setRegisteredUsers([sessionResult.user as RegUser]);
+} else {
+  setRegisteredUsers([]);
 }
 
 const savedUserId =
@@ -1362,19 +1349,14 @@ const savedUserId =
           console.error("Gagal mengambil ulasan:", reviewsResult.error);
         } else {
           setMyRatings(reviewsResult.myRatings || {});
-          const userMap = new Map(
-            (usersData || []).map((user: any) => [String(user.id), user])
-          );
+          // Identitas reviewer lain tidak ditampilkan kepada pengguna.
           setReviews(
-            (reviewsResult.reviews || []).map((review: any) => {
-              const user: any = userMap.get(String(review.user_id));
-              return {
-                ...review,
-                username: user?.username || "user",
-                display_name: user?.display_name || user?.username || "User",
-                avatar_url: user?.avatar_url || "",
-              };
-            })
+            (reviewsResult.reviews || []).map((review: any) => ({
+              ...review,
+              username: "pengguna",
+              display_name: "Pengguna",
+              avatar_url: "",
+            }))
           );
         }
 
@@ -2304,14 +2286,16 @@ const logout = async () => {
         throw new Error(refreshResult.error || "Ulasan tersimpan, tetapi daftar gagal diperbarui.");
       }
 
-      const userMap = new Map(registeredUsers.map((user) => [String(user.id), user]));
+      const ownProfile = registeredUsers.find(
+        (user) => String(user.id) === String(currentUserId)
+      );
       const mapped = (refreshResult.reviews || []).map((review: any) => {
-        const user = userMap.get(String(review.user_id));
+        const isOwnReview = String(review.user_id) === String(currentUserId);
         return {
           ...review,
-          username: user?.username || review.username || "user",
-          display_name: user?.display_name || user?.username || review.display_name || "Pengguna",
-          avatar_url: user?.avatar_url || review.avatar_url || "",
+          username: isOwnReview ? ownProfile?.username || "Anda" : "pengguna",
+          display_name: isOwnReview ? ownProfile?.display_name || "Anda" : "Pengguna",
+          avatar_url: isOwnReview ? ownProfile?.avatar_url || "" : "",
         };
       });
       setReviews((prev) => [
@@ -3226,16 +3210,16 @@ const openEvent = async (event: Event) => {
       throw new Error(result.error || "Gagal mengambil ulasan event.");
     }
 
-    const userMap = new Map(
-      registeredUsers.map((user) => [String(user.id), user])
+    const ownProfile = registeredUsers.find(
+      (user) => String(user.id) === String(currentUserId)
     );
     const mapped = (result.reviews || []).map((review: any) => {
-      const user = userMap.get(String(review.user_id));
+      const isOwnReview = String(review.user_id) === String(currentUserId);
       return {
         ...review,
-        username: user?.username || review.username || "user",
-        display_name: user?.display_name || user?.username || review.display_name || "Pengguna",
-        avatar_url: user?.avatar_url || review.avatar_url || "",
+        username: isOwnReview ? ownProfile?.username || "Anda" : "pengguna",
+        display_name: isOwnReview ? ownProfile?.display_name || "Anda" : "Pengguna",
+        avatar_url: isOwnReview ? ownProfile?.avatar_url || "" : "",
       };
     });
 
