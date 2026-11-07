@@ -139,9 +139,24 @@ export async function GET(request: NextRequest) {
       }
     });
 
+    // Opsi A: identitas reviewer hanya boleh diketahui oleh pemilik review
+    // sendiri. Review pengguna lain tetap tampil sebagai konten anonim.
+    const privacySafeReviews = publicReviews.map((review: any) => {
+      const isOwnReview =
+        Boolean(session) &&
+        String(review.user_id) === String(session!.user_id);
+
+      if (isOwnReview) return review;
+
+      return {
+        ...review,
+        user_id: null,
+      };
+    });
+
     return json({
       success: true,
-      reviews: publicReviews,
+      reviews: privacySafeReviews,
       myRatings,
     });
   } catch (error) {
