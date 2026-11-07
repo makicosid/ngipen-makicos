@@ -153,7 +153,7 @@ export async function GET(request: NextRequest) {
 
     const { data, error } = await supabase
       .from("event_documentations")
-      .select("id, event_id, user_id, username, image_url, caption, created_at")
+      .select("id, event_id, user_id, image_url, caption, created_at")
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -191,25 +191,49 @@ export async function GET(request: NextRequest) {
       visibleCompletedEventIds.has(String(doc.event_id))
     );
 
-    // Identitas pembuat dokumentasi hanya dikirim kepada admin
-    // atau pemilik dokumentasi itu sendiri.
-    const privacySafeDocs = visibleDocs.map((doc: any) => {
-      const isOwner =
-        Boolean(session) &&
-        String(doc.user_id) === String(session!.user_id);
+    // Profil publik dokumentasi hanya memuat display_name dan avatar_url.
+    // Kolom username lama tidak pernah dikirim ke browser.
+    const uploaderIds = Array.from(new Set(
+      visibleDocs.map((doc: any) => String(doc.user_id || "")).filter(Boolean)
+    ));
+    const uploaderProfiles = new Map<string, { display_name: string; avatar_url: string }>();
 
-      if (isAdmin || isOwner) return doc;
+    for (let offset = 0; offset < uploaderIds.length; offset += 200) {
+      const { data: profiles, error: profilesError } = await supabase
+        .from("users")
+        .select("id, display_name, avatar_url")
+        .in("id", uploaderIds.slice(offset, offset + 200));
 
+      if (profilesError) {
+        console.error("Fetch documentation public profiles error:", profilesError);
+        return json({ error: "Gagal mengambil profil pengunggah." }, 500);
+      }
+
+      (profiles || []).forEach((profile: any) => {
+        uploaderProfiles.set(String(profile.id), {
+          display_name: String(profile.display_name || "Pengunjung"),
+          avatar_url: String(profile.avatar_url || ""),
+        });
+      });
+    }
+
+    const publicDocs = visibleDocs.map((doc: any) => {
+      const profile = uploaderProfiles.get(String(doc.user_id || ""));
       return {
-        ...doc,
-        user_id: null,
-        username: null,
+        id: doc.id,
+        event_id: doc.event_id,
+        user_id: doc.user_id,
+        display_name: profile?.display_name || "Pengunjung",
+        avatar_url: profile?.avatar_url || "",
+        image_url: doc.image_url,
+        caption: doc.caption,
+        created_at: doc.created_at,
       };
     });
 
     return json({
       success: true,
-      docs: privacySafeDocs,
+      docs: publicDocs,
     });
   } catch (error) {
     console.error("Event documentations GET error:", error);
@@ -294,7 +318,7 @@ export async function POST(request: NextRequest) {
     // Ambil identitas pengguna dari sesi yang sudah tervalidasi.
     const { data: user, error: userError } = await supabase
       .from("users")
-      .select("id, username, display_name")
+      .select("id, display_name, avatar_url")
       .eq("id", session.user_id)
       .maybeSingle();
 
@@ -385,10 +409,7 @@ export async function POST(request: NextRequest) {
 
     const imageUrl = publicUrlData.publicUrl;
 
-    const displayName =
-      user.display_name?.trim() ||
-      user.username?.trim() ||
-      "Pengguna";
+    const displayName = user.display_name?.trim() || "Pengunjung";
 
     const { data, error: insertError } = await supabase
       .from("event_documentations")
@@ -399,7 +420,7 @@ export async function POST(request: NextRequest) {
         image_url: imageUrl,
         caption,
       })
-      .select("id, event_id, user_id, username, image_url, caption, created_at")
+      .select("id, event_id, user_id, image_url, caption, created_at")
       .single();
 
     if (insertError) {
@@ -424,7 +445,16 @@ export async function POST(request: NextRequest) {
 
     return json({
       success: true,
-      doc: data,
+      doc: {
+        id: data.id,
+        event_id: data.event_id,
+        user_id: data.user_id,
+        display_name: displayName,
+        avatar_url: user.avatar_url || "",
+        image_url: data.image_url,
+        caption: data.caption,
+        created_at: data.created_at,
+      },
     });
   } catch (error) {
     console.error("Event documentations POST error:", error);
