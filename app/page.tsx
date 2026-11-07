@@ -3456,7 +3456,7 @@ const shareEvent = async (event: Event) => {
     <div className={dark ? "dark" : ""}>
       <div className="min-h-screen bg-gray-50 text-gray-900 transition-colors dark:bg-gray-950 dark:text-white">
         {/* HEADER */}
-        <header className="sticky top-0 z-40 border-b border-gray-200 bg-white/95 backdrop-blur dark:border-gray-800 dark:bg-gray-950/95">
+        <header className="fox-header-accent sticky top-0 z-40 border-b border-gray-200 bg-white/95 backdrop-blur dark:border-gray-800 dark:bg-gray-950/95">
           <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-3 px-4 py-3">
             {/* LOGO */}
             <button
@@ -4157,7 +4157,8 @@ const shareEvent = async (event: Event) => {
             </h3>
 
             {calendarEvents.length === 0 ? (
-              <div className="rounded-xl bg-gray-50 p-6 text-center dark:bg-gray-800">
+              <div className="fox-state-panel rounded-xl bg-gray-50 p-6 text-center dark:bg-gray-800">
+                <img src="/fox-mark.png" alt="" aria-hidden="true" className="mx-auto mb-2 h-10 w-10 object-contain opacity-70" />
                 <p className="font-semibold">
                   Belum ada event pada tanggal ini.
                 </p>
@@ -4595,11 +4596,13 @@ const shareEvent = async (event: Event) => {
               </div>
 
               {loading ? (
-                <div className="rounded-2xl border border-gray-200 p-10 text-center text-sm text-gray-500 dark:border-gray-800">
+                <div className="fox-state-panel rounded-2xl border border-gray-200 p-10 text-center text-sm text-gray-500 dark:border-gray-800">
+                  <img src="/fox-mark.png" alt="" aria-hidden="true" className="mx-auto mb-3 h-10 w-10 object-contain opacity-70" />
                   Memuat event...
                 </div>
               ) : filteredEvents.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-gray-300 px-5 py-12 text-center dark:border-gray-700">
+                <div className="fox-state-panel rounded-2xl border border-dashed border-gray-300 px-5 py-12 text-center dark:border-gray-700">
+                  <img src="/fox-mark.png" alt="" aria-hidden="true" className="mx-auto mb-3 h-12 w-12 object-contain opacity-75" />
                   <p className="text-lg font-bold">Belum ada event ditemukan</p>
                   <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
                     Coba ubah filter pencarian atau kunjungi kembali nanti.
@@ -4611,7 +4614,7 @@ const shareEvent = async (event: Event) => {
                   {paginatedEvents.map((event) => (
                     <article
                       key={event.id}
-                      className="group overflow-hidden rounded-2xl border border-gray-200 bg-white transition hover:-translate-y-1 hover:shadow-lg dark:border-gray-800 dark:bg-gray-900"
+                      className="fox-event-card group overflow-hidden rounded-2xl border border-gray-200 bg-white transition hover:-translate-y-1 hover:shadow-lg dark:border-gray-800 dark:bg-gray-900"
                     >
                       <button
                         type="button"
@@ -7587,7 +7590,7 @@ accept="image/jpeg,image/png,image/webp"
 
         {/* FOOTER */}
         {!selectedEvent && (
-          <footer className="border-t border-gray-200 bg-white px-4 py-8 dark:border-gray-800 dark:bg-gray-950 sm:px-6">
+          <footer className="fox-site-footer border-t border-gray-200 bg-white px-4 py-8 dark:border-gray-800 dark:bg-gray-950 sm:px-6">
             <div className="mx-auto flex max-w-7xl flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-3">
                 <img
