@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
 
     const { data, error } = await supabase
       .from("event_saves")
-      .select("id, created_at, event_id, events(*)")
+      .select("id, created_at, event_id, events(id, title, poster_url, start_date, city, moderation_status)")
       .eq("user_id", userId)
       .order("created_at", { ascending: false });
 

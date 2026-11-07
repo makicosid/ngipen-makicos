@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
       .update({ moderation_status: "Approved" })
       .in("id", ids as string[])
       .eq("moderation_status", "Pending")
-      .select("*");
+      .select("id");
 
     if (updateError) {
       console.error("Bulk approve update error:", updateError);

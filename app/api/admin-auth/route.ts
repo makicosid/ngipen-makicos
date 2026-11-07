@@ -1,12 +1,45 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { randomBytes, createHash } from "crypto";
+import {
+  randomBytes,
+  createHash,
+  scrypt as scryptCallback,
+  timingSafeEqual,
+} from "crypto";
+import { promisify } from "util";
 
 export const runtime = "nodejs";
 
 const COOKIE_NAME = "ngipen_admin_session";
 const SESSION_DAYS = 30;
+const scrypt = promisify(scryptCallback);
+
+async function hashAdminPin(pin: string) {
+  const salt = randomBytes(16).toString("hex");
+  const derivedKey = (await scrypt(pin, salt, 64)) as Buffer;
+  return `scrypt$${salt}$${derivedKey.toString("hex")}`;
+}
+
+async function verifyAdminPin(pin: string, storedValue: string) {
+  const match = /^scrypt\$([a-f0-9]{32})\$([a-f0-9]{128})$/i.exec(storedValue);
+  if (!match) return false;
+
+  try {
+    const [, salt, savedKey] = match;
+    const derivedKey = (await scrypt(pin, salt, 64)) as Buffer;
+    const savedBuffer = Buffer.from(savedKey, "hex");
+    return savedBuffer.length === derivedKey.length && timingSafeEqual(savedBuffer, derivedKey);
+  } catch {
+    return false;
+  }
+}
+
+function verifyLegacyAdminPin(pin: string, storedValue: string) {
+  const pinBuffer = Buffer.from(pin, "utf8");
+  const storedBuffer = Buffer.from(storedValue, "utf8");
+  return pinBuffer.length === storedBuffer.length && timingSafeEqual(pinBuffer, storedBuffer);
+}
 
 
 function getAttemptKey(request: NextRequest, username: string) {
@@ -45,14 +78,21 @@ async function clearLoginAttempts(
 ) {
   const attemptKey = getAttemptKey(request, username);
 
-  const { error } = await getSupabaseAdmin()
-    .from("admin_login_attempts")
-    .delete()
-    .eq("attempt_key", attemptKey);
+  try {
+    const { error } = await getSupabaseAdmin()
+      .from("admin_login_attempts")
+      .delete()
+      .eq("attempt_key", attemptKey);
 
-  if (error) {
-    console.error("Login attempt cleanup error:", error);
-    throw new Error("Gagal menghapus catatan percobaan login.");
+    if (error) {
+      console.error("Login attempt cleanup failed.");
+      return false;
+    }
+
+    return true;
+  } catch {
+    console.error("Login attempt cleanup failed.");
+    return false;
   }
 }
 function getSupabaseAdmin() {
@@ -220,7 +260,7 @@ if (!loginAllowed) {
 }
     const { data, error } = await supabase
       .from("admin_settings")
-      .select("username, pin_hash")
+      .select("id, username, pin_hash")
       .eq("username", username)
       .maybeSingle();
 
@@ -229,19 +269,73 @@ if (!loginAllowed) {
       return json({ error: "Gagal memeriksa login admin." }, 500);
     }
 
-    if (!data || String(data.pin_hash) !== pin) {
+    if (!data) {
       return json(
         { error: "Username atau PIN admin salah." },
         401
       );
     }
+
+    const storedPinValue = String(data.pin_hash || "");
+    const isHashedPin = storedPinValue.startsWith("scrypt$");
+    const pinMatches = isHashedPin
+      ? await verifyAdminPin(pin, storedPinValue)
+      : verifyLegacyAdminPin(pin, storedPinValue);
+
+    if (!pinMatches) {
+      return json(
+        { error: "Username atau PIN admin salah." },
+        401
+      );
+    }
+
+    if (!isHashedPin) {
+      const upgradedPinHash = await hashAdminPin(pin);
+      const { data: migratedAdmin, error: migrationError } = await supabase
+        .from("admin_settings")
+        .update({ pin_hash: upgradedPinHash })
+        .eq("id", data.id)
+        .eq("pin_hash", storedPinValue)
+        .select("id")
+        .maybeSingle();
+
+      if (migrationError) {
+        console.error("Admin PIN upgrade failed; login blocked until the credential can be secured.");
+        return json(
+          { error: "Gagal mengamankan kredensial admin. Silakan coba lagi." },
+          503
+        );
+      }
+
+      if (!migratedAdmin) {
+        const { data: currentAdmin, error: currentAdminError } = await supabase
+          .from("admin_settings")
+          .select("pin_hash")
+          .eq("id", data.id)
+          .maybeSingle();
+
+        const currentPinValue = String(currentAdmin?.pin_hash || "");
+        if (
+          currentAdminError ||
+          !currentPinValue.startsWith("scrypt$") ||
+          !(await verifyAdminPin(pin, currentPinValue))
+        ) {
+          console.error("Admin PIN upgrade lost a concurrent update; login denied.");
+          return json(
+            { error: "Gagal memverifikasi perubahan kredensial admin. Silakan coba lagi." },
+            503
+          );
+        }
+      }
+    }
     
-    await clearLoginAttempts(request, username);
+    const loginSecurityWarning = !(await clearLoginAttempts(request, username));
     
     const response = json({
       success: true,
       authenticated: true,
       role: "admin",
+      ...(loginSecurityWarning ? { loginSecurityWarning: true } : {}),
     });
 
     await createAdminSession(response);

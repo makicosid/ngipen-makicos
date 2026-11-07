@@ -8,6 +8,7 @@ export const runtime = "nodejs";
 const COOKIE_NAME = "ngipen_admin_session";
 const BUCKET = "costume-rentals";
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
+const RENTAL_COLUMNS = "id, name, region, province, city, instagram_url, image_url, image_path, display_order, created_at, is_verified, is_subscription, whatsapp_number, subscription_expires_at";
 
 function getSupabaseAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -113,6 +114,19 @@ function getImageExtension(type: string) {
   return null;
 }
 
+function isValidImage(buffer: Buffer, type: string) {
+  if (type === "image/jpeg") {
+    return buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
+  }
+  if (type === "image/png") {
+    return buffer.length >= 8 && buffer.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
+  }
+  if (type === "image/webp") {
+    return buffer.length >= 12 && buffer.toString("ascii", 0, 4) === "RIFF" && buffer.toString("ascii", 8, 12) === "WEBP";
+  }
+  return false;
+}
+
 async function uploadImage(file: File) {
   const extension = getImageExtension(file.type);
 
@@ -126,6 +140,9 @@ async function uploadImage(file: File) {
 
   const path = `${randomUUID()}.${extension}`;
   const buffer = Buffer.from(await file.arrayBuffer());
+  if (buffer.length !== file.size || !isValidImage(buffer, file.type)) {
+    throw new Error("File bukan gambar JPG, PNG, atau WebP yang valid.");
+  }
 
   const { error } = await getSupabaseAdmin()
     .storage
@@ -164,13 +181,14 @@ async function removeImage(path: string) {
 }
 
 // GET: daftar rental untuk publik dan admin
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const supabase = getSupabaseAdmin();
+    const isAdmin = await requireAdmin(request);
 
     const { data, error } = await supabase
       .from("costume_rentals")
-      .select("*")
+      .select(RENTAL_COLUMNS)
       .order("display_order", { ascending: true })
       .order("created_at", { ascending: false });
 
@@ -200,11 +218,30 @@ export async function GET() {
           rental.is_subscription === true &&
           expiry > now;
 
-        return {
-          ...rental,
+        const publicRental = {
+          id: rental.id,
+          name: rental.name,
+          region: rental.region,
+          province: rental.province,
+          city: rental.city,
+          instagram_url: rental.instagram_url,
+          image_url: rental.image_url,
+          display_order: rental.display_order,
+          created_at: rental.created_at,
+          is_verified: rental.is_verified,
+          whatsapp_number: rental.whatsapp_number,
           total_views: count ?? 0,
           is_subscription_active: isSubscriptionActive,
         };
+
+        return isAdmin
+          ? {
+              ...publicRental,
+              image_path: rental.image_path,
+              is_subscription: rental.is_subscription,
+              subscription_expires_at: rental.subscription_expires_at,
+            }
+          : publicRental;
       })
     );
 
@@ -291,7 +328,7 @@ export async function POST(request: NextRequest) {
         image_url: image.image_url,
         image_path: image.image_path,
       })
-      .select()
+      .select(RENTAL_COLUMNS)
       .single();
 
     if (error) {
@@ -486,7 +523,7 @@ export async function PATCH(request: NextRequest) {
       .from("costume_rentals")
       .update(updates)
       .eq("id", id)
-      .select()
+      .select(RENTAL_COLUMNS)
       .single();
 
     if (error) {

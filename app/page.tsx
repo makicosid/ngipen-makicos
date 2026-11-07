@@ -1381,10 +1381,33 @@ const savedUserId =
           );
 
           // Pertahankan fallback tabel lama agar dokumentasi legacy tetap dapat ditampilkan.
-          const { data: docsFallback, error: docsFallbackError } = await supabase
-            .from("documentations")
-            .select("*")
-            .order("created_at", { ascending: false });
+          const documentationFieldSets = [
+            ["event_id", "image_url"],
+            ["event_id", "imageUrl"],
+            ["eventId", "image_url"],
+            ["eventId", "imageUrl"],
+          ] as const;
+
+          let docsFallback: any[] | null = null;
+          let docsFallbackError: { code?: string; message?: string } | null = null;
+
+          for (const [eventField, imageField] of documentationFieldSets) {
+            const result = await supabase
+              .from("documentations")
+              .select(`id,${eventField},user_id,username,${imageField},caption,created_at`)
+              .order("created_at", { ascending: false });
+
+            docsFallback = result.data;
+            docsFallbackError = result.error;
+
+            if (!result.error) break;
+
+            // Legacy rows may use either camelCase or snake_case names.
+            // Retry only when the selected column is absent from that schema.
+            if (result.error.code !== "42703" && result.error.code !== "PGRST204") {
+              break;
+            }
+          }
 
           if (!docsFallbackError && docsFallback) {
             setDocs(
@@ -1415,24 +1438,27 @@ const savedUserId =
     file: File,
     bucket: string
   ): Promise<string> => {
-    const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
-    const fileName =
-      bucket === "avatars"
-        ? `${currentUserId}/avatar-${Date.now()}-${safeName}`
-        : `${Date.now()}-${safeName}`;
+    if (bucket !== "avatars") {
+      throw new Error("Jenis unggahan tidak didukung.");
+    }
 
-    const { error } = await supabase.storage
-      .from(bucket)
-      .upload(fileName, file, {
-        upsert: true,
-        cacheControl: "3600",
-        contentType: file.type,
-      });
+    const formData = new FormData();
+    formData.append("file", file);
 
-    if (error) throw error;
+    const response = await fetch("/api/profile/avatar", {
+      method: "POST",
+      credentials: "include",
+      body: formData,
+    });
+    const result = await response.json();
 
-    const { data } = supabase.storage.from(bucket).getPublicUrl(fileName);
-    return `${data.publicUrl}?v=${Date.now()}`;
+    if (!response.ok || !result.success || typeof result.url !== "string") {
+      throw new Error(result.error || "Gagal mengunggah avatar.");
+    }
+
+    const avatarUrl = new URL(result.url);
+    avatarUrl.searchParams.set("v", String(Date.now()));
+    return avatarUrl.toString();
   };
 
   
@@ -1556,8 +1582,24 @@ const handlePosterUpload = (
       }
 
       setShowLoginUser(false);
-      setToast(`Halo, ${user.display_name || user.username}!`);
-      setTimeout(() => setToast(""), 2000);
+      const loginNotices: string[] = [];
+      if (result.passwordMigrationPending === true) {
+        loginNotices.push(
+          "Peningkatan keamanan password belum selesai. Coba ganti password dari menu profil."
+        );
+      }
+      if (result.loginSecurityWarning === true) {
+        loginNotices.push(
+          "Pencatatan pembatasan login belum berhasil diperbarui; perlindungan percobaan login tetap aktif."
+        );
+      }
+
+      setToast(
+        loginNotices.length > 0
+          ? `Login berhasil. ${loginNotices.join(" ")}`
+          : `Halo, ${user.display_name || user.username}!`
+      );
+      setTimeout(() => setToast(""), loginNotices.length > 0 ? 6000 : 2000);
     } catch (error) {
       console.error("Login error:", error);
       setToast("Gagal menghubungi server. Coba lagi.");
@@ -1667,8 +1709,12 @@ const handlePosterUpload = (
     localStorage.setItem("ngipen_role", "admin");
     setCurrentRole("admin");
     setShowAdmin(false);
-    setToast("Login admin berhasil.");
-    setTimeout(() => setToast(""), 2000);
+    setToast(
+      result.loginSecurityWarning === true
+        ? "Login admin berhasil, tetapi catatan pembatasan login belum dapat dibersihkan."
+        : "Login admin berhasil."
+    );
+    setTimeout(() => setToast(""), result.loginSecurityWarning === true ? 5000 : 2000);
   } catch (error) {
     console.error("Admin login error:", error);
     setToast("Gagal menghubungi server.");
@@ -1678,24 +1724,40 @@ const handlePosterUpload = (
 
  // Logout
 const logout = async () => {
+  const logoutErrors: string[] = [];
+
   try {
-    // Hapus sesi admin
-    await fetch("/api/admin-auth", {
+    const response = await fetch("/api/admin-auth", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
       body: JSON.stringify({ action: "logout" }),
     });
 
-    // Hapus sesi user
-    await fetch("/api/auth", {
+    if (!response.ok) {
+      const result = await response.json().catch(() => null);
+      logoutErrors.push(result?.error || "Sesi admin mungkin belum berhasil dicabut.");
+    }
+  } catch (error) {
+    console.error("Admin logout error:", error);
+    logoutErrors.push("Tidak dapat memastikan sesi admin telah dicabut.");
+  }
+
+  try {
+    const response = await fetch("/api/auth", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
       body: JSON.stringify({ action: "logout" }),
     });
+
+    if (!response.ok) {
+      const result = await response.json().catch(() => null);
+      logoutErrors.push(result?.error || "Sesi pengguna mungkin belum berhasil dicabut.");
+    }
   } catch (error) {
-    console.error("Logout error:", error);
+    console.error("User logout error:", error);
+    logoutErrors.push("Tidak dapat memastikan sesi pengguna telah dicabut.");
   } finally {
     localStorage.removeItem("ngipen_role");
     localStorage.removeItem("ngipen_user");
@@ -1720,8 +1782,12 @@ const logout = async () => {
 
     window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
 
-    setToast("Kamu telah keluar.");
-    setTimeout(() => setToast(""), 2000);
+    setToast(
+      logoutErrors.length > 0
+        ? `Kamu telah keluar dari perangkat ini, tetapi ${logoutErrors.join(" ")}`
+        : "Kamu telah keluar."
+    );
+    setTimeout(() => setToast(""), logoutErrors.length > 0 ? 5000 : 2000);
   }
 };
   // Membuat event baru; pengguna tidak memiliki fitur edit event
@@ -2502,12 +2568,18 @@ if (!allowedImageTypes.includes(docFile.type)) {
         return;
       }
 
-      setToast("Password berhasil diganti.");
+      const hasPasswordWarning =
+        typeof result.warning === "string" && Boolean(result.warning.trim());
+      setToast(
+        hasPasswordWarning
+          ? result.warning
+          : "Password berhasil diganti."
+      );
 
       if (oldInput) oldInput.value = "";
       if (newInput) newInput.value = "";
 
-      setTimeout(() => setToast(""), 2000);
+      setTimeout(() => setToast(""), hasPasswordWarning ? 5000 : 2000);
     } catch (error) {
       console.error("Change password request error:", error);
       setToast("Tidak dapat terhubung ke server.");
