@@ -100,3 +100,70 @@ body {
     animation: none;
   }
 }
+
+
+/* Identitas rubah MAKICOS: aksen dekoratif, tidak menggantikan logo NGIPEN. */
+.fox-header-accent {
+  position: sticky;
+  isolation: isolate;
+}
+.fox-header-accent::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  right: 31%;
+  top: 50%;
+  width: 30px;
+  height: 30px;
+  transform: translateY(-50%);
+  background: url("/fox-mark.png") center / contain no-repeat;
+  opacity: 0.07;
+  pointer-events: none;
+}
+.fox-state-panel {
+  position: relative;
+  overflow: hidden;
+  background-image: radial-gradient(circle at 50% 0%, rgba(229, 57, 53, 0.045), transparent 58%);
+}
+.fox-event-card {
+  position: relative;
+}
+.fox-event-card::after {
+  content: "";
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  width: 22px;
+  height: 22px;
+  background: url("/fox-mark.png") center / contain no-repeat;
+  opacity: 0.13;
+  pointer-events: none;
+}
+.fox-site-footer {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+.fox-site-footer::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  right: 7%;
+  top: 50%;
+  width: 76px;
+  height: 76px;
+  transform: translateY(-50%);
+  background: url("/fox-mark.png") center / contain no-repeat;
+  opacity: 0.07;
+  pointer-events: none;
+}
+@media (max-width: 767px) {
+  .fox-header-accent::after {
+    display: none;
+  }
+  .fox-site-footer::after {
+    right: 2%;
+    width: 52px;
+    height: 52px;
+  }
+}
