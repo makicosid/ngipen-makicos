@@ -4655,9 +4655,6 @@ const shareEvent = async (event: Event) => {
                               ★ PROMOTE
                             </span>
                           )}
-                          <span aria-hidden="true" className="ngipen-fox-sticker absolute bottom-2 right-2 z-[1] flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border-2 border-white bg-white shadow-md">
-                            <img src="/ngipen-fox-duo.png" alt="" className="h-full w-full scale-[2.15] object-cover object-[25%_35%]" />
-                          </span>
 
 {(() => {
   const start = new Date(event.start_date + "T00:00:00");
@@ -4692,8 +4689,14 @@ const shareEvent = async (event: Event) => {
                           </span>
                         </div>
 
-                        <div className="p-3">
-                          <h3 className="line-clamp-2 min-h-10 text-sm font-bold">
+                        <div className="relative p-3">
+                          <img
+                            src="/ngipen-fox-head-sticker.png"
+                            alt=""
+                            aria-hidden="true"
+                            className="pointer-events-none absolute bottom-2 right-2 z-[1] h-12 w-12 object-contain drop-shadow-[0_2px_3px_rgba(120,20,20,0.18)]"
+                          />
+                          <h3 className="line-clamp-2 min-h-10 pr-12 text-sm font-bold">
                             {event.title}
                           </h3>
 
@@ -4722,7 +4725,7 @@ const shareEvent = async (event: Event) => {
   </svg>
   <span>{(event.views || 0).toLocaleString("id-ID")} views</span>
 </div>
-                          <div className="mt-3 flex flex-wrap gap-1">
+                          <div className="mt-3 min-h-12 flex flex-wrap gap-1 pr-12">
                             {(event.categories || []).slice(0, 2).map((cat) => (
                               <span
                                 key={cat}
