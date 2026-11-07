@@ -37,16 +37,16 @@ function BrandCard({ name, description, href, image, monogram, category }: Brand
 
 const ecosystem: Brand[] = [
   { name: "@makicos.id", description: "Media kolaborasi cosplay Indonesia dan ruang bagi cosplayer untuk memperkenalkan karya serta kreativitasnya kepada publik.", href: "https://www.instagram.com/makicos.id/", image: "/about/ecosystem/makicos-id.jpg", monogram: "M", category: "Media utama" },
-  { name: "@daily.sidecos", description: "Ruang kolaborasi foto casual, inspirasi gaya, dan tren fashion dari komunitas.", href: "https://www.instagram.com/daily.sidecos/", image: "/about/ecosystem/daily-sidecos.jpeg", monogram: "DS", category: "Casual & fashion" },
+  { name: "@daily.sidecos", description: "Ruang kolaborasi foto casual, inspirasi gaya, dan tren fashion dari komunitas.", href: "https://www.instagram.com/daily.sidecos/", image: "/about/ecosystem/daily-sidecos.png", monogram: "DS", category: "Casual & fashion" },
   { name: "@cosraya.collab", description: "Media kolaborasi untuk cosplayer di Surabaya dan wilayah sekitarnya.", href: "https://www.instagram.com/cosraya.collab/", image: "/about/ecosystem/cosraya-collab.jpeg", monogram: "CR", category: "Regional community" },
-  { name: "@coser_notes", description: "Wadah berbagi cerita, pengalaman, dan ruang curhat yang dekat dengan keseharian para cosplayer.", href: "https://www.instagram.com/coser_notes/", monogram: "CN", category: "Cerita komunitas" },
+  { name: "@coser_notes", description: "Wadah berbagi cerita, pengalaman, dan ruang curhat yang dekat dengan keseharian para cosplayer.", href: "https://www.instagram.com/coser_notes/", image: "/about/ecosystem/coser-notes.png", monogram: "CN", category: "Cerita komunitas" },
   { name: "@makicosgame.store", description: "Toko top up game online dari MAKICOS untuk menemani keseruan bermain.", href: "https://www.instagram.com/makicosgame.store/", image: "/about/ecosystem/makicos-game-store.webp", monogram: "MG", category: "Game store" },
-  { name: "@makicos.talent", description: "Membantu menghubungkan kebutuhan talent dengan penyelenggara event jejepangan.", href: "https://www.instagram.com/makicos.talent/", monogram: "MT", category: "Talent network" },
+  { name: "@makicos.talent", description: "Membantu menghubungkan kebutuhan talent dengan penyelenggara event jejepangan.", href: "https://www.instagram.com/makicos.talent/", image: "/about/ecosystem/makicos-talent.png", monogram: "MT", category: "Talent network" },
   { name: "MAKICOS × ASOBI KYOU", description: "Forum dan ruang interaksi cosplayer di Kyoummunity untuk saling terhubung dan berbagi.", href: "https://asobi.kyou.id/kyommunity/makicos-id", monogram: "K", category: "Community forum" },
 ];
 
 const partners: Brand[] = [
-  { name: "@angkringanevent.id", description: "Media event sekaligus organizer yang berfokus pada penyelenggaraan event jejepangan di wilayah Jabodetabek.", href: "https://www.instagram.com/angkringanevent.id/", monogram: "AE", category: "Event media & organizer" },
+  { name: "@angkringanevent.id", description: "Media event sekaligus organizer yang berfokus pada penyelenggaraan event jejepangan di wilayah Jabodetabek.", href: "https://www.instagram.com/angkringanevent.id/", image: "/about/partners/angkringan-event-id.png", monogram: "AE", category: "Event media & organizer" },
   { name: "@wibufest.jabodetabek", description: "Partner komunitas yang ikut meramaikan kegiatan dan pertemuan jejepangan di Jabodetabek.", href: "https://www.instagram.com/wibufest.jabodetabek/", image: "/about/partners/wibufest-jabodetabek.jpeg", monogram: "WF", category: "Community partner" },
   { name: "Kyoucosplaycorner", description: "Toko rental kostum cosplay yang melayani kebutuhan cosplayer di wilayah Jabodetabek.", href: "https://www.instagram.com/kyoucosplaycorner/", image: "/about/partners/kyou-cosplay-corner.png", monogram: "KCC", category: "Costume rental" },
   { name: "pungkicosrent", description: "Layanan rental kostum cosplay untuk cosplayer di wilayah Surabaya dan Jakarta.", href: "https://www.instagram.com/pungkicosrent/", image: "/about/partners/pungkicosrent.png", monogram: "PC", category: "Costume rental" },
