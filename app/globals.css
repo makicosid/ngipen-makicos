@@ -171,3 +171,23 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .ngipen-fox-sticker { transition: none; }
 }
+
+
+/* NGIPEN mascot layer — transparent character artwork, no frames */
+.ngipen-hero-mascots img {
+  user-select: none;
+  -webkit-user-drag: none;
+}
+.ngipen-fox-sticker {
+  transform: rotate(5deg);
+  transition: transform .2s ease;
+}
+.group:hover .ngipen-fox-sticker {
+  transform: rotate(0deg) scale(1.06);
+}
+@media (max-width: 639px) {
+  .ngipen-hero-mascots { height: 220px; max-width: 340px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ngipen-fox-sticker { transition: none; }
+}
