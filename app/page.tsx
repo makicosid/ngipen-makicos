@@ -3456,8 +3456,8 @@ const shareEvent = async (event: Event) => {
     <div className={dark ? "dark" : ""}>
       <div className="min-h-screen bg-gray-50 text-gray-900 transition-colors dark:bg-gray-950 dark:text-white">
         {/* HEADER */}
-        <header className="fox-header-accent sticky top-0 z-40 border-b border-gray-200 bg-white/95 backdrop-blur dark:border-gray-800 dark:bg-gray-950/95">
-          <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-3 px-4 py-3">
+        <header className="ngipen-jp-header sticky top-0 z-40 border-b border-red-100 bg-white/95 backdrop-blur dark:border-red-950 dark:bg-gray-950/95">
+          <div className="relative z-10 mx-auto flex max-w-[1400px] items-center justify-between gap-3 px-4 py-3">
             {/* LOGO */}
             <button
               type="button"
@@ -3831,8 +3831,11 @@ const shareEvent = async (event: Event) => {
        {!selectedEvent && !showCostumeDirectory && (
           <main>
             {/* HERO */}
-            <section className="mx-auto max-w-[1400px] px-4 pb-6 pt-8 sm:pt-12">
-              <div className="overflow-hidden rounded-3xl bg-gradient-to-br from-red-700 via-red-600 to-red-500 p-6 text-white sm:p-10">
+            <section className="mx-auto max-w-[1400px] px-4 pb-6 pt-8 sm:pt-10">
+              <div className="ngipen-hero relative isolate overflow-hidden rounded-3xl border border-red-200/70 bg-gradient-to-br from-red-800 via-red-700 to-red-600 p-6 text-white shadow-[0_18px_50px_rgba(153,27,27,0.12)] sm:p-10 lg:p-12">
+                <span aria-hidden="true" className="ngipen-hero-cloud ngipen-hero-cloud-one" />
+                <span aria-hidden="true" className="ngipen-hero-cloud ngipen-hero-cloud-two" />
+                <div className="relative z-10 grid items-center gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(300px,0.85fr)] lg:gap-8">
                 <div className="max-w-3xl">
                   <p className="mb-3 text-xs font-bold uppercase tracking-[0.25em] text-red-100">
                     Event Jejepangan Indonesia
@@ -3882,6 +3885,15 @@ const shareEvent = async (event: Event) => {
                   >
                     JOIN COMMUNITY ↗
                   </a>
+                </div>
+                <div className="relative mx-auto w-full max-w-[440px] lg:ml-auto">
+                  <div className="pointer-events-none absolute -inset-3 rounded-[2rem] border border-white/25" />
+                  <div className="relative overflow-hidden rounded-[1.6rem] border border-white/60 bg-white/95 p-2 shadow-2xl shadow-red-950/20">
+                    <img src="/ngipen-fox-duo.png" alt="Maskot rubah NGIPEN" className="block h-auto w-full rounded-[1.2rem] object-contain" />
+                    <span className="absolute bottom-4 right-4 rounded-full border border-red-100 bg-white/90 px-3 py-1 text-[9px] font-black uppercase tracking-[0.2em] text-red-700 shadow-sm">MAKICOS · NGIPEN</span>
+                  </div>
+                  <span aria-hidden="true" className="absolute -right-3 -top-4 text-3xl text-amber-200">✿</span>
+                </div>
                 </div>
               </div>
             </section>
@@ -4157,8 +4169,7 @@ const shareEvent = async (event: Event) => {
             </h3>
 
             {calendarEvents.length === 0 ? (
-              <div className="fox-state-panel rounded-xl bg-gray-50 p-6 text-center dark:bg-gray-800">
-                <img src="/fox-mark.png" alt="" aria-hidden="true" className="mx-auto mb-2 h-10 w-10 object-contain opacity-70" />
+              <div className="rounded-xl bg-gray-50 p-6 text-center dark:bg-gray-800">
                 <p className="font-semibold">
                   Belum ada event pada tanggal ini.
                 </p>
@@ -4596,13 +4607,11 @@ const shareEvent = async (event: Event) => {
               </div>
 
               {loading ? (
-                <div className="fox-state-panel rounded-2xl border border-gray-200 p-10 text-center text-sm text-gray-500 dark:border-gray-800">
-                  <img src="/fox-mark.png" alt="" aria-hidden="true" className="mx-auto mb-3 h-10 w-10 object-contain opacity-70" />
+                <div className="rounded-2xl border border-gray-200 p-10 text-center text-sm text-gray-500 dark:border-gray-800">
                   Memuat event...
                 </div>
               ) : filteredEvents.length === 0 ? (
-                <div className="fox-state-panel rounded-2xl border border-dashed border-gray-300 px-5 py-12 text-center dark:border-gray-700">
-                  <img src="/fox-mark.png" alt="" aria-hidden="true" className="mx-auto mb-3 h-12 w-12 object-contain opacity-75" />
+                <div className="rounded-2xl border border-dashed border-gray-300 px-5 py-12 text-center dark:border-gray-700">
                   <p className="text-lg font-bold">Belum ada event ditemukan</p>
                   <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
                     Coba ubah filter pencarian atau kunjungi kembali nanti.
@@ -4614,7 +4623,7 @@ const shareEvent = async (event: Event) => {
                   {paginatedEvents.map((event) => (
                     <article
                       key={event.id}
-                      className="fox-event-card group overflow-hidden rounded-2xl border border-gray-200 bg-white transition hover:-translate-y-1 hover:shadow-lg dark:border-gray-800 dark:bg-gray-900"
+                      className="group overflow-hidden rounded-2xl border border-gray-200 bg-white transition hover:-translate-y-1 hover:shadow-lg dark:border-gray-800 dark:bg-gray-900"
                     >
                       <button
                         type="button"
@@ -4646,6 +4655,9 @@ const shareEvent = async (event: Event) => {
                               ★ PROMOTE
                             </span>
                           )}
+                          <span aria-hidden="true" className="ngipen-fox-sticker absolute bottom-2 right-2 z-[1] flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border-2 border-white bg-white shadow-md">
+                            <img src="/ngipen-fox-duo.png" alt="" className="h-full w-full scale-[2.15] object-cover object-[25%_35%]" />
+                          </span>
 
 {(() => {
   const start = new Date(event.start_date + "T00:00:00");
@@ -4723,7 +4735,7 @@ const shareEvent = async (event: Event) => {
                         </div>
                       </button>
 
-                      <div className="flex items-center justify-between border-t border-gray-100 px-3 py-2 dark:border-gray-800">
+                      <div className="flex items-center justify-between border-t border-red-100 bg-gradient-to-r from-white via-red-50/40 to-white px-3 py-2 dark:border-red-950 dark:from-gray-900 dark:via-red-950/20 dark:to-gray-900">
                         <span className="text-xs text-gray-500">
                           ★ {(event.avg_rating || 0).toFixed(1)}
                         </span>
@@ -5093,26 +5105,30 @@ const shareEvent = async (event: Event) => {
                   </div>
                 </div>
 
-                <div className="mt-6">
-  <h2 className="text-lg font-black">Tentang Event</h2>
-
+                <div className="ngipen-description mt-6 overflow-hidden rounded-2xl border border-red-100 bg-white shadow-sm dark:border-red-950 dark:bg-gray-900">
+  <div className="flex items-center gap-3 border-b border-red-100 bg-gradient-to-r from-red-50/80 to-white px-4 py-3 dark:border-red-950 dark:from-red-950/40 dark:to-gray-900 sm:px-5">
+    <span aria-hidden="true" className="flex h-8 w-8 items-center justify-center rounded-xl bg-white text-lg shadow-sm dark:bg-gray-800">⛩️</span>
+    <div><h2 className="text-lg font-black">Tentang Event</h2><p className="text-[10px] font-bold uppercase tracking-[0.16em] text-red-600 dark:text-red-300">Informasi kegiatan</p></div>
+  </div>
+  <div className="p-4 sm:p-5">
   <p
-    className={`mt-3 whitespace-pre-wrap text-sm leading-7 text-gray-700 dark:text-gray-300 ${
+    className={`whitespace-pre-wrap text-sm leading-7 text-gray-700 dark:text-gray-300 ${
       descriptionExpanded ? "" : "line-clamp-4"
     }`}
   >
-    {selectedEvent.description}
+    {selectedEvent.description || "Informasi event belum tersedia."}
   </p>
 
   {(selectedEvent.description || "").length > 180 && (
     <button
       type="button"
       onClick={() => setDescriptionExpanded((prev) => !prev)}
-      className="mt-2 text-sm font-bold text-red-600 hover:text-red-700"
+      className="mt-3 inline-flex rounded-full border border-red-200 px-3 py-1.5 text-xs font-bold text-red-700 transition hover:bg-red-50 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950/40"
     >
       {descriptionExpanded ? "Sembunyikan" : "Lihat selengkapnya"}
     </button>
   )}
+  </div>
 </div>
 
                 {/* TOMBOL AKSI */}
@@ -7590,7 +7606,7 @@ accept="image/jpeg,image/png,image/webp"
 
         {/* FOOTER */}
         {!selectedEvent && (
-          <footer className="fox-site-footer border-t border-gray-200 bg-white px-4 py-8 dark:border-gray-800 dark:bg-gray-950 sm:px-6">
+          <footer className="ngipen-jp-footer border-t border-red-100 bg-white px-4 py-8 dark:border-red-950 dark:bg-gray-950 sm:px-6">
             <div className="mx-auto flex max-w-7xl flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-3">
                 <img
