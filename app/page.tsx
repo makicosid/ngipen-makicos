@@ -50,6 +50,7 @@ interface Event {
   avg_rating: number;
   rating_count: number;
   organizer_name: string;
+  organizer_avatar?: string;
   created_at: string;
 }
 
@@ -57,7 +58,8 @@ interface Doc {
   id: string;
   event_id: string;
   user_id: string;
-  username: string;
+  display_name?: string;
+  avatar_url?: string;
   image_url: string;
   caption: string;
   created_at: string;
@@ -1349,15 +1351,8 @@ const savedUserId =
           console.error("Gagal mengambil ulasan:", reviewsResult.error);
         } else {
           setMyRatings(reviewsResult.myRatings || {});
-          // Identitas reviewer lain tidak ditampilkan kepada pengguna.
-          setReviews(
-            (reviewsResult.reviews || []).map((review: any) => ({
-              ...review,
-              username: "pengguna",
-              display_name: "Pengguna",
-              avatar_url: "",
-            }))
-          );
+          // API publik hanya mengirim display_name dan avatar_url, tanpa username login.
+          setReviews(reviewsResult.reviews || []);
         }
 
         const docsResponse = await fetch("/api/event-documentations", {
@@ -1374,48 +1369,8 @@ const savedUserId =
             docsResult.error || "Respons API tidak valid."
           );
 
-          // Pertahankan fallback tabel lama agar dokumentasi legacy tetap dapat ditampilkan.
-          const documentationFieldSets = [
-            ["event_id", "image_url"],
-            ["event_id", "imageUrl"],
-            ["eventId", "image_url"],
-            ["eventId", "imageUrl"],
-          ] as const;
-
-          let docsFallback: any[] | null = null;
-          let docsFallbackError: { code?: string; message?: string } | null = null;
-
-          for (const [eventField, imageField] of documentationFieldSets) {
-            const result = await supabase
-              .from("documentations")
-              .select(`id,${eventField},user_id,username,${imageField},caption,created_at`)
-              .order("created_at", { ascending: false });
-
-            docsFallback = result.data;
-            docsFallbackError = result.error;
-
-            if (!result.error) break;
-
-            // Legacy rows may use either camelCase or snake_case names.
-            // Retry only when the selected column is absent from that schema.
-            if (result.error.code !== "42703" && result.error.code !== "PGRST204") {
-              break;
-            }
-          }
-
-          if (!docsFallbackError && docsFallback) {
-            setDocs(
-              docsFallback.map((doc: any) => ({
-                id: doc.id,
-                event_id: doc.event_id || doc.eventId,
-                user_id: doc.user_id,
-                username: doc.username,
-                image_url: doc.image_url || doc.imageUrl,
-                caption: doc.caption,
-                created_at: doc.created_at,
-              }))
-            );
-          }
+          // Tidak melakukan fallback langsung ke tabel Supabase dari browser.
+          // Endpoint server adalah satu-satunya jalur untuk data dokumentasi publik.
         }
       } catch (error) {
         console.error("Kesalahan memuat data:", error);
@@ -2286,18 +2241,7 @@ const logout = async () => {
         throw new Error(refreshResult.error || "Ulasan tersimpan, tetapi daftar gagal diperbarui.");
       }
 
-      const ownProfile = registeredUsers.find(
-        (user) => String(user.id) === String(currentUserId)
-      );
-      const mapped = (refreshResult.reviews || []).map((review: any) => {
-        const isOwnReview = String(review.user_id) === String(currentUserId);
-        return {
-          ...review,
-          username: isOwnReview ? ownProfile?.username || "Anda" : "pengguna",
-          display_name: isOwnReview ? ownProfile?.display_name || "Anda" : "Pengguna",
-          avatar_url: isOwnReview ? ownProfile?.avatar_url || "" : "",
-        };
-      });
+      const mapped = refreshResult.reviews || [];
       setReviews((prev) => [
         ...mapped,
         ...prev.filter((review) => String(review.event_id) !== String(selectedEvent.id)),
@@ -2479,7 +2423,6 @@ if (!allowedImageTypes.includes(docFile.type)) {
           String(review.user_id) === String(updated.id)
             ? {
                 ...review,
-                username: updated.username,
                 display_name: updated.display_name,
                 avatar_url: updated.avatar_url || "",
               }
@@ -3210,18 +3153,7 @@ const openEvent = async (event: Event) => {
       throw new Error(result.error || "Gagal mengambil ulasan event.");
     }
 
-    const ownProfile = registeredUsers.find(
-      (user) => String(user.id) === String(currentUserId)
-    );
-    const mapped = (result.reviews || []).map((review: any) => {
-      const isOwnReview = String(review.user_id) === String(currentUserId);
-      return {
-        ...review,
-        username: isOwnReview ? ownProfile?.username || "Anda" : "pengguna",
-        display_name: isOwnReview ? ownProfile?.display_name || "Anda" : "Pengguna",
-        avatar_url: isOwnReview ? ownProfile?.avatar_url || "" : "",
-      };
-    });
+    const mapped = result.reviews || [];
 
     setReviews((prev) => [
       ...mapped,
@@ -4525,6 +4457,23 @@ const shareEvent = async (event: Event) => {
                             {event.title}
                           </h3>
 
+                          <div className="mt-2 flex min-w-0 items-center gap-2">
+                            {event.organizer_avatar ? (
+                              <img
+                                src={event.organizer_avatar}
+                                alt=""
+                                className="h-6 w-6 shrink-0 rounded-full object-cover"
+                              />
+                            ) : (
+                              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-red-100 text-[10px] font-bold text-red-700">
+                                {(event.organizer_name || "P")[0].toUpperCase()}
+                              </span>
+                            )}
+                            <span className="truncate text-xs font-semibold text-gray-700 dark:text-gray-300">
+                              {event.organizer_name || "Penyelenggara"}
+                            </span>
+                          </div>
+
                           <p className="mt-2 truncate text-xs text-gray-500 dark:text-gray-400">
                             📍 {event.city}, {event.province}
                           </p>
@@ -5161,18 +5110,14 @@ const shareEvent = async (event: Event) => {
                             />
                           ) : (
                             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-100 font-bold text-red-700 dark:bg-red-950 dark:text-red-300">
-                              {(review.display_name ||
-                                review.username ||
-                                "U")[0].toUpperCase()}
+                              {(review.display_name || "U")[0].toUpperCase()}
                             </div>
                           )}
 
                           <div className="min-w-0 flex-1">
                             <div className="flex flex-wrap items-center justify-between gap-2">
                               <p className="font-bold">
-                                {review.display_name ||
-                                  review.username ||
-                                  "Pengguna"}
+                                {review.display_name || "Pengguna"}
                               </p>
 
                               <span className="text-xs text-gray-500">
@@ -5278,9 +5223,18 @@ accept="image/jpeg,image/png,image/webp"
                       </a>
 
                       <div className="p-3">
-                        <p className="text-xs font-bold">
-                          {doc.username || "Pengunjung"}
-                        </p>
+                        <div className="flex items-center gap-2">
+                          {doc.avatar_url ? (
+                            <img src={doc.avatar_url} alt="" className="h-7 w-7 rounded-full object-cover" />
+                          ) : (
+                            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-red-100 text-xs font-bold text-red-700">
+                              {(doc.display_name || "P")[0].toUpperCase()}
+                            </span>
+                          )}
+                          <p className="text-xs font-bold">
+                            {doc.display_name || "Pengunjung"}
+                          </p>
+                        </div>
 
                         {doc.caption && (
                           <p className="mt-1 line-clamp-3 text-xs text-gray-600 dark:text-gray-300">
