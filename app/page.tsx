@@ -3398,6 +3398,19 @@ const shareEvent = async (event: Event) => {
                 {dark ? "☀️" : "🌙"}
               </button>
 
+              <a
+                href="/tentang-kami"
+                aria-label="Tentang Kami"
+                title="Tentang Kami"
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 text-red-600 transition hover:border-red-300 hover:bg-red-50 dark:border-gray-700 dark:hover:bg-red-950/30"
+              >
+                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v17H6.5A2.5 2.5 0 0 0 4 22z" />
+                  <path d="M4 5.5v14A2.5 2.5 0 0 1 6.5 17H20" />
+                  <path d="M8 7h8M8 10h8" />
+                </svg>
+              </a>
+
               {currentRole === "guest" ? (
                 <>
                   <button
@@ -3560,6 +3573,14 @@ const shareEvent = async (event: Event) => {
                 >
                   Buku Panduan
                 </button>
+
+                <a
+                  href="/tentang-kami"
+                  onClick={() => setMobileOpen(false)}
+                  className="rounded-xl border-b-2 border-transparent px-3 py-3 text-left font-semibold text-gray-700 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-700 dark:text-gray-200 dark:hover:bg-red-950/30"
+                >
+                  Tentang Kami
+                </a>
 
                 {currentRole === "user" && (
                   <button
@@ -4456,6 +4477,23 @@ const shareEvent = async (event: Event) => {
                           <h3 className="line-clamp-2 min-h-10 text-sm font-bold">
                             {event.title}
                           </h3>
+
+                          <div className="mt-2 flex min-w-0 items-center gap-2">
+                            {event.organizer_avatar ? (
+                              <img
+                                src={event.organizer_avatar}
+                                alt=""
+                                className="h-6 w-6 shrink-0 rounded-full object-cover"
+                              />
+                            ) : (
+                              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-red-100 text-[10px] font-bold text-red-700">
+                                {(event.organizer_name || "P")[0].toUpperCase()}
+                              </span>
+                            )}
+                            <span className="truncate text-xs font-semibold text-gray-700 dark:text-gray-300">
+                              {event.organizer_name || "Penyelenggara"}
+                            </span>
+                          </div>
 
                           <p className="mt-2 truncate text-xs text-gray-500 dark:text-gray-400">
                             📍 {event.city}, {event.province}
@@ -7393,6 +7431,10 @@ accept="image/jpeg,image/png,image/webp"
                 >
                   Buku Panduan
                 </button>
+
+                <a href="/tentang-kami" className="hover:text-red-600">
+                  Tentang Kami
+                </a>
 
                 <button
   type="button"
