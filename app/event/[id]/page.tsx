@@ -25,7 +25,6 @@ type EventData = {
   ticket_url: string | null;
   registration_url: string | null;
   social_link: string | null;
-  organizer_name: string | null;
   created_at: string | null;
 };
 
@@ -70,7 +69,6 @@ async function getEvent(id: string): Promise<EventData | null> {
       ticket_url,
       registration_url,
       social_link,
-      organizer_name,
       created_at
     `)
     .eq("id", id)
@@ -182,13 +180,6 @@ function getStructuredData(event: EventData, canonicalUrl: string) {
         addressRegion: event.province || undefined,
         addressCountry: "ID",
       },
-    };
-  }
-
-  if (event.organizer_name) {
-    structuredData.organizer = {
-      "@type": "Organization",
-      name: event.organizer_name,
     };
   }
 
@@ -396,14 +387,6 @@ export default async function EventPage({ params }: Props) {
                 </p>
               </div>
 
-              <div>
-                <p className="text-xs font-semibold text-gray-500">
-                  Penyelenggara
-                </p>
-                <p className="mt-1 font-bold">
-                  {event.organizer_name || "-"}
-                </p>
-              </div>
             </div>
 
             <section className="mt-8">
