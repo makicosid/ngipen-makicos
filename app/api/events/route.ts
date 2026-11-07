@@ -78,17 +78,38 @@ export async function GET(request: NextRequest) {
       return json({ error: "Gagal memuat data event." }, 500);
     }
 
-    // Jangan kirim identitas profil penyelenggara kepada guest/pengguna biasa.
-    // Admin tetap menerima data lengkap untuk kebutuhan moderasi.
-    const safeEvents = (events || []).map((event) => {
-      if (isAdmin) return event;
+    // Ambil identitas publik penyelenggara dari tabel users.
+    // Hanya display_name yang digunakan; username login tidak pernah dikirim.
+    const organizerIds = Array.from(new Set(
+      (events || []).map((event: any) => String(event.organizer_id || "")).filter(Boolean)
+    ));
+    const organizerProfiles = new Map<string, { display_name: string; avatar_url: string }>();
 
-      return {
-        ...event,
-        organizer_id: null,
-        organizer_name: "Penyelenggara",
-      };
-    });
+    for (let offset = 0; offset < organizerIds.length; offset += 200) {
+      const { data: profiles, error: profilesError } = await supabase
+        .from("users")
+        .select("id, display_name, avatar_url")
+        .in("id", organizerIds.slice(offset, offset + 200));
+
+      if (profilesError) {
+        console.error("Get organizer public profiles error:", profilesError);
+        return json({ error: "Gagal mengambil nama penyelenggara." }, 500);
+      }
+
+      (profiles || []).forEach((profile: any) => {
+        organizerProfiles.set(String(profile.id), {
+          display_name: String(profile.display_name || "Penyelenggara"),
+          avatar_url: String(profile.avatar_url || ""),
+        });
+      });
+    }
+
+    const safeEvents = (events || []).map((event: any) => ({
+      ...event,
+      organizer_id: isAdmin ? event.organizer_id : null,
+      organizer_name: organizerProfiles.get(String(event.organizer_id || ""))?.display_name || "Penyelenggara",
+      organizer_avatar: organizerProfiles.get(String(event.organizer_id || ""))?.avatar_url || "",
+    }));
 
     return json({ success: true, events: safeEvents });
   } catch (error) {
@@ -314,7 +335,7 @@ export async function POST(request: NextRequest) {
 
     const { data: user, error: userError } = await supabase
       .from("users")
-      .select("id, username, display_name")
+      .select("id, display_name")
       .eq("id", session.user_id)
       .maybeSingle();
 
@@ -543,7 +564,7 @@ export async function POST(request: NextRequest) {
       saves_count: 0,
       avg_rating: 0,
       rating_count: 0,
-      organizer_name: user.display_name || user.username,
+      organizer_name: user.display_name || "Penyelenggara",
     };
 
     const { data: event, error: insertError } = await supabase
