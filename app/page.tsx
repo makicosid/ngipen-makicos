@@ -572,6 +572,11 @@ export default function Page() {
     useState<"Semua" | "Tersimpan">("Semua");
 const [showCalendar, setShowCalendar] = useState(false);
   const [activeNav, setActiveNav] = useState<"home" | "explore" | "costume" | "calendar" | "guide">("home");
+  const activeNavHistoryRef = useRef<"home" | "explore" | "costume" | "calendar" | "guide">("home");
+  const suppressActiveNavHistoryRef = useRef(false);
+  const activeNavHistoryReadyRef = useRef(false);
+  // Jumlah entri navigasi internal NGIPEN yang aman untuk dikembalikan.
+  const ngipenHistoryDepthRef = useRef(0);
   const [isMobileCalendar, setIsMobileCalendar] = useState(false);
 
 useEffect(() => {
@@ -593,6 +598,12 @@ const [eventStatusTab, setEventStatusTab] = useState<
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
 const eventOpenSourceRef = useRef<"calendar" | "explore" | "other">("explore");
 const calendarScrollYRef = useRef(0);
+// Browser history entry khusus untuk detail event yang dibuka di dalam halaman utama.
+// Ini membuat swipe-back Chrome Android dan tombol Back Android menutup detail,
+// bukan keluar dari NGIPEN.
+const eventHistoryEntryRef = useRef(false);
+const eventPreviousScrollYRef = useRef(0);
+const eventPreviousActiveNavRef = useRef<"home" | "explore" | "costume" | "calendar" | "guide">("home");
 const [activeEventPreview, setActiveEventPreview] = useState<Event | null>(null);
 const [eventPreviewClosing, setEventPreviewClosing] = useState(false);
 const eventPreviewTimerRef = useRef<number | null>(null);
@@ -608,6 +619,195 @@ useEffect(() => {
 }, [selectedEvent?.id]);
 
 const sharedEventOpenedRef = useRef<string | null>(null);
+
+const pushEventHistoryEntry = (event: Event) => {
+  if (typeof window === "undefined") return;
+
+  const currentUrl = new URL(window.location.href);
+  // Link berbagi ?event=<id> sudah merupakan entri halaman tersendiri.
+  // Jangan menambahkan entri kedua saat detail dibuka otomatis dari tautan tersebut.
+  if (currentUrl.searchParams.get("event") === String(event.id)) return;
+
+  eventPreviousScrollYRef.current = window.scrollY;
+  currentUrl.searchParams.set("event", String(event.id));
+  window.history.pushState(
+    {
+      ...(window.history.state || {}),
+      __ngipenEventDetail: true,
+      ngipenEventId: String(event.id),
+    },
+    "",
+    `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`
+  );
+  eventHistoryEntryRef.current = true;
+  ngipenHistoryDepthRef.current += 1;
+};
+
+const closeEventDetailWithHistory = () => {
+  if (eventHistoryEntryRef.current) {
+    window.history.back();
+    return;
+  }
+
+  setSelectedEvent(null);
+  sharedEventOpenedRef.current = null;
+  eventOpenSourceRef.current = "explore";
+  const cleanUrl = new URL(window.location.href);
+  cleanUrl.searchParams.delete("event");
+  window.history.replaceState(window.history.state, "", `${cleanUrl.pathname}${cleanUrl.search}${cleanUrl.hash}`);
+};
+
+useEffect(() => {
+  const handleBrowserBack = (event: PopStateEvent) => {
+    ngipenHistoryDepthRef.current = Math.max(0, ngipenHistoryDepthRef.current - 1);
+    const previousView = event.state?.__ngipenAppView;
+
+    if (eventHistoryEntryRef.current) {
+      eventHistoryEntryRef.current = false;
+      setSelectedEvent(null);
+      sharedEventOpenedRef.current = null;
+      setShowCostumeDirectory(false);
+
+      const restoreView =
+        previousView === "home" || previousView === "explore" || previousView === "costume" || previousView === "calendar" || previousView === "guide"
+          ? previousView
+          : eventPreviousActiveNavRef.current;
+      if (activeNavHistoryRef.current !== restoreView) {
+        suppressActiveNavHistoryRef.current = true;
+      }
+      activeNavHistoryRef.current = restoreView;
+      setActiveNav(restoreView);
+      setShowCalendar(restoreView === "calendar");
+      setShowCostumeDirectory(restoreView === "costume");
+
+      // Browser memulihkan entri history; pulihkan juga posisi scroll tampilan asal.
+      window.requestAnimationFrame(() => {
+        window.scrollTo({ top: eventPreviousScrollYRef.current, left: 0, behavior: "auto" });
+      });
+      return;
+    }
+
+    // Navigasi tab internal juga menjadi entri history, sehingga swipe-back
+    // dapat kembali dari Kalender/Costume/Jelajahi ke tampilan sebelumnya.
+    if (previousView === "home" || previousView === "explore" || previousView === "costume" || previousView === "calendar" || previousView === "guide") {
+      if (activeNavHistoryRef.current !== previousView) {
+        suppressActiveNavHistoryRef.current = true;
+      }
+      activeNavHistoryRef.current = previousView;
+      setActiveNav(previousView);
+      setShowCalendar(previousView === "calendar");
+      setShowCostumeDirectory(previousView === "costume");
+      setSelectedEvent(null);
+    }
+  };
+
+  // Tandai entri awal halaman tanpa menambah langkah navigasi.
+  const currentState = window.history.state || {};
+  const restoredView = currentState.__ngipenAppView;
+  if (restoredView === "home" || restoredView === "explore" || restoredView === "costume" || restoredView === "calendar" || restoredView === "guide") {
+    if (activeNavHistoryRef.current !== restoredView) {
+      suppressActiveNavHistoryRef.current = true;
+    }
+    activeNavHistoryRef.current = restoredView;
+    setActiveNav(restoredView);
+    setShowCalendar(restoredView === "calendar");
+    setShowCostumeDirectory(restoredView === "costume");
+  } else {
+    window.history.replaceState(
+      { ...currentState, __ngipenAppView: activeNavHistoryRef.current },
+      "",
+      window.location.href
+    );
+  }
+
+  window.addEventListener("popstate", handleBrowserBack);
+  return () => window.removeEventListener("popstate", handleBrowserBack);
+}, []);
+
+useEffect(() => {
+  // Aba pertama hanya menyelaraskan referensi; jangan membuat entri history saat mount.
+  if (!activeNavHistoryReadyRef.current) {
+    activeNavHistoryReadyRef.current = true;
+    activeNavHistoryRef.current = activeNav;
+    return;
+  }
+
+  if (suppressActiveNavHistoryRef.current) {
+    suppressActiveNavHistoryRef.current = false;
+    activeNavHistoryRef.current = activeNav;
+    return;
+  }
+
+  if (activeNavHistoryRef.current === activeNav) return;
+
+  activeNavHistoryRef.current = activeNav;
+  window.history.pushState(
+    { ...(window.history.state || {}), __ngipenAppView: activeNav },
+    "",
+    window.location.href
+  );
+  ngipenHistoryDepthRef.current += 1;
+}, [activeNav]);
+
+// Kedua arah swipe horizontal diperlakukan sebagai BACK.
+// Gestur vertikal, kontrol form, carousel, dan area horizontal-scroll dikecualikan.
+useEffect(() => {
+  let startX = 0;
+  let startY = 0;
+  let startTarget: EventTarget | null = null;
+  let tracking = false;
+
+  const isExcludedTarget = (target: EventTarget | null) => {
+    if (!(target instanceof Element)) return true;
+    return Boolean(
+      target.closest(
+        'input, textarea, select, button, a, [role="button"], [contenteditable="true"], [data-swipe-ignore], .swiper, .carousel, [data-carousel], [data-horizontal-scroll]'
+      )
+    );
+  };
+
+  const handleTouchStart = (event: TouchEvent) => {
+    if (event.touches.length !== 1) {
+      tracking = false;
+      return;
+    }
+    const touch = event.touches[0];
+    startX = touch.clientX;
+    startY = touch.clientY;
+    startTarget = event.target;
+    tracking = !isExcludedTarget(startTarget);
+  };
+
+  const handleTouchEnd = (event: TouchEvent) => {
+    if (!tracking || event.changedTouches.length !== 1) return;
+    tracking = false;
+    const touch = event.changedTouches[0];
+    const deltaX = touch.clientX - startX;
+    const deltaY = touch.clientY - startY;
+    const horizontalDistance = Math.abs(deltaX);
+
+    // Ambang gerak untuk membedakan swipe dari tap atau scroll vertikal.
+    if (horizontalDistance < 85 || horizontalDistance < Math.abs(deltaY) * 1.35) return;
+
+    // Jangan keluar dari NGIPEN jika tidak ada entri internal untuk dikembalikan.
+    if (ngipenHistoryDepthRef.current > 0) {
+      window.history.back();
+    }
+  };
+
+  const handleTouchCancel = () => {
+    tracking = false;
+  };
+
+  document.addEventListener("touchstart", handleTouchStart, { passive: true });
+  document.addEventListener("touchend", handleTouchEnd, { passive: true });
+  document.addEventListener("touchcancel", handleTouchCancel, { passive: true });
+  return () => {
+    document.removeEventListener("touchstart", handleTouchStart);
+    document.removeEventListener("touchend", handleTouchEnd);
+    document.removeEventListener("touchcancel", handleTouchCancel);
+  };
+}, []);
 
 const sponsorCarouselRef = useRef<HTMLDivElement>(null);
 const sponsorCarouselPausedRef = useRef(false);
@@ -3094,6 +3294,7 @@ const handleEventCardClick = (event: Event) => {
 
 const openEvent = async (event: Event) => {
   eventOpenSourceRef.current = "explore";
+  eventPreviousActiveNavRef.current = activeNav;
   setActiveEventPreview(null);
   if (currentRole === "guest") {
     setPendingGuestEvent(event);
@@ -3101,6 +3302,7 @@ const openEvent = async (event: Event) => {
     return;
   }
 
+  pushEventHistoryEntry(event);
   setSelectedEvent(event);
   setCommentText("");
 
@@ -3980,7 +4182,9 @@ const shareEvent = async (event: Event) => {
                         return;
                       }
                       eventOpenSourceRef.current = "calendar";
+                      eventPreviousActiveNavRef.current = "calendar";
                       calendarScrollYRef.current = window.scrollY;
+                      pushEventHistoryEntry(event);
                       setSelectedEvent(event);
                       setShowCalendar(false);
                     }}
@@ -4745,6 +4949,10 @@ const shareEvent = async (event: Event) => {
               <button
                 type="button"
                 onClick={() => {
+                  if (eventHistoryEntryRef.current) {
+                    closeEventDetailWithHistory();
+                    return;
+                  }
                   setSelectedEvent(null);
                   sharedEventOpenedRef.current = null;
                   eventOpenSourceRef.current = "explore";
@@ -4752,7 +4960,7 @@ const shareEvent = async (event: Event) => {
                   setShowCostumeDirectory(false);
                   const cleanUrl = new URL(window.location.href);
                   cleanUrl.searchParams.delete("event");
-                  window.history.replaceState({}, "", cleanUrl.toString());
+                  window.history.replaceState(window.history.state, "", `${cleanUrl.pathname}${cleanUrl.search}${cleanUrl.hash}`);
                   window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
                 }}
                 className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-bold hover:border-red-500 hover:text-red-600 dark:border-gray-700 dark:bg-gray-900"
@@ -4763,13 +4971,17 @@ const shareEvent = async (event: Event) => {
                 <button
                   type="button"
                   onClick={() => {
+                    if (eventHistoryEntryRef.current) {
+                      closeEventDetailWithHistory();
+                      return;
+                    }
                     setSelectedEvent(null);
                     sharedEventOpenedRef.current = null;
                     setShowCostumeDirectory(false);
                     setShowCalendar(true);
                     const cleanUrl = new URL(window.location.href);
                     cleanUrl.searchParams.delete("event");
-                    window.history.replaceState({}, "", cleanUrl.toString());
+                    window.history.replaceState(window.history.state, "", `${cleanUrl.pathname}${cleanUrl.search}${cleanUrl.hash}`);
                     window.setTimeout(() => {
                       document.getElementById("calendar-event-list")?.scrollIntoView({ behavior: "smooth", block: "start" });
                       if (!document.getElementById("calendar-event-list")) {
