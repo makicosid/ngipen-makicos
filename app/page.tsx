@@ -3886,13 +3886,11 @@ const shareEvent = async (event: Event) => {
                     JOIN COMMUNITY ↗
                   </a>
                 </div>
-                <div className="relative mx-auto w-full max-w-[440px] lg:ml-auto">
-                  <div className="pointer-events-none absolute -inset-3 rounded-[2rem] border border-white/25" />
-                  <div className="relative overflow-hidden rounded-[1.6rem] border border-white/60 bg-white/95 p-2 shadow-2xl shadow-red-950/20">
-                    <img src="/ngipen-fox-duo.png" alt="Maskot rubah NGIPEN" className="block h-auto w-full rounded-[1.2rem] object-contain" />
-                    <span className="absolute bottom-4 right-4 rounded-full border border-red-100 bg-white/90 px-3 py-1 text-[9px] font-black uppercase tracking-[0.2em] text-red-700 shadow-sm">MAKICOS · NGIPEN</span>
-                  </div>
-                  <span aria-hidden="true" className="absolute -right-3 -top-4 text-3xl text-amber-200">✿</span>
+                <div className="ngipen-hero-mascots relative mx-auto flex h-[260px] w-full max-w-[440px] items-end justify-center lg:ml-auto lg:h-[340px]">
+                  <span aria-hidden="true" className="absolute bottom-5 left-1/2 h-40 w-72 -translate-x-1/2 rounded-full bg-white/10 blur-2xl" />
+                  <img src="/mascots/kitsune-kun.png" alt="Kitsune-kun, maskot laki-laki NGIPEN" className="relative z-10 h-[94%] w-[52%] -mr-5 object-contain object-bottom drop-shadow-[0_12px_18px_rgba(80,0,0,.22)]" />
+                  <img src="/mascots/kitsune-chan.png" alt="Kitsune-chan, maskot perempuan NGIPEN" className="relative z-20 h-full w-[56%] -ml-5 object-contain object-bottom drop-shadow-[0_12px_18px_rgba(80,0,0,.22)]" />
+                  <span aria-hidden="true" className="absolute -right-1 top-2 z-30 text-3xl text-amber-200">✿</span>
                 </div>
                 </div>
               </div>
@@ -4607,11 +4605,13 @@ const shareEvent = async (event: Event) => {
               </div>
 
               {loading ? (
-                <div className="rounded-2xl border border-gray-200 p-10 text-center text-sm text-gray-500 dark:border-gray-800">
-                  Memuat event...
+                <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-gray-200 px-5 py-7 text-center text-sm text-gray-500 dark:border-gray-800">
+                  <img src="/mascots/kitsune-kun.png" alt="Kitsune-kun sedang memuat" className="h-24 w-16 object-contain" />
+                  <span>Memuat event...</span>
                 </div>
               ) : filteredEvents.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-gray-300 px-5 py-12 text-center dark:border-gray-700">
+                <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-300 px-5 py-8 text-center dark:border-gray-700">
+                  <img src="/mascots/kitsune-chan.png" alt="Kitsune-chan sedang mencari event" className="h-28 w-20 object-contain" />
                   <p className="text-lg font-bold">Belum ada event ditemukan</p>
                   <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
                     Coba ubah filter pencarian atau kunjungi kembali nanti.
@@ -4655,7 +4655,6 @@ const shareEvent = async (event: Event) => {
                               ★ PROMOTE
                             </span>
                           )}
-
 {(() => {
   const start = new Date(event.start_date + "T00:00:00");
   const end = new Date((event.end_date || event.start_date) + "T00:00:00");
@@ -4689,14 +4688,8 @@ const shareEvent = async (event: Event) => {
                           </span>
                         </div>
 
-                        <div className="relative p-3">
-                          <img
-                            src="/ngipen-fox-head-sticker.png"
-                            alt=""
-                            aria-hidden="true"
-                            className="pointer-events-none absolute bottom-2 right-2 z-[1] h-12 w-12 object-contain drop-shadow-[0_2px_3px_rgba(120,20,20,0.18)]"
-                          />
-                          <h3 className="line-clamp-2 min-h-10 pr-12 text-sm font-bold">
+                        <div className="relative min-h-[174px] p-3 pb-14">
+                          <h3 className="line-clamp-2 min-h-10 pr-1 text-sm font-bold">
                             {event.title}
                           </h3>
 
@@ -4725,7 +4718,7 @@ const shareEvent = async (event: Event) => {
   </svg>
   <span>{(event.views || 0).toLocaleString("id-ID")} views</span>
 </div>
-                          <div className="mt-3 min-h-12 flex flex-wrap gap-1 pr-12">
+                          <div className="mt-3 flex flex-wrap gap-1">
                             {(event.categories || []).slice(0, 2).map((cat) => (
                               <span
                                 key={cat}
@@ -4735,6 +4728,7 @@ const shareEvent = async (event: Event) => {
                               </span>
                             ))}
                           </div>
+                          <img src="/mascots/kitsune-chan-head.png" alt="" aria-hidden="true" className="ngipen-fox-sticker pointer-events-none absolute bottom-1 right-2 h-12 w-12 object-contain drop-shadow-sm" />
                         </div>
                       </button>
 
@@ -5111,7 +5105,8 @@ const shareEvent = async (event: Event) => {
                 <div className="ngipen-description mt-6 overflow-hidden rounded-2xl border border-red-100 bg-white shadow-sm dark:border-red-950 dark:bg-gray-900">
   <div className="flex items-center gap-3 border-b border-red-100 bg-gradient-to-r from-red-50/80 to-white px-4 py-3 dark:border-red-950 dark:from-red-950/40 dark:to-gray-900 sm:px-5">
     <span aria-hidden="true" className="flex h-8 w-8 items-center justify-center rounded-xl bg-white text-lg shadow-sm dark:bg-gray-800">⛩️</span>
-    <div><h2 className="text-lg font-black">Tentang Event</h2><p className="text-[10px] font-bold uppercase tracking-[0.16em] text-red-600 dark:text-red-300">Informasi kegiatan</p></div>
+    <div className="min-w-0 flex-1"><h2 className="text-lg font-black">Tentang Event</h2><p className="text-[10px] font-bold uppercase tracking-[0.16em] text-red-600 dark:text-red-300">Informasi kegiatan</p></div>
+    <img src="/mascots/kitsune-kun-head.png" alt="" aria-hidden="true" className="h-10 w-10 shrink-0 object-contain" />
   </div>
   <div className="p-4 sm:p-5">
   <p
