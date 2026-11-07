@@ -1,4 +1,3 @@
-
 -- NGIPEN: Restrict public access to user bio.
 -- Keep bio readable by trusted server-side service_role only.
 -- Does not modify or delete user data.
