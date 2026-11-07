@@ -5,15 +5,25 @@ import { createHash } from "crypto";
 
 export const runtime = "nodejs";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+let supabaseAdmin: ReturnType<typeof createClient<any>> | undefined;
 
-const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false,
-  },
-});
+function getSupabaseAdmin() {
+  if (supabaseAdmin) return supabaseAdmin;
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!supabaseUrl || !serviceRoleKey) {
+    throw new Error("Supabase server configuration is unavailable.");
+  }
+
+  supabaseAdmin = createClient<any>(supabaseUrl, serviceRoleKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  });
+  return supabaseAdmin;
+}
 
 const COOKIE_NAME = "ngipen_session";
 
@@ -25,12 +35,14 @@ function hashToken(token: string) {
   return createHash("sha256").update(token).digest("hex");
 }
 
-async function getSession(request: NextRequest) {
+async function getSession(
+  request: NextRequest
+): Promise<{ user_id: string; expires_at: string } | null> {
   const token = request.cookies.get(COOKIE_NAME)?.value;
 
   if (!token) return null;
 
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await getSupabaseAdmin()
     .from("ngipen_sessions")
     .select("user_id, expires_at")
     .eq("token_hash", hashToken(token))
@@ -39,7 +51,29 @@ async function getSession(request: NextRequest) {
 
   if (error || !data) return null;
 
-  return data;
+  return data as { user_id: string; expires_at: string };
+}
+
+async function getVisibleEventIds(eventIds: string[]) {
+  const visible = new Set<string>();
+  if (eventIds.length === 0) return visible;
+
+  for (let offset = 0; offset < eventIds.length; offset += 200) {
+    const batch = eventIds.slice(offset, offset + 200);
+    const { data, error } = await getSupabaseAdmin()
+      .from("events")
+      .select("id")
+      .in("id", batch)
+      .eq("moderation_status", "Approved")
+      .eq("is_hidden", false);
+
+    if (error) throw error;
+    ((data as Array<{ id: string }> | null) || []).forEach((event) =>
+      visible.add(String(event.id))
+    );
+  }
+
+  return visible;
 }
 
 /* =====================================================
@@ -50,9 +84,9 @@ export async function GET(request: NextRequest) {
   try {
     const eventId = request.nextUrl.searchParams.get("eventId");
 
-    let query = supabaseAdmin
+    let query = getSupabaseAdmin()
       .from("event_reviews")
-      .select("*")
+      .select("id, event_id, user_id, rating, comment, created_at")
       .order("created_at", { ascending: false });
 
     if (eventId) {
@@ -68,9 +102,10 @@ export async function GET(request: NextRequest) {
 
     const session = await getSession(request);
     const myRatings: Record<string, number> = {};
+    let personalReviews: Array<{ event_id: string; rating: number }> = [];
 
     if (session) {
-      let personalQuery = supabaseAdmin
+      let personalQuery = getSupabaseAdmin()
         .from("event_reviews")
         .select("event_id, rating")
         .eq("user_id", session.user_id);
@@ -79,7 +114,7 @@ export async function GET(request: NextRequest) {
         personalQuery = personalQuery.eq("event_id", eventId);
       }
 
-      const { data: personalReviews, error: personalError } =
+      const { data, error: personalError } =
         await personalQuery;
 
       if (personalError) {
@@ -87,14 +122,26 @@ export async function GET(request: NextRequest) {
         return json({ error: "Gagal mengambil rating pribadi." }, 500);
       }
 
-      (personalReviews || []).forEach((review: any) => {
-        myRatings[String(review.event_id)] = Number(review.rating);
-      });
+      personalReviews = (data || []) as Array<{ event_id: string; rating: number }>;
     }
+
+    const candidateEventIds = Array.from(new Set([
+      ...(reviews || []).map((review: any) => String(review.event_id)),
+      ...personalReviews.map((review) => String(review.event_id)),
+    ]));
+    const visibleEventIds = await getVisibleEventIds(candidateEventIds);
+    const publicReviews = (reviews || []).filter((review: any) =>
+      visibleEventIds.has(String(review.event_id))
+    );
+    personalReviews.forEach((review) => {
+      if (visibleEventIds.has(String(review.event_id))) {
+        myRatings[String(review.event_id)] = Number(review.rating);
+      }
+    });
 
     return json({
       success: true,
-      reviews: reviews || [],
+      reviews: publicReviews,
       myRatings,
     });
   } catch (error) {
@@ -163,18 +210,23 @@ export async function POST(request: NextRequest) {
     }
 
     // Pastikan event memang tersedia.
-    const { data: event, error: eventError } = await supabaseAdmin
+    const { data: event, error: eventError } = await getSupabaseAdmin()
       .from("events")
-      .select("id")
+      .select("id, moderation_status, is_hidden")
       .eq("id", eventId)
       .maybeSingle();
 
-    if (eventError || !event) {
+    if (
+      eventError ||
+      !event ||
+      event.moderation_status !== "Approved" ||
+      event.is_hidden !== false
+    ) {
       return json({ error: "Event tidak ditemukan." }, 404);
     }
 
     // Identitas user selalu berasal dari sesi server.
-    const { data: existing, error: lookupError } = await supabaseAdmin
+    const { data: existing, error: lookupError } = await getSupabaseAdmin()
       .from("event_reviews")
       .select("id, rating, comment")
       .eq("user_id", session.user_id)
@@ -206,7 +258,7 @@ export async function POST(request: NextRequest) {
     let saveError: any = null;
 
     if (existing) {
-      const result = await supabaseAdmin
+      const result = await getSupabaseAdmin()
         .from("event_reviews")
         .update({
           ...payload,
@@ -214,20 +266,20 @@ export async function POST(request: NextRequest) {
         })
         .eq("id", existing.id)
         .eq("user_id", session.user_id)
-        .select("*")
+        .select("id, event_id, user_id, rating, comment, created_at")
         .single();
 
       savedReview = result.data;
       saveError = result.error;
     } else {
-      const result = await supabaseAdmin
+      const result = await getSupabaseAdmin()
         .from("event_reviews")
         .insert({
           user_id: session.user_id,
           event_id: eventId,
           ...payload,
         })
-        .select("*")
+        .select("id, event_id, user_id, rating, comment, created_at")
         .single();
 
       savedReview = result.data;
@@ -240,7 +292,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Hitung ulang statistik rating di server.
-    const { data: allReviews, error: refreshError } = await supabaseAdmin
+    const { data: allReviews, error: refreshError } = await getSupabaseAdmin()
       .from("event_reviews")
       .select("rating")
       .eq("event_id", eventId);
@@ -263,7 +315,7 @@ export async function POST(request: NextRequest) {
           ) / reviewCount
         : 0;
 
-    const { error: eventUpdateError } = await supabaseAdmin
+    const { error: eventUpdateError } = await getSupabaseAdmin()
       .from("events")
       .update({
         avg_rating: average,

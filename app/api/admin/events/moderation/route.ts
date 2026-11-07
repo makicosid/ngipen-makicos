@@ -188,7 +188,7 @@ export async function POST(request: NextRequest) {
       .from("events")
       .update(updateData)
       .eq("id", id)
-      .select("*")
+      .select("id, moderation_status, is_sponsored, sponsored_priority, sponsored_start, sponsored_end")
       .maybeSingle();
 
     if (error) {

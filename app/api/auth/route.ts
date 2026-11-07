@@ -7,6 +7,7 @@ import {
   timingSafeEqual,
   createHash,
 } from "crypto";
+import { isIP } from "net";
 import { promisify } from "util";
 
 export const runtime = "nodejs";
@@ -71,6 +72,61 @@ function validLoginPassword(value: string) {
   return value.length >= 1 && value.length <= 128;
 }
 
+function isSafeAvatarUrl(value: string) {
+  try {
+    const url = new URL(value);
+    if (url.protocol !== "https:" || url.username || url.password) {
+      return false;
+    }
+
+    const host = url.hostname.toLowerCase().replace(/^\[|\]$/g, "").replace(/\.$/, "");
+    if (
+      !host ||
+      host === "localhost" ||
+      host.endsWith(".localhost") ||
+      host.endsWith(".local") ||
+      host.endsWith(".internal") ||
+      host.endsWith(".test")
+    ) {
+      return false;
+    }
+
+    const ipVersion = isIP(host);
+    if (ipVersion === 4) {
+      const octets = host.split(".").map(Number);
+      const [a, b] = octets;
+      if (
+        a === 0 ||
+        a === 10 ||
+        a === 127 ||
+        (a === 169 && b === 254) ||
+        (a === 172 && b >= 16 && b <= 31) ||
+        (a === 192 && b === 168) ||
+        (a === 100 && b >= 64 && b <= 127) ||
+        a >= 224
+      ) {
+        return false;
+      }
+    } else if (ipVersion === 6) {
+      const normalized = host.toLowerCase();
+      if (
+        normalized === "::" ||
+        normalized === "::1" ||
+        normalized.startsWith("fc") ||
+        normalized.startsWith("fd") ||
+        /^fe[89ab]/.test(normalized) ||
+        normalized.startsWith("::ffff:")
+      ) {
+        return false;
+      }
+    }
+
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /* =========================================================
    PASSWORD SECURITY
 ========================================================= */
@@ -106,6 +162,16 @@ async function verifyPassword(password: string, stored: string) {
   } catch {
     return false;
   }
+}
+
+function verifyLegacyPassword(password: string, stored: string) {
+  const passwordBuffer = Buffer.from(password, "utf8");
+  const storedBuffer = Buffer.from(stored, "utf8");
+
+  return (
+    passwordBuffer.length === storedBuffer.length &&
+    timingSafeEqual(passwordBuffer, storedBuffer)
+  );
 }
 
 /* =========================================================
@@ -256,15 +322,26 @@ export async function POST(request: NextRequest) {
 
     if (action === "logout") {
       const token = request.cookies.get(COOKIE_NAME)?.value;
+      let deleteFailed = false;
 
       if (token) {
-        await getSupabaseAdmin()
-          .from("ngipen_sessions")
-          .delete()
-          .eq("token_hash", hashToken(token));
+        try {
+          const { error } = await getSupabaseAdmin()
+            .from("ngipen_sessions")
+            .delete()
+            .eq("token_hash", hashToken(token));
+          deleteFailed = Boolean(error);
+        } catch {
+          deleteFailed = true;
+        }
       }
 
-      const response = json({ success: true });
+      const response = deleteFailed
+        ? json(
+            { success: false, error: "Sesi server belum dapat dicabut. Silakan coba logout kembali." },
+            500
+          )
+        : json({ success: true });
 
       response.cookies.set(COOKIE_NAME, "", {
         httpOnly: true,
@@ -322,6 +399,28 @@ export async function POST(request: NextRequest) {
       if (avatarUrl.length > 2048) {
         return json(
           { error: "URL avatar terlalu panjang." },
+          400
+        );
+      }
+
+      const { data: currentProfile, error: currentProfileError } =
+        await getSupabaseAdmin()
+          .from("users")
+          .select("avatar_url")
+          .eq("id", session.user_id)
+          .maybeSingle();
+
+      if (currentProfileError || !currentProfile) {
+        console.error("Profile avatar lookup failed.");
+        return json({ error: "Gagal memeriksa data profil." }, 500);
+      }
+
+      const avatarIsUnchanged =
+        avatarUrl === String(currentProfile.avatar_url || "");
+
+      if (avatarUrl && !avatarIsUnchanged && !isSafeAvatarUrl(avatarUrl)) {
+        return json(
+          { error: "URL avatar harus menggunakan HTTPS dan host publik yang valid." },
           400
         );
       }
@@ -423,7 +522,7 @@ export async function POST(request: NextRequest) {
 
       const passwordMatches = storedPassword.startsWith("scrypt$")
         ? await verifyPassword(oldPassword, storedPassword)
-        : storedPassword === oldPassword;
+        : verifyLegacyPassword(oldPassword, storedPassword);
 
       if (!passwordMatches) {
         return json(
@@ -447,6 +546,28 @@ export async function POST(request: NextRequest) {
           { error: "Gagal mengganti password." },
           500
         );
+      }
+
+      const currentToken = request.cookies.get(COOKIE_NAME)?.value;
+      if (!currentToken) {
+        return json({
+          success: true,
+          warning: "Password berubah, tetapi sesi lain belum dapat dicabut karena sesi saat ini tidak ditemukan.",
+        });
+      }
+
+      const { error: revokeError } = await getSupabaseAdmin()
+        .from("ngipen_sessions")
+        .delete()
+        .eq("user_id", session.user_id)
+        .neq("token_hash", hashToken(currentToken));
+
+      if (revokeError) {
+        console.error("Other session revocation failed.");
+        return json({
+          success: true,
+          warning: "Password berubah, tetapi sesi lain belum dapat dicabut. Silakan logout dari perangkat lain.",
+        });
       }
 
       return json({ success: true });
@@ -712,7 +833,7 @@ export async function POST(request: NextRequest) {
           );
         } else {
           // Mendukung password lama sebelum migrasi.
-          passwordMatches = storedPassword === password;
+          passwordMatches = verifyLegacyPassword(password, storedPassword);
         }
       }
 
@@ -804,80 +925,61 @@ export async function POST(request: NextRequest) {
 
       /* LEGACY PASSWORD MIGRATION */
 
+      let passwordMigrationPending = false;
       if (!storedPassword.startsWith("scrypt$")) {
         const newHash = await hashPassword(password);
 
-        const { error: updateError } = await getSupabaseAdmin()
+        const { data: migratedUser, error: updateError } = await getSupabaseAdmin()
           .from("users")
           .update({
             password_hash: newHash,
           })
-          .eq("id", user.id);
+          .eq("id", user.id)
+          .eq("password_hash", storedPassword)
+          .select("id")
+          .maybeSingle();
 
-        if (updateError) {
-          console.error(
-            "Password migration error:",
-            updateError
-          );
-
-          return json(
-            {
-              error:
-                "Gagal memperbarui keamanan password.",
-            },
-            500
-          );
+        if (updateError || !migratedUser) {
+          // Keep a correct legacy login usable during transient DB write failures.
+          // The plaintext fallback remains until this account can be migrated.
+          passwordMigrationPending = true;
+          console.error("Password hash migration failed; login will continue with migration pending.");
         }
       }
 
       /* RESET USERNAME LOGIN ATTEMPTS */
 
-      const { error: resetError } =
-        await getSupabaseAdmin().rpc(
+      let loginSecurityWarning = false;
+      try {
+        const { error: resetError } = await getSupabaseAdmin().rpc(
           "ngipen_reset_login_attempts",
-          {
-            p_username: username,
-          }
+          { p_username: username }
         );
 
-      if (resetError) {
-        console.error(
-          "Login attempts reset error:",
-          resetError
-        );
-
-        return json(
-          {
-            error:
-              "Gagal memperbarui keamanan login.",
-          },
-          500
-        );
+        if (resetError) {
+          loginSecurityWarning = true;
+          console.error("Login attempts reset failed.");
+        }
+      } catch {
+        loginSecurityWarning = true;
+        console.error("Login attempts reset failed.");
       }
 
       /* RESET IP LOGIN ATTEMPTS */
 
-      const { error: ipResetError } =
-        await getSupabaseAdmin().rpc(
+      try {
+        const { error: ipResetError } = await getSupabaseAdmin().rpc(
           "ngipen_reset_ip_login_attempts",
-          {
-            p_ip_hash: ipHash,
-          }
+          { p_ip_hash: ipHash }
         );
 
-      if (ipResetError) {
-        console.error(
-          "IP login attempts reset error:",
-          ipResetError
-        );
-
-        return json(
-          {
-            error:
-              "Gagal memperbarui keamanan koneksi login.",
-          },
-          500
-        );
+        if (ipResetError) {
+          loginSecurityWarning = true;
+          console.error("IP login attempts reset failed.");
+        }
+      } catch {
+        loginSecurityWarning = true;
+        console.error("IP login attempts reset failed.");
       }
 
       /* CREATE LOGIN SESSION */
@@ -889,6 +991,8 @@ export async function POST(request: NextRequest) {
           username: user.username,
           display_name: user.display_name,
         },
+        ...(passwordMigrationPending ? { passwordMigrationPending: true } : {}),
+        ...(loginSecurityWarning ? { loginSecurityWarning: true } : {}),
       });
 
       await createSession(user.id, response);

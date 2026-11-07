@@ -6,6 +6,7 @@ export const runtime = "nodejs";
 
 const USER_COOKIE_NAME = "ngipen_session";
 const ADMIN_COOKIE_NAME = "ngipen_admin_session";
+const EVENT_COLUMNS = "id, organizer_id, title, slug, description, poster_url, categories, province, city, venue_address, start_date, end_date, start_time, end_time, ticket_type, ticket_url, registration_url, social_link, moderation_status, is_hidden, is_sponsored, sponsored_priority, sponsored_start, sponsored_end, views, saves_count, avg_rating, rating_count, organizer_name, created_at";
 
 function json(data: object, status = 200) {
   const response = NextResponse.json(data, { status });
@@ -62,7 +63,7 @@ export async function GET(request: NextRequest) {
 
     let query = supabase
       .from("events")
-      .select("*")
+      .select(EVENT_COLUMNS)
       .order("created_at", { ascending: false });
 
     if (!isAdmin) {
@@ -536,7 +537,7 @@ export async function POST(request: NextRequest) {
     const { data: event, error: insertError } = await supabase
       .from("events")
       .insert(payload)
-      .select()
+      .select(EVENT_COLUMNS)
       .single();
 
     if (insertError || !event) {

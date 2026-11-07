@@ -5,6 +5,7 @@ import { createHash, randomUUID } from "crypto";
 export const runtime = "nodejs";
 
 const ADMIN_COOKIE_NAME = "ngipen_admin_session";
+const EVENT_COLUMNS = "id, organizer_id, title, slug, description, poster_url, categories, province, city, venue_address, start_date, end_date, start_time, end_time, ticket_type, ticket_url, registration_url, social_link, moderation_status, is_hidden, is_sponsored, sponsored_priority, sponsored_start, sponsored_end, views, saves_count, avg_rating, rating_count, organizer_name, created_at";
 const POSTER_BUCKET = "posters";
 const MAX_POSTER_SIZE = 3 * 1024 * 1024;
 const ALLOWED_CATEGORIES = ["Cosplay", "Pefomance", "Market", "Game", "Comic"];
@@ -126,7 +127,7 @@ export async function POST(request: NextRequest) {
     if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) {
       return json({ error: "ID event tidak valid." }, 400);
     }
-    const { data: current, error: currentError } = await supabase.from("events").select("*").eq("id", id).maybeSingle();
+    const { data: current, error: currentError } = await supabase.from("events").select("id, slug, poster_url, moderation_status").eq("id", id).maybeSingle();
     if (currentError) return json({ error: "Gagal memuat event." }, 500);
     if (!current || current.moderation_status !== "Approved") {
       return json({ error: "Event tidak ditemukan atau bukan event yang berstatus Disetujui." }, 404);
@@ -201,7 +202,7 @@ export async function POST(request: NextRequest) {
       // moderation_status, sponsor flags, counters, organizer and ratings are deliberately preserved.
     };
     const { data: updated, error: updateError } = await supabase.from("events").update(payload).eq("id", id)
-      .eq("moderation_status", "Approved").select("*").maybeSingle();
+      .eq("moderation_status", "Approved").select(EVENT_COLUMNS).maybeSingle();
     if (updateError || !updated) {
       if (uploadedPath) await supabase.storage.from(POSTER_BUCKET).remove([uploadedPath]);
       uploadedPath = null;

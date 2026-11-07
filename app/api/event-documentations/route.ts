@@ -129,7 +129,7 @@ export async function GET() {
 
     const { data, error } = await supabase
       .from("event_documentations")
-      .select("*")
+      .select("id, event_id, user_id, username, image_url, caption, created_at")
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -140,9 +140,34 @@ export async function GET() {
       );
     }
 
+    const eventIds = Array.from(new Set((data || []).map((doc) => String(doc.event_id))));
+    const visibleCompletedEventIds = new Set<string>();
+
+    for (let offset = 0; offset < eventIds.length; offset += 200) {
+      const { data: events, error: eventsError } = await supabase
+        .from("events")
+        .select("id, moderation_status, is_hidden, start_date, end_date, start_time, end_time")
+        .in("id", eventIds.slice(offset, offset + 200))
+        .eq("moderation_status", "Approved")
+        .eq("is_hidden", false);
+
+      if (eventsError) {
+        console.error("Filter public documentation error:", eventsError);
+        return json({ error: "Gagal mengambil dokumentasi event." }, 500);
+      }
+
+      (events || []).forEach((event) => {
+        if (getEventTimeStatus(event) === "Completed") {
+          visibleCompletedEventIds.add(String(event.id));
+        }
+      });
+    }
+
     return json({
       success: true,
-      docs: data || [],
+      docs: (data || []).filter((doc) =>
+        visibleCompletedEventIds.has(String(doc.event_id))
+      ),
     });
   } catch (error) {
     console.error("Event documentations GET error:", error);
@@ -242,7 +267,7 @@ export async function POST(request: NextRequest) {
     // Pastikan event benar-benar ada dan sudah selesai menurut WIB.
     const { data: event, error: eventError } = await supabase
       .from("events")
-      .select("id, start_date, end_date, start_time, end_time")
+      .select("id, moderation_status, is_hidden, start_date, end_date, start_time, end_time")
       .eq("id", eventId)
       .maybeSingle();
 
@@ -259,6 +284,10 @@ export async function POST(request: NextRequest) {
         { error: "Event tidak ditemukan." },
         404
       );
+    }
+
+    if (event.moderation_status !== "Approved" || event.is_hidden !== false) {
+      return json({ error: "Event tidak ditemukan." }, 404);
     }
 
     if (getEventTimeStatus(event) !== "Completed") {
@@ -328,7 +357,7 @@ export async function POST(request: NextRequest) {
         image_url: imageUrl,
         caption,
       })
-      .select()
+      .select("id, event_id, user_id, username, image_url, caption, created_at")
       .single();
 
     if (insertError) {
