@@ -139,24 +139,46 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    // Opsi A: identitas reviewer hanya boleh diketahui oleh pemilik review
-    // sendiri. Review pengguna lain tetap tampil sebagai konten anonim.
-    const privacySafeReviews = publicReviews.map((review: any) => {
-      const isOwnReview =
-        Boolean(session) &&
-        String(review.user_id) === String(session!.user_id);
+    // Profil publik terbatas: hanya display_name dan avatar_url.
+    // Username login, bio, dan kredensial tidak pernah dikirim.
+    const reviewerIds = Array.from(new Set(
+      publicReviews
+        .map((review: any) => String(review.user_id || ""))
+        .filter(Boolean)
+    ));
 
-      if (isOwnReview) return review;
+    const publicProfileMap = new Map<string, { display_name: string; avatar_url: string }>();
+    for (let offset = 0; offset < reviewerIds.length; offset += 200) {
+      const { data: profiles, error: profilesError } = await getSupabaseAdmin()
+        .from("users")
+        .select("id, display_name, avatar_url")
+        .in("id", reviewerIds.slice(offset, offset + 200));
 
+      if (profilesError) {
+        console.error("Get reviewer public profiles error:", profilesError);
+        return json({ error: "Gagal mengambil identitas publik reviewer." }, 500);
+      }
+
+      (profiles || []).forEach((profile: any) => {
+        publicProfileMap.set(String(profile.id), {
+          display_name: String(profile.display_name || "Pengguna"),
+          avatar_url: String(profile.avatar_url || ""),
+        });
+      });
+    }
+
+    const reviewsWithProfiles = publicReviews.map((review: any) => {
+      const profile = publicProfileMap.get(String(review.user_id || ""));
       return {
         ...review,
-        user_id: null,
+        display_name: profile?.display_name || "Pengguna",
+        avatar_url: profile?.avatar_url || "",
       };
     });
 
     return json({
       success: true,
-      reviews: privacySafeReviews,
+      reviews: reviewsWithProfiles,
       myRatings,
     });
   } catch (error) {
