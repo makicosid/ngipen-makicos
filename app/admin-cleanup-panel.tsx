@@ -50,6 +50,25 @@ function formatDate(value: string) {
   return Number.isNaN(date.getTime()) ? value : dateFormat.format(date);
 }
 
+function PosterPreview({ src, title }: { src: string | null; title: string }) {
+  const [failed, setFailed] = useState(false);
+  if (!src || failed) {
+    return (
+      <div className="flex h-24 w-16 shrink-0 items-center justify-center rounded-lg bg-gray-100 px-1 text-center text-[10px] text-gray-400 dark:bg-gray-800">
+        Poster tidak tersedia
+      </div>
+    );
+  }
+  return (
+    <img
+      src={src}
+      alt={`Poster ${title}`}
+      onError={() => setFailed(true)}
+      className="h-24 w-16 shrink-0 rounded-lg border object-cover"
+    />
+  );
+}
+
 export default function AdminCleanupPanel({ onCleanupComplete }: { onCleanupComplete?: (eventId: string) => void }) {
   const [candidates, setCandidates] = useState<CleanupCandidate[]>([]);
   const [history, setHistory] = useState<CleanupHistory[]>([]);
@@ -194,7 +213,7 @@ export default function AdminCleanupPanel({ onCleanupComplete }: { onCleanupComp
                     <article key={item.id} className={`rounded-2xl border p-4 dark:border-gray-800 ${selected ? "border-red-300 bg-red-50/40 dark:border-red-900 dark:bg-red-950/10" : "border-gray-200 bg-white dark:bg-gray-900"}`}>
                       <div className="flex gap-3">
                         <input aria-label={`Pilih ${item.title}`} type="checkbox" checked={selected} onChange={(event) => setSelectedIds((current) => event.target.checked ? [...current, item.id] : current.filter((id) => id !== item.id))} className="mt-1 h-4 w-4 shrink-0 accent-red-600" />
-                        {item.poster_url ? <img src={item.poster_url} alt={`Poster ${item.title}`} className="h-24 w-16 shrink-0 rounded-lg border object-cover" /> : <div className="flex h-24 w-16 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-[10px] text-gray-400 dark:bg-gray-800">Tanpa poster</div>}
+                        <PosterPreview src={item.poster_url} title={item.title} />
                         <div className="min-w-0 flex-1">
                           <div className="flex flex-wrap items-start gap-2">
                             <h3 className="min-w-0 flex-1 break-words text-sm font-black text-gray-900 dark:text-white">{item.title}</h3>
