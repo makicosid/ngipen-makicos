@@ -104,32 +104,7 @@ body {
 
 /* NGIPEN Japanese Kitsune visual layer — presentation only */
 .ngipen-jp-header {
-  isolation: isolate;
-}
-.ngipen-jp-header::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  opacity: .38;
-  background-image: url("/ngipen-japanese-trim.svg");
-  background-repeat: repeat-x;
-  background-position: right center;
-  background-size: auto 100%;
-}
-.ngipen-jp-header::after {
-  content: "";
-  position: absolute;
-  right: clamp(12rem, 24vw, 25rem);
-  top: 50%;
-  width: 42px;
-  height: 42px;
-  transform: translateY(-50%);
-  pointer-events: none;
-  opacity: .12;
-  background: url("/ngipen-fox-duo.png") 24% 28% / 260% auto no-repeat;
-  border-radius: 50%;
+  position: relative;
 }
 .ngipen-hero::before {
   content: "";
@@ -161,8 +136,6 @@ body {
   isolation: isolate;
 }
 @media (max-width: 767px) {
-  .ngipen-jp-header::after { display: none; }
-  .ngipen-jp-header::before { opacity: .22; background-position: 70% center; }
   .ngipen-hero-cloud-one { right: -2rem; top: 2%; }
   .ngipen-hero-cloud-two { right: -2rem; bottom: 34%; }
 }

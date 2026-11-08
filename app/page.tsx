@@ -3456,7 +3456,7 @@ const shareEvent = async (event: Event) => {
     <div className={dark ? "dark" : ""}>
       <div className="min-h-screen bg-gray-50 text-gray-900 transition-colors dark:bg-gray-950 dark:text-white">
         {/* HEADER */}
-        <header className="ngipen-jp-header sticky top-0 z-40 border-b border-red-100 bg-white/95 backdrop-blur dark:border-red-950 dark:bg-gray-950/95">
+        <header className="sticky top-0 z-40 border-b border-red-100 bg-white/95 backdrop-blur dark:border-red-950 dark:bg-gray-950/95">
           <div className="relative z-10 mx-auto flex max-w-[1400px] items-center justify-between gap-3 px-4 py-3">
             {/* LOGO */}
             <button
