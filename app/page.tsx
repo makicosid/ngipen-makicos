@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import { supabase } from "../lib/supabase";
+import AdminCleanupPanel from "./admin-cleanup-panel";
 
 type TicketType = "Gratis" | "Berbayar";
 type Category =
@@ -906,7 +907,7 @@ const sponsorCarouselPausedRef = useRef(false);
   const [newTicketType, setNewTicketType] = useState<TicketType>("Gratis");
 
  const [adminTab, setAdminTab] =
-    useState<"moderation" | "users" | "rentals">("moderation");
+    useState<"moderation" | "users" | "rentals" | "cleanup">("moderation");
   const [adminEventTab, setAdminEventTab] = useState<
     "Pending" | "Approved" | "Rejected" | "Sponsored" | "Completed" | "Hidden"
   >("Pending");
@@ -5828,7 +5829,7 @@ accept="image/jpeg,image/png,image/webp"
                 </form>
               ) : (
                 <>
-                  <div className="flex gap-2 border-b border-gray-200 pb-3 dark:border-gray-800">
+                  <div className="flex flex-wrap gap-2 border-b border-gray-200 pb-3 dark:border-gray-800">
                     <button
                       onClick={() => setAdminTab("moderation")}
                       className={`rounded-xl px-3 py-2 text-sm font-bold ${
@@ -5859,6 +5860,17 @@ accept="image/jpeg,image/png,image/webp"
                       }`}
                     >
                       Konfigurasi List Rentalan
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAdminTab("cleanup")}
+                      className={`rounded-xl px-3 py-2 text-sm font-bold ${
+                        adminTab === "cleanup"
+                          ? "bg-red-600 text-white"
+                          : "bg-gray-100 dark:bg-gray-800"
+                      }`}
+                    >
+                      Event Cleanup
                     </button>
                   </div>
 
@@ -6250,6 +6262,14 @@ accept="image/jpeg,image/png,image/webp"
                       </div>
                     )}
                     </>
+              ) : adminTab === "cleanup" ? (
+                <AdminCleanupPanel
+                  onCleanupComplete={(eventId) => {
+                    setEvents((current) =>
+                      current.filter((event) => String(event.id) !== eventId)
+                    );
+                  }}
+                />
               ) : (
                 <div className="mt-4 space-y-5">
                   <div id="admin-rental-form" className={`rounded-2xl border p-4 transition-all duration-500 dark:border-gray-800 ${rentalFormHighlight ? "border-red-500 bg-red-50 shadow-lg shadow-red-200/60 ring-2 ring-red-300 dark:bg-red-950/30 dark:shadow-red-950/40" : "border-gray-200"}`}>
