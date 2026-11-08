@@ -236,7 +236,10 @@ export async function GET(request: NextRequest) {
       let totalBytes = 0;
       let presentFiles = 0;
       let missingFiles = 0;
-      for (const target of targets.values()) {
+      const targetList: StorageTarget[] = [];
+      targets.forEach((target) => targetList.push(target));
+      for (let index = 0; index < targetList.length; index += 1) {
+        const target = targetList[index];
         const info = await objectInfo(supabase, target);
         if (info.exists) { presentFiles += 1; totalBytes += info.sizeBytes; }
         else missingFiles += 1;
@@ -296,7 +299,10 @@ export async function POST(request: NextRequest) {
     const references = await collectReferences(supabase, body.id);
     const sharedTargets: string[] = [];
     const removableTargets: StorageTarget[] = [];
-    for (const target of details.targets.values()) {
+    const detailTargets: StorageTarget[] = [];
+    details.targets.forEach((target) => detailTargets.push(target));
+    for (let index = 0; index < detailTargets.length; index += 1) {
+      const target = detailTargets[index];
       const key = `${target.bucket}:${target.path}`;
       if (references.has(key)) sharedTargets.push(key);
       else removableTargets.push(target);
@@ -425,3 +431,4 @@ export async function POST(request: NextRequest) {
     return json({ error: message }, 500);
   }
 }
+
