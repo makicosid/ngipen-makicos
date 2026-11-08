@@ -392,8 +392,7 @@ export default async function EventPage({ params }: Props) {
             <section className="mt-8 overflow-hidden rounded-2xl border border-red-100 bg-white shadow-sm">
               <div className="flex items-center gap-3 border-b border-red-100 bg-gradient-to-r from-red-50 to-white px-4 py-3">
                 <span aria-hidden="true" className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-lg shadow-sm">⛩️</span>
-                <div className="min-w-0 flex-1"><h2 className="text-xl font-black">Tentang Event</h2><p className="text-[10px] font-bold uppercase tracking-[0.16em] text-red-600">Deskripsi kegiatan</p></div>
-                <img src="/mascots/kitsune-chan-head.png" alt="" aria-hidden="true" className="h-11 w-11 shrink-0 object-contain" />
+                <div><h2 className="text-xl font-black">Tentang Event</h2><p className="text-[10px] font-bold uppercase tracking-[0.16em] text-red-600">Deskripsi kegiatan</p></div>
               </div>
               <div className="p-4 sm:p-5"><p className="whitespace-pre-line text-sm leading-7 text-gray-700">{event.description || "Informasi event belum tersedia."}</p></div>
               <div className="grid gap-px border-t border-red-100 bg-red-100 sm:grid-cols-2">
@@ -463,7 +462,7 @@ export default async function EventPage({ params }: Props) {
           </div>
         </article>
 
-        <footer className="py-8 text-center text-xs text-gray-500">
+        <footer className="ngipen-jp-footer relative isolate mt-6 overflow-hidden border-t border-red-100 px-4 pb-16 pt-8 text-center text-xs text-gray-500 dark:border-red-950 dark:text-gray-400">
           NGIPEN – Satu Hobby Satu Keseruan.
           <br />
           MARI KITA COSPLAY, MAKICOS ID
