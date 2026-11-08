@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 150" fill="none">
+ <defs>
+  <linearGradient id="hgold" x1="0" y1="0" x2="1600" y2="0"><stop stop-color="#E7B85B"/><stop offset=".5" stop-color="#FFF0B8"/><stop offset="1" stop-color="#D99A35"/></linearGradient>
+  <linearGradient id="hred" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#D82B3A"/><stop offset="1" stop-color="#A91625"/></linearGradient>
+ </defs>
+ <!-- fine festival cord -->
+ <path d="M0 20 Q400 92 800 20 T1600 20" stroke="#B51D2B" stroke-width="3" opacity=".8"/>
+ <path d="M0 25 Q400 97 800 25 T1600 25" stroke="url(#hgold)" stroke-width="2"/>
+ <!-- lanterns -->
+ <g stroke="#9F1825" stroke-width="3" stroke-linejoin="round">
+  <g transform="translate(155 22)"><path d="M0 0v16"/><path d="M-20 16h40l-4 10v47q-16 14-32 0V26z" fill="#F8D7D0"/><path d="M-15 37h30M-16 53h32" stroke="#D52A39" stroke-width="3"/><path d="M0 85v14m-8 0h16"/></g>
+  <g transform="translate(475 48) scale(.78)"><path d="M0 -30v16"/><path d="M-20 -14h40l-4 10v47q-16 14-32 0V-4z" fill="#F8D7D0"/><path d="M-15 7h30M-16 23h32" stroke="#D52A39"/><path d="M0 55v14m-8 0h16"/></g>
+  <g transform="translate(1125 48) scale(.78)"><path d="M0 -30v16"/><path d="M-20 -14h40l-4 10v47q-16 14-32 0V-4z" fill="#F8D7D0"/><path d="M-15 7h30M-16 23h32" stroke="#D52A39"/><path d="M0 55v14m-8 0h16"/></g>
+  <g transform="translate(1445 22)"><path d="M0 0v16"/><path d="M-20 16h40l-4 10v47q-16 14-32 0V26z" fill="#F8D7D0"/><path d="M-15 37h30M-16 53h32" stroke="#D52A39"/><path d="M0 85v14m-8 0h16"/></g>
+ </g>
+ <!-- sakura clusters -->
+ <g fill="#F3A9B0" stroke="#D77B85" stroke-width="1.5">
+  <g transform="translate(315 75)"><circle cx="0" cy="-13" r="10"/><circle cx="13" cy="-4" r="10"/><circle cx="8" cy="11" r="10"/><circle cx="-8" cy="11" r="10"/><circle cx="-13" cy="-4" r="10"/><circle r="5" fill="#F4D27D" stroke="none"/></g>
+  <g transform="translate(1285 75)"><circle cx="0" cy="-13" r="10"/><circle cx="13" cy="-4" r="10"/><circle cx="8" cy="11" r="10"/><circle cx="-8" cy="11" r="10"/><circle cx="-13" cy="-4" r="10"/><circle r="5" fill="#F4D27D" stroke="none"/></g>
+ </g>
+ <!-- small torii at both ends -->
+ <g stroke="url(#hred)" stroke-linecap="round" stroke-linejoin="round">
+  <g transform="translate(55 58)"><path d="M0 68V20m40 48V20M-9 20h58M-17 12h74l-7 10h-60z" stroke-width="7"/><path d="M-4 68h48" stroke-width="4"/></g>
+  <g transform="translate(1505 58)"><path d="M0 68V20m40 48V20M-9 20h58M-17 12h74l-7 10h-60z" stroke-width="7"/><path d="M-4 68h48" stroke-width="4"/></g>
+ </g>
+ <!-- flowing seigaiha lower edge -->
+ <path d="M0 124 Q50 74 100 124T200 124T300 124T400 124T500 124T600 124T700 124T800 124T900 124T1000 124T1100 124T1200 124T1300 124T1400 124T1500 124T1600 124" stroke="#D52A39" stroke-width="4" opacity=".9"/>
+ <path d="M0 132 Q50 82 100 132T200 132T300 132T400 132T500 132T600 132T700 132T800 132T900 132T1000 132T1100 132T1200 132T1300 132T1400 132T1500 132T1600 132" stroke="url(#hgold)" stroke-width="3"/>
+ <path d="M0 143H1600" stroke="#F2C7C3" stroke-width="2"/>
+</svg>
