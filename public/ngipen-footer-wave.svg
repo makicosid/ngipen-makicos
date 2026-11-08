@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 120" fill="none" preserveAspectRatio="none">
+  <defs>
+    <linearGradient id="bottomWaveRed" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#C5222F" />
+      <stop offset="60%" stop-color="#B71C1C" />
+      <stop offset="100%" stop-color="#991B1B" />
+    </linearGradient>
+
+    <linearGradient id="bottomGoldRibbon" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#E5A93C" />
+      <stop offset="35%" stop-color="#F6D57A" />
+      <stop offset="70%" stop-color="#E5A93C" />
+      <stop offset="100%" stop-color="#D4902B" />
+    </linearGradient>
+
+    <!-- Seigaiha Wave Pattern Unit (Concentric wave arches) -->
+    <pattern id="seigaiha-unit" width="80" height="40" patternUnits="userSpaceOnUse">
+      <g stroke="#C5222F" stroke-width="1.1" fill="none" opacity="0.32">
+        <!-- Row 1: Centers at x=0, 80, y=0 -->
+        <circle cx="0" cy="0" r="10" />
+        <circle cx="0" cy="0" r="20" />
+        <circle cx="0" cy="0" r="30" />
+        <circle cx="0" cy="0" r="40" />
+
+        <circle cx="80" cy="0" r="10" />
+        <circle cx="80" cy="0" r="20" />
+        <circle cx="80" cy="0" r="30" />
+        <circle cx="80" cy="0" r="40" />
+
+        <!-- Row 2: Center at x=40, y=20 (offset) -->
+        <circle cx="40" cy="20" r="10" />
+        <circle cx="40" cy="20" r="20" />
+        <circle cx="40" cy="20" r="30" />
+        <circle cx="40" cy="20" r="40" />
+
+        <!-- Row 3: Centers at x=0, 80, y=40 -->
+        <circle cx="0" cy="40" r="10" />
+        <circle cx="0" cy="40" r="20" />
+        <circle cx="0" cy="40" r="30" />
+        <circle cx="0" cy="40" r="40" />
+
+        <circle cx="80" cy="40" r="10" />
+        <circle cx="80" cy="40" r="20" />
+        <circle cx="80" cy="40" r="30" />
+        <circle cx="80" cy="40" r="40" />
+      </g>
+    </pattern>
+  </defs>
+
+  <!-- 1. Seigaiha concentric arches pattern across the entire width -->
+  <rect x="0" y="0" width="1600" height="120" fill="url(#seigaiha-unit)" />
+
+  <!-- 2. Solid Crimson Red Wave sweeping down center and up right -->
+  <path
+    d="M0 68
+       Q220 54 440 72
+       T920 82
+       Q1180 80 1380 54
+       T1600 22
+       L1600 120
+       L0 120
+       Z"
+    fill="url(#bottomWaveRed)"
+  />
+
+  <!-- 3. Golden Crest Trim Line -->
+  <path
+    d="M0 68
+       Q220 54 440 72
+       T920 82
+       Q1180 80 1380 54
+       T1600 22"
+    stroke="url(#bottomGoldRibbon)"
+    stroke-width="3"
+    stroke-linecap="round"
+    fill="none"
+  />
+
+  <!-- 4. Subtle Gold Shimmer Line -->
+  <path
+    d="M0 67
+       Q220 53 440 71
+       T920 81
+       Q1180 79 1380 53
+       T1600 21"
+    stroke="#FFF4CC"
+    stroke-width="1"
+    stroke-linecap="round"
+    fill="none"
+    opacity="0.8"
+  />
+</svg>

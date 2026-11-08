@@ -1,0 +1,145 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 200" fill="none">
+  <defs>
+    <linearGradient id="sakuraPetalL" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="50%" stop-color="#FFC2CD" />
+      <stop offset="100%" stop-color="#F47291" />
+    </linearGradient>
+
+    <!-- 5-Petal Sakura Flower -->
+    <g id="flower-l">
+      <g fill="url(#sakuraPetalL)" stroke="#E57385" stroke-width="0.75">
+        <path d="M0 0 C-4 -8 -6 -15 -2 -19 C0 -21 2 -21 4 -19 C8 -15 6 -8 0 0 Z" />
+        <path d="M0 0 C-4 -8 -6 -15 -2 -19 C0 -21 2 -21 4 -19 C8 -15 6 -8 0 0 Z" transform="rotate(72)" />
+        <path d="M0 0 C-4 -8 -6 -15 -2 -19 C0 -21 2 -21 4 -19 C8 -15 6 -8 0 0 Z" transform="rotate(144)" />
+        <path d="M0 0 C-4 -8 -6 -15 -2 -19 C0 -21 2 -21 4 -19 C8 -15 6 -8 0 0 Z" transform="rotate(216)" />
+        <path d="M0 0 C-4 -8 -6 -15 -2 -19 C0 -21 2 -21 4 -19 C8 -15 6 -8 0 0 Z" transform="rotate(288)" />
+      </g>
+      <circle cx="0" cy="0" r="3.2" fill="#E11D48" />
+      <circle cx="0" cy="0" r="1.6" fill="#FBBF24" />
+      <g stroke="#BE123C" stroke-width="0.6" stroke-linecap="round">
+        <line x1="0" y1="0" x2="0" y2="-4.5" />
+        <line x1="0" y1="0" x2="4.2" y2="-1.4" />
+        <line x1="0" y1="0" x2="2.6" y2="3.6" />
+        <line x1="0" y1="0" x2="-2.6" y2="3.6" />
+        <line x1="0" y1="0" x2="-4.2" y2="-1.4" />
+      </g>
+      <circle cx="0" cy="-4.5" r="0.7" fill="#FBBF24" />
+      <circle cx="4.2" cy="-1.4" r="0.7" fill="#FBBF24" />
+      <circle cx="2.6" cy="3.6" r="0.7" fill="#FBBF24" />
+      <circle cx="-2.6" cy="3.6" r="0.7" fill="#FBBF24" />
+      <circle cx="-4.2" cy="-1.4" r="0.7" fill="#FBBF24" />
+    </g>
+
+    <!-- Sakura Bud -->
+    <g id="bud-l">
+      <path d="M0 0 C-2 -4 -3 -8 0 -11 C3 -8 2 -4 0 0 Z" fill="#FDA4AF" stroke="#E11D48" stroke-width="0.6" />
+      <path d="M-1.5 1 C-0.8 3.5 0.8 3.5 1.5 1" stroke="#4A2810" stroke-width="1.1" fill="none" />
+    </g>
+
+    <!-- Single Floating Petal -->
+    <path id="petal-l" d="M0 0 C-2 -4 -4 -9 -1 -12 C1 -13 2 -13 4 -12 C6 -9 4 -4 0 0 Z" fill="url(#sakuraPetalL)" stroke="#F47291" stroke-width="0.4" />
+  </defs>
+
+  <!-- ============================================== -->
+  <!-- PAGODA & TORII SILHOUETTE (RED)                -->
+  <!-- ============================================== -->
+
+  <!-- Torii Gate Silhouette (x=8..52, base at y=170) -->
+  <g fill="#A91D26" stroke="#A91D26">
+    <!-- Top lintel (Kasagi & Shimaki) -->
+    <path d="M6 136 Q28 132 50 136 L51 139.5 Q28 136 5 139.5 Z" stroke-width="0.5" stroke-linejoin="round" />
+    <path d="M8 141 H48 V144.5 H8 Z" />
+    <!-- Lower tie-beam (Nuki) -->
+    <path d="M10 149 H46 V151.8 H10 Z" />
+    <!-- Gakuzuka strut -->
+    <rect x="26.5" y="144" width="3" height="5" />
+    <!-- Pillars with slight taper -->
+    <path d="M15 141 L14 171 H19.5 L19 141 Z" />
+    <path d="M37 141 L36.5 171 H42 L41 141 Z" />
+    <!-- Base stones -->
+    <rect x="12" y="170" width="9" height="3" rx="1" />
+    <rect x="35" y="170" width="9" height="3" rx="1" />
+  </g>
+
+  <!-- 5-Tier Japanese Pagoda (Goju-no-to) (x=50..125, base at y=172, spire to y=35) -->
+  <g fill="#991B1B">
+    <!-- Central Spire (Sorin) -->
+    <rect x="86.5" y="38" width="3" height="32" />
+    <!-- Sacred Jewel (Hoju) -->
+    <path d="M88 32 C86 35 86 38 88 39 C90 38 90 35 88 32 Z" />
+    <!-- Dragon vehicle ring (Ryusha) -->
+    <ellipse cx="88" cy="42" rx="4" ry="1.2" />
+    <!-- 9 Sacred Rings (Kurin) -->
+    <rect x="84" y="44" width="8" height="1.6" rx="0.8" />
+    <rect x="83.5" y="46.5" width="9" height="1.6" rx="0.8" />
+    <rect x="83.5" y="49" width="9" height="1.6" rx="0.8" />
+    <rect x="83" y="51.5" width="10" height="1.6" rx="0.8" />
+    <rect x="83" y="54" width="10" height="1.6" rx="0.8" />
+    <rect x="82.5" y="56.5" width="11" height="1.6" rx="0.8" />
+    <rect x="82.5" y="59" width="11" height="1.6" rx="0.8" />
+    <rect x="82" y="61.5" width="12" height="1.6" rx="0.8" />
+    <rect x="82" y="64" width="12" height="1.6" rx="0.8" />
+    <!-- Inverted bowl (Fukubachi) -->
+    <path d="M81 70 C81 67 95 67 95 70 Z" />
+
+    <!-- Tier 1 Roof & Body -->
+    <path d="M74 74 Q88 70 102 74 L100 76.5 Q88 73.5 76 76.5 Z" />
+    <rect x="82" y="75" width="12" height="7" />
+
+    <!-- Tier 2 -->
+    <path d="M70 85 Q88 80 106 85 L104 87.5 Q88 84 72 87.5 Z" />
+    <rect x="80" y="86" width="16" height="8" />
+
+    <!-- Tier 3 -->
+    <path d="M65 97 Q88 91 111 97 L109 99.5 Q88 95.5 67 99.5 Z" />
+    <rect x="78" y="98" width="20" height="9" />
+
+    <!-- Tier 4 -->
+    <path d="M60 110 Q88 103 116 110 L114 113 Q88 108 62 113 Z" />
+    <rect x="76" y="111.5" width="24" height="11" />
+
+    <!-- Tier 5 (Bottom) -->
+    <path d="M54 125 Q88 117 122 125 L120 128.5 Q88 123 56 128.5 Z" />
+    <rect x="73" y="127" width="30" height="15" />
+
+    <!-- Foundation Platform -->
+    <rect x="67" y="142" width="42" height="6" rx="1" />
+    <rect x="63" y="148" width="50" height="7" rx="1" />
+    <rect x="58" y="155" width="60" height="8" rx="1" />
+  </g>
+
+  <!-- ============================================== -->
+  <!-- TOP-LEFT SAKURA BRANCH & FLOWERS               -->
+  <!-- ============================================== -->
+  <g>
+    <!-- Main branch -->
+    <path d="M0 10 Q32 18 64 26 T115 38" stroke="#4A2810" stroke-width="4.5" stroke-linecap="round" fill="none" />
+    <path d="M42 20 Q56 34 64 48" stroke="#4A2810" stroke-width="2.6" stroke-linecap="round" fill="none" />
+    <path d="M72 29 Q92 22 116 18" stroke="#4A2810" stroke-width="2.2" stroke-linecap="round" fill="none" />
+    <path d="M84 32 Q95 48 106 58" stroke="#4A2810" stroke-width="1.8" stroke-linecap="round" fill="none" />
+
+    <!-- Buds -->
+    <use href="#bud-l" x="116" y="18" transform="rotate(-30 116 18) scale(1.1)" />
+    <use href="#bud-l" x="64" y="48" transform="rotate(45 64 48) scale(1)" />
+    <use href="#bud-l" x="106" y="58" transform="rotate(70 106 58) scale(0.9)" />
+
+    <!-- Blossoms -->
+    <use href="#flower-l" x="22" y="15" transform="rotate(15 22 15) scale(0.95)" />
+    <use href="#flower-l" x="50" y="26" transform="rotate(42 50 26) scale(1.2)" />
+    <use href="#flower-l" x="80" y="30" transform="rotate(-18 80 30) scale(1.05)" />
+    <use href="#flower-l" x="115" y="38" transform="rotate(65 115 38) scale(0.92)" />
+    <use href="#flower-l" x="46" y="42" transform="rotate(110 46 42) scale(0.85)" />
+    <use href="#flower-l" x="96" y="50" transform="rotate(-40 96 50) scale(0.8)" />
+    <use href="#flower-l" x="72" y="15" transform="rotate(85 72 15) scale(0.75)" />
+  </g>
+
+  <!-- Floating petals near left -->
+  <g opacity="0.85">
+    <use href="#petal-l" x="135" y="24" transform="rotate(35 135 24) scale(1.1)" />
+    <use href="#petal-l" x="125" y="55" transform="rotate(75 125 55) scale(0.9)" />
+    <use href="#petal-l" x="145" y="75" transform="rotate(-30 145 75) scale(0.85)" />
+    <use href="#petal-l" x="160" y="40" transform="rotate(50 160 40) scale(1)" />
+    <use href="#petal-l" x="180" y="68" transform="rotate(-55 180 68) scale(0.95)" />
+  </g>
+</svg>

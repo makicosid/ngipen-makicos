@@ -1,0 +1,281 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 180" fill="none" preserveAspectRatio="none">
+  <defs>
+    <!-- Gradients -->
+    <linearGradient id="waveRed" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#C5222F" />
+      <stop offset="50%" stop-color="#B71C1C" />
+      <stop offset="100%" stop-color="#991B1B" />
+    </linearGradient>
+
+    <linearGradient id="goldRibbon" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#E5A93C" />
+      <stop offset="35%" stop-color="#F6D57A" />
+      <stop offset="70%" stop-color="#E5A93C" />
+      <stop offset="100%" stop-color="#D4902B" />
+    </linearGradient>
+
+    <linearGradient id="sakuraGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="45%" stop-color="#FFCCD5" />
+      <stop offset="100%" stop-color="#F47291" />
+    </linearGradient>
+
+    <linearGradient id="petalGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFE4E8" />
+      <stop offset="100%" stop-color="#F27289" />
+    </linearGradient>
+
+    <!-- 5-Petal Sakura Flower Symbol -->
+    <g id="sakura-flower">
+      <!-- 5 petals with notch -->
+      <g fill="url(#sakuraGrad)" stroke="#E57385" stroke-width="0.8">
+        <!-- Petal 1 (top) -->
+        <path d="M0 0 C-6 -10 -9 -19 -4 -24 C-1 -27 1 -27 4 -24 C9 -19 6 -10 0 0 Z" />
+        <!-- Petal 2 (top right) -->
+        <path d="M0 0 C2 -12 7 -20 14 -20 C18 -20 20 -18 20 -14 C19 -7 11 -2 0 0 Z" transform="rotate(72)" />
+        <!-- Petal 3 (bottom right) -->
+        <path d="M0 0 C2 -12 7 -20 14 -20 C18 -20 20 -18 20 -14 C19 -7 11 -2 0 0 Z" transform="rotate(144)" />
+        <!-- Petal 4 (bottom left) -->
+        <path d="M0 0 C2 -12 7 -20 14 -20 C18 -20 20 -18 20 -14 C19 -7 11 -2 0 0 Z" transform="rotate(216)" />
+        <!-- Petal 5 (top left) -->
+        <path d="M0 0 C2 -12 7 -20 14 -20 C18 -20 20 -18 20 -14 C19 -7 11 -2 0 0 Z" transform="rotate(288)" />
+      </g>
+      <!-- Flower center / stamens -->
+      <circle cx="0" cy="0" r="4.5" fill="#E11D48" />
+      <circle cx="0" cy="0" r="2.2" fill="#FDE047" />
+      <g stroke="#BE123C" stroke-width="0.75" stroke-linecap="round">
+        <line x1="0" y1="0" x2="0" y2="-6" />
+        <line x1="0" y1="0" x2="5.7" y2="-1.8" />
+        <line x1="0" y1="0" x2="3.5" y2="4.8" />
+        <line x1="0" y1="0" x2="-3.5" y2="4.8" />
+        <line x1="0" y1="0" x2="-5.7" y2="-1.8" />
+      </g>
+      <circle cx="0" cy="-6" r="0.9" fill="#FBBF24" />
+      <circle cx="5.7" cy="-1.8" r="0.9" fill="#FBBF24" />
+      <circle cx="3.5" cy="4.8" r="0.9" fill="#FBBF24" />
+      <circle cx="-3.5" cy="4.8" r="0.9" fill="#FBBF24" />
+      <circle cx="-5.7" cy="-1.8" r="0.9" fill="#FBBF24" />
+    </g>
+
+    <!-- Single Sakura Petal -->
+    <path id="single-petal" d="M0 0 C-3 -6 -5 -12 -2 -15 C0 -17 2 -17 4 -15 C7 -12 5 -6 0 0 Z" fill="url(#petalGrad)" stroke="#F47291" stroke-width="0.5" />
+
+    <!-- Sakura Bud -->
+    <g id="sakura-bud">
+      <path d="M0 0 C-2 -4 -3 -9 0 -13 C3 -9 2 -4 0 0 Z" fill="#FDA4AF" stroke="#E11D48" stroke-width="0.6" />
+      <path d="M-2 1 C-1 4 1 4 2 1" stroke="#4A5568" stroke-width="1.2" fill="none" />
+    </g>
+
+    <!-- Seigaiha Pattern Unit (Concentric wave arches) -->
+    <pattern id="seigaiha" width="80" height="40" patternUnits="userSpaceOnUse">
+      <g stroke="#C5222F" stroke-width="1.1" fill="none" opacity="0.28">
+        <!-- Row 1: Centers at x=0, 80, y=0 -->
+        <circle cx="0" cy="0" r="10" />
+        <circle cx="0" cy="0" r="20" />
+        <circle cx="0" cy="0" r="30" />
+        <circle cx="0" cy="0" r="40" />
+
+        <circle cx="80" cy="0" r="10" />
+        <circle cx="80" cy="0" r="20" />
+        <circle cx="80" cy="0" r="30" />
+        <circle cx="80" cy="0" r="40" />
+
+        <!-- Row 2: Center at x=40, y=20 (offset) -->
+        <circle cx="40" cy="20" r="10" />
+        <circle cx="40" cy="20" r="20" />
+        <circle cx="40" cy="20" r="30" />
+        <circle cx="40" cy="20" r="40" />
+
+        <!-- Row 3: Centers at x=0, 80, y=40 -->
+        <circle cx="0" cy="40" r="10" />
+        <circle cx="0" cy="40" r="20" />
+        <circle cx="0" cy="40" r="30" />
+        <circle cx="0" cy="40" r="40" />
+
+        <circle cx="80" cy="40" r="10" />
+        <circle cx="80" cy="40" r="20" />
+        <circle cx="80" cy="40" r="30" />
+        <circle cx="80" cy="40" r="40" />
+      </g>
+    </pattern>
+  </defs>
+
+  <!-- ============================================== -->
+  <!-- 1. SEIGAIHA PATTERN BACKGROUND (LOWER HALF)    -->
+  <!-- ============================================== -->
+  <rect x="0" y="70" width="1600" height="110" fill="url(#seigaiha)" />
+
+  <!-- ============================================== -->
+  <!-- 2. SILHOUETTES: TORII GATE & PAGODA (LEFT)     -->
+  <!-- ============================================== -->
+  <!-- Torii Gate Silhouette (x=16..64, base at y=145) -->
+  <g fill="#A91D26" stroke="#A91D26" stroke-linejoin="round">
+    <!-- Top lintel (Kasagi/Shimaki) curved -->
+    <path d="M12 110 Q38 107 64 110 L65 113 Q38 111 11 113 Z" stroke-width="0.8" />
+    <path d="M14 114 H62 V117 H14 Z" />
+    <!-- Lower tie-beam (Nuki) -->
+    <path d="M16 122 H60 V124.5 H16 Z" />
+    <!-- Central tablet strut (Gakuzuka) -->
+    <rect x="36.5" y="117" width="3" height="5" />
+    <!-- Pillars (Inward slight taper) -->
+    <path d="M22 114 L21 146 H26 L26.5 114 Z" />
+    <path d="M49.5 114 L50 146 H55 L54 114 Z" />
+    <!-- Base stones -->
+    <rect x="19" y="145" width="9" height="3" rx="1" />
+    <rect x="48" y="145" width="9" height="3" rx="1" />
+  </g>
+
+  <!-- 5-Tier Japanese Pagoda Silhouette (x=68..152, base at y=146, spire to y=20) -->
+  <g fill="#991B1B">
+    <!-- Central Sorin (Spire / Finial) -->
+    <rect x="108.5" y="22" width="3" height="30" />
+    <!-- Sacred Jewel (Hoju) at top tip -->
+    <path d="M110 16 C108 19 108 22 110 23 C112 22 112 19 110 16 Z" />
+    <!-- 9 Sacred Rings (Kurin) -->
+    <rect x="106" y="27" width="8" height="1.6" rx="0.8" />
+    <rect x="105.5" y="29.5" width="9" height="1.6" rx="0.8" />
+    <rect x="105.5" y="32" width="9" height="1.6" rx="0.8" />
+    <rect x="105" y="34.5" width="10" height="1.6" rx="0.8" />
+    <rect x="105" y="37" width="10" height="1.6" rx="0.8" />
+    <rect x="104.5" y="39.5" width="11" height="1.6" rx="0.8" />
+    <rect x="104.5" y="42" width="11" height="1.6" rx="0.8" />
+    <rect x="104" y="44.5" width="12" height="1.6" rx="0.8" />
+    <rect x="104" y="47" width="12" height="1.6" rx="0.8" />
+    <!-- Inverted bowl (Fukubachi) -->
+    <path d="M103 52 C103 49 117 49 117 52 Z" />
+
+    <!-- Tier 1 (Top Roof) -->
+    <path d="M96 57 Q110 53 124 57 L122 59 Q110 56 98 59 Z" />
+    <rect x="104" y="58" width="12" height="7" />
+
+    <!-- Tier 2 -->
+    <path d="M92 68 Q110 63 128 68 L126 70.5 Q110 67 94 70.5 Z" />
+    <rect x="102" y="70" width="16" height="8" />
+
+    <!-- Tier 3 -->
+    <path d="M87 81 Q110 75 133 81 L131 83.5 Q110 79.5 89 83.5 Z" />
+    <rect x="100" y="83" width="20" height="9" />
+
+    <!-- Tier 4 -->
+    <path d="M81 95 Q110 88 139 95 L137 98 Q110 93 83 98 Z" />
+    <rect x="98" y="97.5" width="24" height="10" />
+
+    <!-- Tier 5 (Bottom Roof) -->
+    <path d="M74 110 Q110 102 146 110 L144 113.5 Q110 108 76 113.5 Z" />
+    <rect x="95" y="113" width="30" height="14" />
+
+    <!-- Foundation Podium / Platform -->
+    <rect x="88" y="127" width="44" height="6" rx="1" />
+    <rect x="84" y="133" width="52" height="6" rx="1" />
+    <rect x="80" y="139" width="60" height="8" rx="1" />
+  </g>
+
+  <!-- ============================================== -->
+  <!-- 3. SAKURA BLOSSOMS & BRANCHES                  -->
+  <!-- ============================================== -->
+
+  <!-- LEFT SAKURA BRANCH (Hanging from top-left) -->
+  <g id="left-sakura">
+    <!-- Branch wood -->
+    <path d="M0 8 Q35 18 68 28 T115 42" stroke="#4A2810" stroke-width="4.5" stroke-linecap="round" fill="none" />
+    <path d="M42 21 Q55 35 62 48" stroke="#4A2810" stroke-width="2.8" stroke-linecap="round" fill="none" />
+    <path d="M78 32 Q95 24 118 20" stroke="#4A2810" stroke-width="2.2" stroke-linecap="round" fill="none" />
+    <path d="M88 36 Q98 52 108 60" stroke="#4A2810" stroke-width="1.8" stroke-linecap="round" fill="none" />
+
+    <!-- Buds -->
+    <use href="#sakura-bud" x="118" y="20" transform="rotate(-30 118 20) scale(1.1)" />
+    <use href="#sakura-bud" x="62" y="48" transform="rotate(45 62 48) scale(1)" />
+    <use href="#sakura-bud" x="108" y="60" transform="rotate(70 108 60) scale(0.9)" />
+
+    <!-- Flowers -->
+    <use href="#sakura-flower" x="25" y="15" transform="rotate(12 25 15) scale(0.95)" />
+    <use href="#sakura-flower" x="52" y="28" transform="rotate(40 52 28) scale(1.15)" />
+    <use href="#sakura-flower" x="85" y="32" transform="rotate(-20 85 32) scale(1.05)" />
+    <use href="#sakura-flower" x="115" y="42" transform="rotate(65 115 42) scale(0.9)" />
+    <use href="#sakura-flower" x="48" y="42" transform="rotate(110 48 42) scale(0.85)" />
+    <use href="#sakura-flower" x="98" y="52" transform="rotate(-45 98 52) scale(0.8)" />
+    <use href="#sakura-flower" x="72" y="16" transform="rotate(85 72 16) scale(0.75)" />
+  </g>
+
+  <!-- RIGHT SAKURA BRANCH (Entering from top-right) -->
+  <g id="right-sakura">
+    <!-- Branch wood -->
+    <path d="M1600 12 Q1550 25 1495 36 T1410 46" stroke="#4A2810" stroke-width="4.5" stroke-linecap="round" fill="none" />
+    <path d="M1525 30 Q1500 48 1475 62" stroke="#4A2810" stroke-width="2.8" stroke-linecap="round" fill="none" />
+    <path d="M1465 40 Q1440 28 1405 22" stroke="#4A2810" stroke-width="2.2" stroke-linecap="round" fill="none" />
+    <path d="M1445 43 Q1425 60 1400 70" stroke="#4A2810" stroke-width="1.8" stroke-linecap="round" fill="none" />
+
+    <!-- Buds -->
+    <use href="#sakura-bud" x="1405" y="22" transform="rotate(30 1405 22) scale(1.1)" />
+    <use href="#sakura-bud" x="1475" y="62" transform="rotate(-40 1475 62) scale(1)" />
+    <use href="#sakura-bud" x="1400" y="70" transform="rotate(-65 1400 70) scale(0.9)" />
+
+    <!-- Flowers -->
+    <use href="#sakura-flower" x="1560" y="20" transform="rotate(-15 1560 20) scale(1)" />
+    <use href="#sakura-flower" x="1515" y="34" transform="rotate(35 1515 34) scale(1.2)" />
+    <use href="#sakura-flower" x="1465" y="38" transform="rotate(-50 1465 38) scale(1.05)" />
+    <use href="#sakura-flower" x="1410" y="46" transform="rotate(75 1410 46) scale(0.95)" />
+    <use href="#sakura-flower" x="1490" y="55" transform="rotate(130 1490 55) scale(0.85)" />
+    <use href="#sakura-flower" x="1430" y="58" transform="rotate(-25 1430 58) scale(0.8)" />
+    <use href="#sakura-flower" x="1435" y="24" transform="rotate(95 1435 24) scale(0.75)" />
+  </g>
+
+  <!-- FLOATING SAKURA PETALS (Scattered across the air) -->
+  <g id="floating-petals" opacity="0.85">
+    <use href="#single-petal" x="140" y="25" transform="rotate(35 140 25) scale(1.1)" />
+    <use href="#single-petal" x="180" y="55" transform="rotate(80 180 55) scale(0.9)" />
+    <use href="#single-petal" x="240" y="35" transform="rotate(-45 240 35) scale(1)" />
+    <use href="#single-petal" x="320" y="70" transform="rotate(60 320 70) scale(0.85)" />
+    <use href="#single-petal" x="480" y="40" transform="rotate(-20 480 40) scale(0.95)" />
+    <use href="#single-petal" x="650" y="60" transform="rotate(115 650 60) scale(0.8)" />
+    <use href="#single-petal" x="780" y="30" transform="rotate(-65 780 30) scale(0.9)" />
+    <use href="#single-petal" x="920" y="75" transform="rotate(45 920 75) scale(0.85)" />
+    <use href="#single-petal" x="1080" y="45" transform="rotate(-30 1080 45) scale(1)" />
+    <use href="#single-petal" x="1240" y="65" transform="rotate(70 1240 65) scale(0.9)" />
+    <use href="#single-petal" x="1340" y="35" transform="rotate(-85 1340 35) scale(1.1)" />
+    <use href="#single-petal" x="1370" y="85" transform="rotate(25 1370 85) scale(0.85)" />
+  </g>
+
+  <!-- ============================================== -->
+  <!-- 4. RED BOTTOM WAVE WITH GOLD CREST ACCENT      -->
+  <!-- ============================================== -->
+  <!-- Red Wave Fill (Fluid hill sweeping down center and up right) -->
+  <path
+    d="M0 132
+       Q200 120 420 136
+       T900 144
+       Q1180 142 1380 118
+       T1600 84
+       L1600 180
+       L0 180
+       Z"
+    fill="url(#waveRed)"
+  />
+
+  <!-- Golden Accent Trim Line (Upper edge of red wave) -->
+  <path
+    d="M0 132
+       Q200 120 420 136
+       T900 144
+       Q1180 142 1380 118
+       T1600 84"
+    stroke="url(#goldRibbon)"
+    stroke-width="3"
+    stroke-linecap="round"
+    fill="none"
+  />
+
+  <!-- Subtle Inner Shimmer Highlight on Gold -->
+  <path
+    d="M0 131
+       Q200 119 420 135
+       T900 143
+       Q1180 141 1380 117
+       T1600 83"
+    stroke="#FFF4CC"
+    stroke-width="1"
+    stroke-linecap="round"
+    fill="none"
+    opacity="0.8"
+  />
+</svg>

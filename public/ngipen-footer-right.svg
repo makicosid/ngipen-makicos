@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 180" fill="none">
+  <defs>
+    <linearGradient id="sakuraPetalR" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="50%" stop-color="#FFC2CD" />
+      <stop offset="100%" stop-color="#F47291" />
+    </linearGradient>
+
+    <!-- 5-Petal Sakura Flower -->
+    <g id="flower-r">
+      <g fill="url(#sakuraPetalR)" stroke="#E57385" stroke-width="0.75">
+        <path d="M0 0 C-4 -8 -6 -15 -2 -19 C0 -21 2 -21 4 -19 C8 -15 6 -8 0 0 Z" />
+        <path d="M0 0 C-4 -8 -6 -15 -2 -19 C0 -21 2 -21 4 -19 C8 -15 6 -8 0 0 Z" transform="rotate(72)" />
+        <path d="M0 0 C-4 -8 -6 -15 -2 -19 C0 -21 2 -21 4 -19 C8 -15 6 -8 0 0 Z" transform="rotate(144)" />
+        <path d="M0 0 C-4 -8 -6 -15 -2 -19 C0 -21 2 -21 4 -19 C8 -15 6 -8 0 0 Z" transform="rotate(216)" />
+        <path d="M0 0 C-4 -8 -6 -15 -2 -19 C0 -21 2 -21 4 -19 C8 -15 6 -8 0 0 Z" transform="rotate(288)" />
+      </g>
+      <circle cx="0" cy="0" r="3.2" fill="#E11D48" />
+      <circle cx="0" cy="0" r="1.6" fill="#FBBF24" />
+      <g stroke="#BE123C" stroke-width="0.6" stroke-linecap="round">
+        <line x1="0" y1="0" x2="0" y2="-4.5" />
+        <line x1="0" y1="0" x2="4.2" y2="-1.4" />
+        <line x1="0" y1="0" x2="2.6" y2="3.6" />
+        <line x1="0" y1="0" x2="-2.6" y2="3.6" />
+        <line x1="0" y1="0" x2="-4.2" y2="-1.4" />
+      </g>
+      <circle cx="0" cy="-4.5" r="0.7" fill="#FBBF24" />
+      <circle cx="4.2" cy="-1.4" r="0.7" fill="#FBBF24" />
+      <circle cx="2.6" cy="3.6" r="0.7" fill="#FBBF24" />
+      <circle cx="-2.6" cy="3.6" r="0.7" fill="#FBBF24" />
+      <circle cx="-4.2" cy="-1.4" r="0.7" fill="#FBBF24" />
+    </g>
+
+    <!-- Sakura Bud -->
+    <g id="bud-r">
+      <path d="M0 0 C-2 -4 -3 -8 0 -11 C3 -8 2 -4 0 0 Z" fill="#FDA4AF" stroke="#E11D48" stroke-width="0.6" />
+      <path d="M-1.5 1 C-0.8 3.5 0.8 3.5 1.5 1" stroke="#4A2810" stroke-width="1.1" fill="none" />
+    </g>
+
+    <!-- Single Floating Petal -->
+    <path id="petal-r" d="M0 0 C-2 -4 -4 -9 -1 -12 C1 -13 2 -13 4 -12 C6 -9 4 -4 0 0 Z" fill="url(#sakuraPetalR)" stroke="#F47291" stroke-width="0.4" />
+  </defs>
+
+  <!-- ============================================== -->
+  <!-- TOP-RIGHT SAKURA BRANCH & FLOWERS              -->
+  <!-- ============================================== -->
+  <g>
+    <!-- Main branch dipping from right edge -->
+    <path d="M280 12 Q230 24 185 36 T105 48" stroke="#4A2810" stroke-width="4.5" stroke-linecap="round" fill="none" />
+    <path d="M210 28 Q185 46 160 62" stroke="#4A2810" stroke-width="2.6" stroke-linecap="round" fill="none" />
+    <path d="M155 38 Q130 26 100 20" stroke="#4A2810" stroke-width="2.2" stroke-linecap="round" fill="none" />
+    <path d="M135 42 Q115 58 90 68" stroke="#4A2810" stroke-width="1.8" stroke-linecap="round" fill="none" />
+
+    <!-- Buds -->
+    <use href="#bud-r" x="100" y="20" transform="rotate(30 100 20) scale(1.1)" />
+    <use href="#bud-r" x="160" y="62" transform="rotate(-40 160 62) scale(1)" />
+    <use href="#bud-r" x="90" y="68" transform="rotate(-65 90 68) scale(0.9)" />
+
+    <!-- Blossoms -->
+    <use href="#flower-r" x="250" y="18" transform="rotate(-15 250 18) scale(1)" />
+    <use href="#flower-r" x="205" y="32" transform="rotate(35 205 32) scale(1.2)" />
+    <use href="#flower-r" x="160" y="36" transform="rotate(-50 160 36) scale(1.05)" />
+    <use href="#flower-r" x="105" y="48" transform="rotate(75 105 48) scale(0.95)" />
+    <use href="#flower-r" x="180" y="52" transform="rotate(130 180 52) scale(0.85)" />
+    <use href="#flower-r" x="125" y="56" transform="rotate(-25 125 56) scale(0.8)" />
+    <use href="#flower-r" x="130" y="22" transform="rotate(95 130 22) scale(0.75)" />
+  </g>
+
+  <!-- Floating petals drifting to the left -->
+  <g opacity="0.85">
+    <use href="#petal-r" x="70" y="35" transform="rotate(-80 70 35) scale(1.1)" />
+    <use href="#petal-r" x="50" y="55" transform="rotate(25 50 55) scale(0.9)" />
+    <use href="#petal-r" x="80" y="85" transform="rotate(65 80 85) scale(0.85)" />
+    <use href="#petal-r" x="25" y="70" transform="rotate(-40 25 70) scale(1)" />
+    <use href="#petal-r" x="40" y="105" transform="rotate(45 40 105) scale(0.95)" />
+  </g>
+</svg>

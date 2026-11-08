@@ -157,10 +157,8 @@ body {
 .ngipen-fox-sticker { transform: rotate(8deg); transition: transform .2s ease; }
 .group:hover .ngipen-fox-sticker { transform: rotate(0deg) scale(1.06); }
 .ngipen-jp-footer {
-  background-image: url("/ngipen-japanese-trim.svg");
-  background-repeat: repeat-x;
-  background-position: center bottom;
-  background-size: auto 42px;
+  position: relative;
+  isolation: isolate;
 }
 @media (max-width: 767px) {
   .ngipen-jp-header::after { display: none; }
