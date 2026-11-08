@@ -2191,7 +2191,7 @@ const logout = async () => {
     setTimeout(() => setToast(""), 2500);
   };
 
-  const handleBulkDelete = async (ids: string[], target: "Rejected" | "Completed") => {
+  const handleBulkDelete = async (ids: string[]) => {
     const uniqueIds = Array.from(new Set(ids));
     if (uniqueIds.length === 0) {
       setToast("Pilih minimal satu event untuk dihapus.");
@@ -2199,9 +2199,8 @@ const logout = async () => {
       return;
     }
 
-    const targetLabel = target === "Rejected" ? "Rejected (Ditolak)" : "Completed (Selesai)";
     const confirmed = window.confirm(
-      `Hapus ${uniqueIds.length} event ${targetLabel} secara permanen? Event yang masih memiliki data terkait tidak akan dihapus. Tindakan ini tidak dapat dibatalkan.`
+      `Hapus ${uniqueIds.length} event Rejected (Ditolak) secara permanen? Event yang masih memiliki data terkait tidak akan dihapus. Tindakan ini tidak dapat dibatalkan.`
     );
     if (!confirmed) return;
 
@@ -2211,7 +2210,7 @@ const logout = async () => {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ids: uniqueIds, target }),
+        body: JSON.stringify({ ids: uniqueIds, target: "Rejected" }),
       });
       const result = await response.json().catch(() => null);
       if (!response.ok || !result?.success) {
@@ -2238,51 +2237,6 @@ const logout = async () => {
   // Hapus event yang sudah selesai secara permanen setelah konfirmasi admin.
   // Penghapusan dilakukan melalui API server agar sesi admin dan status Completed
   // diverifikasi kembali di server, bukan menghapus langsung dari browser.
-  const handleDeleteCompletedEvent = async (event: Event) => {
-    if (getTimeStatus(event) !== "Completed") {
-      setToast("Event belum selesai dan tidak dapat dihapus dari daftar ini.");
-      setTimeout(() => setToast(""), 2500);
-      return;
-    }
-
-    const confirmed = window.confirm(
-      `Hapus event "${event.title}" secara permanen? Tindakan ini tidak dapat dibatalkan.`
-    );
-    if (!confirmed) return;
-
-    try {
-      const response = await fetch("/api/admin/events/delete-completed", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "same-origin",
-        body: JSON.stringify({ id: event.id }),
-      });
-
-      const result = await response.json().catch(() => null);
-
-      if (!response.ok || !result?.success) {
-        throw new Error(
-          result?.error || result?.message || "Gagal menghapus event. Silakan coba lagi."
-        );
-      }
-
-      setEvents((prev) => prev.filter((item) => item.id !== event.id));
-      setSavedIds((prev) => prev.filter((id) => id !== event.id));
-      if (selectedEvent?.id === event.id) setSelectedEvent(null);
-      setToast(result.message || "Event selesai berhasil dihapus.");
-      setTimeout(() => setToast(""), 2500);
-    } catch (error) {
-      setToast(
-        error instanceof Error
-          ? `Gagal menghapus event: ${error.message}`
-          : "Gagal menghapus event. Silakan coba lagi."
-      );
-      setTimeout(() => setToast(""), 4000);
-    }
-  };
-
   // Simpan atau hapus event dari daftar tersimpan
   const toggleSave = async (eventId: string) => {
     if (currentRole !== "user") {
@@ -5937,7 +5891,7 @@ accept="image/jpeg,image/png,image/webp"
 
                       {adminEventTab === "Completed" && (
                         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
-                          Event pada daftar ini sudah melewati tanggal dan waktu selesai. Penghapusan bersifat permanen dan memerlukan konfirmasi.
+                          Event yang sudah selesai dapat dihapus melalui tab Event Cleanup setelah melewati masa tunggu minimal 7 hari.
                         </div>
                       )}
 
@@ -5988,7 +5942,7 @@ accept="image/jpeg,image/png,image/webp"
                         </div>
                       )}
 
-                      {(adminEventTab === "Rejected" || adminEventTab === "Completed") && (
+                      {adminEventTab === "Rejected" && (
                         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 p-3 dark:border-red-900 dark:bg-red-950/20">
                           <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-gray-800 dark:text-gray-100">
                             <input
@@ -6004,7 +5958,7 @@ accept="image/jpeg,image/png,image/webp"
                             <button
                               type="button"
                               disabled={bulkDeleteLoading || selectedDeleteEventIds.length === 0}
-                              onClick={() => void handleBulkDelete(selectedDeleteEventIds, adminEventTab as "Rejected" | "Completed")}
+                              onClick={() => void handleBulkDelete(selectedDeleteEventIds)}
                               className="rounded-lg bg-red-600 px-4 py-2 text-xs font-bold text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
                             >
                               {bulkDeleteLoading ? "Memproses..." : "Hapus yang dipilih"}
@@ -6012,7 +5966,7 @@ accept="image/jpeg,image/png,image/webp"
                             <button
                               type="button"
                               disabled={bulkDeleteLoading || adminFilteredEvents.length === 0}
-                              onClick={() => void handleBulkDelete(adminFilteredEvents.map((event) => String(event.id)), adminEventTab as "Rejected" | "Completed")}
+                              onClick={() => void handleBulkDelete(adminFilteredEvents.map((event) => String(event.id)))}
                               className="rounded-lg border border-red-700 px-4 py-2 text-xs font-bold text-red-700 disabled:opacity-50 dark:text-red-300"
                             >
                               Hapus semua hasil filter
@@ -6095,11 +6049,7 @@ accept="image/jpeg,image/png,image/webp"
                                 {adminEventTab === "Hidden" && (
                                   <button type="button" onClick={() => void handleModeration(event.id, "Approved")} className="rounded-lg bg-green-600 px-3 py-2 text-xs font-bold text-white hover:bg-green-700">Tampilkan Kembali</button>
                                 )}
-                                {adminEventTab === "Completed" && (
-                                  <button type="button" onClick={() => void handleDeleteCompletedEvent(event)} className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-3 py-2 text-xs font-bold text-white hover:bg-red-700">
-                                    <span aria-hidden="true">🗑</span> Hapus Event
-                                  </button>
-                                )}
+                                
                               </div>
                             </article>
                           ))}
