@@ -381,6 +381,7 @@ export async function POST(request: NextRequest) {
     const alreadyMissing: string[] = [...previousMissingPaths];
     const deletedPaths: string[] = [...previousDeletedPaths];
     const checkpoint = async () => {
+      if (!supabase) throw new Error("Koneksi database cleanup tidak tersedia.");
       const { data, error } = await supabase
         .from("event_cleanup_audit")
         .update({
