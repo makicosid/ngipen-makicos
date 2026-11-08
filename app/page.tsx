@@ -3496,7 +3496,7 @@ const shareEvent = async (event: Event) => {
             </button>
 
             {/* NAVIGASI DESKTOP */}
-            <nav className="hidden items-center gap-4 md:flex">
+            <nav className="hidden items-center gap-3 xl:flex">
               <button
                 onClick={() => {
   setSelectedEvent(null);
@@ -3589,7 +3589,7 @@ const shareEvent = async (event: Event) => {
             </nav>
 
             {/* AKSI DESKTOP */}
-            <div className="hidden items-center gap-2 md:flex">
+            <div className="hidden items-center gap-2 xl:flex">
               <button
                 type="button"
                 onClick={toggleTheme}
@@ -3649,7 +3649,7 @@ const shareEvent = async (event: Event) => {
             </div>
 
             {/* NAVIGASI MOBILE */}
-            <div className="flex shrink-0 items-center gap-2 md:hidden">
+            <div className="flex shrink-0 items-center gap-2 xl:hidden">
               <button
                 type="button"
                 onClick={toggleTheme}
@@ -3697,7 +3697,7 @@ const shareEvent = async (event: Event) => {
 
           {/* MENU MOBILE */}
           {mobileOpen && (
-            <div className="border-t border-gray-200 bg-white px-4 py-4 dark:border-gray-800 dark:bg-gray-950 md:hidden">
+            <div className="border-t border-gray-200 bg-white px-4 py-4 dark:border-gray-800 dark:bg-gray-950 xl:hidden">
               <div className="flex flex-col gap-2">
                 <button
                   onClick={() => {
@@ -3831,68 +3831,25 @@ const shareEvent = async (event: Event) => {
        {!selectedEvent && !showCostumeDirectory && (
           <main>
             {/* HERO */}
-            <section className="mx-auto max-w-[1400px] px-4 pb-6 pt-8 sm:pt-10">
-              <div className="ngipen-hero relative isolate overflow-hidden rounded-3xl border border-red-200/70 bg-gradient-to-br from-red-800 via-red-700 to-red-600 p-6 text-white shadow-[0_18px_50px_rgba(153,27,27,0.12)] sm:p-10 lg:p-12">
-                <span aria-hidden="true" className="ngipen-hero-cloud ngipen-hero-cloud-one" />
-                <span aria-hidden="true" className="ngipen-hero-cloud ngipen-hero-cloud-two" />
-                <div className="relative z-10 grid items-center gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(300px,0.85fr)] lg:gap-8">
-                <div className="max-w-3xl">
-                  <p className="mb-3 text-xs font-bold uppercase tracking-[0.25em] text-red-100">
-                    Event Jejepangan Indonesia
-                  </p>
-
-                  <h1 className="text-3xl font-black leading-tight sm:text-5xl">
-                    Temukan Keseruan Event Favoritmu!
-                  </h1>
-
-                  <p className="mt-4 max-w-2xl text-sm leading-6 text-red-50 sm:text-base">
-                    Cari event cosplay, idol, toys, dan berbagai kegiatan
-                    komunitas di seluruh Indonesia dalam satu tempat.
-                  </p>
-
-                  <div className="mt-6 flex flex-wrap gap-3">
-  <button
-    onClick={() =>
-      document
-        .getElementById("daftar-event")
-        ?.scrollIntoView({ behavior: "smooth" })
-    }
-    className="rounded-full bg-white px-5 py-3 text-sm font-bold text-red-700 hover:bg-red-50"
-  >
-    Jelajahi Event ↓
-  </button>
-
-  {currentRole === "user" && (
-    <button
-      type="button"
-      onClick={() => {
-        setSelectedEvent(null);
-        setShowCostumeDirectory(true);
-        setShowCalendar(false);
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      }}
-      className="rounded-full border border-white px-5 py-3 text-sm font-bold text-white hover:bg-white/10"
-    >
-      Cari Costume
-    </button>
-  )}
-</div>
-                  <a
-                    href="https://teer.id/makicos.id"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-3 inline-flex rounded-full border border-white/80 px-5 py-3 text-sm font-bold text-white hover:bg-white/10 sm:ml-3"
-                  >
-                    JOIN COMMUNITY ↗
-                  </a>
+            <section className="ngipen-hero-wrap relative isolate overflow-hidden px-4 pb-7 pt-7 sm:pb-9 sm:pt-9">
+              <div className="ngipen-hero relative mx-auto flex min-h-[500px] max-w-[1600px] items-center justify-center overflow-hidden rounded-[2rem] border border-red-200/80 bg-gradient-to-b from-[#fffafa] via-white to-[#fff1f1] px-5 py-10 text-center shadow-[0_18px_55px_rgba(190,24,38,0.14)] sm:min-h-[540px] sm:px-10 lg:min-h-[520px]">
+                <div aria-hidden="true" className="ngipen-hero-landscape" />
+                <div aria-hidden="true" className="ngipen-hero-festival-lights" />
+                <div className="ngipen-hero-copy relative z-20 mx-auto w-full max-w-[720px]">
+                  <p className="ngipen-hero-eyebrow mb-4 text-[11px] font-black uppercase tracking-[0.28em] text-red-700 sm:text-xs">✿ Event Jejepangan Indonesia ✿</p>
+                  <h1 className="ngipen-hero-title text-3xl font-black leading-tight tracking-tight text-gray-950 sm:text-5xl lg:text-[3.7rem]"> <span className="text-red-600">NGIPEN</span> – MAKICOS</h1>
+                  <p className="ngipen-hero-subtitle mx-auto mt-4 max-w-2xl text-sm leading-6 sm:text-lg sm:leading-8">Temukan, ikuti, dan jelajahi berbagai event jejepangan di seluruh Indonesia.</p>
+                  <div className="mx-auto mt-6 flex max-w-[620px] flex-wrap items-center justify-center gap-3">
+                    <button onClick={() => document.getElementById("daftar-event")?.scrollIntoView({ behavior: "smooth" })} className="rounded-full bg-red-600 px-6 py-3 text-sm font-bold text-white shadow-md shadow-red-600/20 transition hover:-translate-y-0.5 hover:bg-red-700">Jelajahi Event ↓</button>
+                    {currentRole === "user" && <button type="button" onClick={() => { setSelectedEvent(null); setShowCostumeDirectory(true); setShowCalendar(false); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="rounded-full border border-red-200 bg-white/90 px-6 py-3 text-sm font-bold text-red-700 transition hover:border-red-400 hover:bg-red-50">Cari Costume</button>}
+                    <a href="https://teer.id/makicos.id" target="_blank" rel="noopener noreferrer" className="rounded-full border border-red-300 bg-white/85 px-6 py-3 text-sm font-bold text-red-700 transition hover:bg-red-50">JOIN COMMUNITY ↗</a>
+                  </div>
                 </div>
-                <div className="ngipen-hero-mascots relative mx-auto flex h-[260px] w-full max-w-[440px] items-end justify-center lg:ml-auto lg:h-[340px]">
-                  <span aria-hidden="true" className="absolute bottom-5 left-1/2 h-40 w-72 -translate-x-1/2 rounded-full bg-white/10 blur-2xl" />
-                  <img src="/mascots/kitsune-kun.png" alt="Kitsune-kun, maskot laki-laki NGIPEN" className="relative z-10 h-[94%] w-[52%] -mr-5 object-contain object-bottom drop-shadow-[0_12px_18px_rgba(80,0,0,.22)]" />
-                  <img src="/mascots/kitsune-chan.png" alt="Kitsune-chan, maskot perempuan NGIPEN" className="relative z-20 h-full w-[56%] -ml-5 object-contain object-bottom drop-shadow-[0_12px_18px_rgba(80,0,0,.22)]" />
-                  <span aria-hidden="true" className="absolute -right-1 top-2 z-30 text-3xl text-amber-200">✿</span>
-                </div>
-                </div>
+                <img src="/mascots/kitsune-kun.png" alt="Kitsune-kun, maskot NGIPEN" className="ngipen-hero-mascot ngipen-hero-mascot-left" />
+                <img src="/mascots/kitsune-chan.png" alt="Kitsune-chan, maskot NGIPEN" className="ngipen-hero-mascot ngipen-hero-mascot-right" />
+                <span aria-hidden="true" className="ngipen-hero-sakura ngipen-hero-sakura-left">✿</span>
+                <span aria-hidden="true" className="ngipen-hero-sakura ngipen-hero-sakura-right">✿</span>
+                <span aria-hidden="true" className="ngipen-hero-kitsune-seal">狐</span>
               </div>
             </section>
 
@@ -4605,13 +4562,11 @@ const shareEvent = async (event: Event) => {
               </div>
 
               {loading ? (
-                <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-gray-200 px-5 py-7 text-center text-sm text-gray-500 dark:border-gray-800">
-                  <img src="/mascots/kitsune-kun.png" alt="Kitsune-kun sedang memuat" className="h-24 w-16 object-contain" />
-                  <span>Memuat event...</span>
+                <div className="rounded-2xl border border-gray-200 p-10 text-center text-sm text-gray-500 dark:border-gray-800">
+                  Memuat event...
                 </div>
               ) : filteredEvents.length === 0 ? (
-                <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-300 px-5 py-8 text-center dark:border-gray-700">
-                  <img src="/mascots/kitsune-chan.png" alt="Kitsune-chan sedang mencari event" className="h-28 w-20 object-contain" />
+                <div className="rounded-2xl border border-dashed border-gray-300 px-5 py-12 text-center dark:border-gray-700">
                   <p className="text-lg font-bold">Belum ada event ditemukan</p>
                   <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
                     Coba ubah filter pencarian atau kunjungi kembali nanti.
@@ -4623,7 +4578,7 @@ const shareEvent = async (event: Event) => {
                   {paginatedEvents.map((event) => (
                     <article
                       key={event.id}
-                      className="group overflow-hidden rounded-2xl border border-gray-200 bg-white transition hover:-translate-y-1 hover:shadow-lg dark:border-gray-800 dark:bg-gray-900"
+                      className="ngipen-event-card group overflow-hidden rounded-2xl border border-gray-200 bg-white transition hover:-translate-y-1 hover:shadow-lg dark:border-gray-800 dark:bg-gray-900"
                     >
                       <button
                         type="button"
@@ -4688,8 +4643,12 @@ const shareEvent = async (event: Event) => {
                           </span>
                         </div>
 
-                        <div className="relative min-h-[174px] p-3 pb-14">
-                          <h3 className="line-clamp-2 min-h-10 pr-1 text-sm font-bold">
+                        <div className="ngipen-event-info relative min-h-[170px] p-3 pb-14">
+                          <span aria-hidden="true" className="ngipen-card-mascot-sticker">
+                            <img src="/mascots/kitsune-kun-head.png" alt="" />
+                            <img src="/mascots/kitsune-chan-head.png" alt="" />
+                          </span>
+                          <h3 className="line-clamp-2 min-h-10 pr-2 text-sm font-bold">
                             {event.title}
                           </h3>
 
@@ -4718,7 +4677,7 @@ const shareEvent = async (event: Event) => {
   </svg>
   <span>{(event.views || 0).toLocaleString("id-ID")} views</span>
 </div>
-                          <div className="mt-3 flex flex-wrap gap-1">
+                          <div className="mt-3 flex flex-wrap gap-1 pr-16">
                             {(event.categories || []).slice(0, 2).map((cat) => (
                               <span
                                 key={cat}
@@ -4728,7 +4687,6 @@ const shareEvent = async (event: Event) => {
                               </span>
                             ))}
                           </div>
-                          <img src="/mascots/kitsune-chan-head.png" alt="" aria-hidden="true" className="ngipen-fox-sticker pointer-events-none absolute bottom-1 right-2 h-12 w-12 object-contain drop-shadow-sm" />
                         </div>
                       </button>
 
@@ -5105,8 +5063,7 @@ const shareEvent = async (event: Event) => {
                 <div className="ngipen-description mt-6 overflow-hidden rounded-2xl border border-red-100 bg-white shadow-sm dark:border-red-950 dark:bg-gray-900">
   <div className="flex items-center gap-3 border-b border-red-100 bg-gradient-to-r from-red-50/80 to-white px-4 py-3 dark:border-red-950 dark:from-red-950/40 dark:to-gray-900 sm:px-5">
     <span aria-hidden="true" className="flex h-8 w-8 items-center justify-center rounded-xl bg-white text-lg shadow-sm dark:bg-gray-800">⛩️</span>
-    <div className="min-w-0 flex-1"><h2 className="text-lg font-black">Tentang Event</h2><p className="text-[10px] font-bold uppercase tracking-[0.16em] text-red-600 dark:text-red-300">Informasi kegiatan</p></div>
-    <img src="/mascots/kitsune-kun-head.png" alt="" aria-hidden="true" className="h-10 w-10 shrink-0 object-contain" />
+    <div><h2 className="text-lg font-black">Tentang Event</h2><p className="text-[10px] font-bold uppercase tracking-[0.16em] text-red-600 dark:text-red-300">Informasi kegiatan</p></div>
   </div>
   <div className="p-4 sm:p-5">
   <p
@@ -7604,92 +7561,39 @@ accept="image/jpeg,image/png,image/webp"
 
         {/* FOOTER */}
         {!selectedEvent && (
-          <footer className="ngipen-jp-footer border-t border-red-100 bg-white px-4 py-8 dark:border-red-950 dark:bg-gray-950 sm:px-6">
-            <div className="mx-auto flex max-w-7xl flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-3">
-                <img
-                  src="/logo.png"
-                  alt="NGIPEN"
-                  className="h-10 w-10 rounded-xl object-contain"
-                  onError={(event) => {
-                    event.currentTarget.style.display = "none";
-                  }}
-                />
-                <div>
-                  <p className="font-black tracking-wide">NGIPEN</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Satu hobby satu keseruan.
-                  </p>
+          <footer className="ngipen-jp-footer relative isolate overflow-hidden border-t border-red-100 bg-[#fffafa] px-4 pb-20 pt-9 dark:border-red-950 dark:bg-gray-950 sm:px-6 sm:pt-11">
+            <div className="relative z-10 mx-auto grid max-w-7xl gap-8 sm:grid-cols-2 lg:grid-cols-[1.35fr_1fr_1fr_1fr] lg:gap-10">
+              <div className="flex items-start gap-3">
+                <img src="/ngipen-logo.png" alt="Logo NGIPEN" className="h-14 w-14 shrink-0 object-contain" onError={(event) => { event.currentTarget.style.display = "none"; }} />
+                <div className="pt-1">
+                  <p className="text-xl font-black tracking-wide text-red-600">NGIPEN</p>
+                  <p className="mt-1 text-xs text-gray-600 dark:text-gray-300">Satu hobby satu keseruan.</p>
+                  <p className="mt-3 text-[11px] font-bold tracking-[0.12em] text-gray-500 dark:text-gray-400">MARI KITA COSPLAY · MAKICOS ID</p>
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-gray-500 dark:text-gray-400">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedEvent(null);
-                    window.scrollTo({ top: 0, behavior: "smooth" });
-                  }}
-                  className="hover:text-red-600"
-                >
-                  Beranda
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => { setGuidePage(0); setShowGuideBook(true); }}
-                  className="hover:text-red-600"
-                >
-                  Buku Panduan
-                </button>
-
-                <a href="/tentang-kami" className="hover:text-red-600">
-                  Tentang Kami
-                </a>
-
-                <button
-  type="button"
-  onClick={() => {
-    if (currentRole !== "user") {
-      setToast("Silakan login sebagai user terlebih dahulu.");
-      setShowLoginUser(true);
-      return;
-    }
-
-    setPosterFile(null);
-    setPosterPreview("");
-    setPosterError("");
-    setNewCategories([]);
-    setNewTicketType("Gratis");
-    setEventFormOpen(true);
-  }}
-  className="hover:text-red-600"
->
-  Publikasikan Event
-</button>
-
-                <button
-                  type="button"
-                  onClick={toggleTheme}
-                  className="hover:text-red-600"
-                >
-                  {dark ? "Mode Terang" : "Mode Gelap"}
-                </button>
+              <div className="space-y-3">
+                <p className="text-sm font-black text-gray-900 dark:text-white">NGIPEN</p>
+                <div className="flex flex-col items-start gap-2 text-sm text-gray-600 dark:text-gray-300">
+                  <button type="button" onClick={() => { setSelectedEvent(null); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="transition hover:text-red-600">Beranda</button>
+                  <button type="button" onClick={() => { setGuidePage(0); setShowGuideBook(true); }} className="transition hover:text-red-600">Buku Panduan</button>
+                  <a href="/tentang-kami" className="transition hover:text-red-600">Tentang Kami</a>
+                  <button type="button" onClick={() => { if (currentRole !== "user") { setToast("Silakan login sebagai user terlebih dahulu."); setShowLoginUser(true); return; } setPosterFile(null); setPosterPreview(""); setPosterError(""); setNewCategories([]); setNewTicketType("Gratis"); setEventFormOpen(true); }} className="transition hover:text-red-600">Publikasikan Event</button>
+                  <button type="button" onClick={toggleTheme} className="transition hover:text-red-600">{dark ? "Mode Terang" : "Mode Gelap"}</button>
+                </div>
               </div>
 
-             <div className="flex flex-col items-center gap-1 text-center">
-  <p className="text-xs text-gray-400">
-    © {new Date().getFullYear()} NGIPEN
-  </p>
+              <div className="space-y-3">
+                <p className="text-sm font-black text-gray-900 dark:text-white">Komunitas</p>
+                <p className="text-sm leading-6 text-gray-600 dark:text-gray-300">Temukan ruang untuk berbagi karya dan keseruan bersama komunitas jejepangan.</p>
+                <a href="https://teer.id/makicos.id" target="_blank" rel="noopener noreferrer" className="inline-flex rounded-full border border-red-200 bg-white px-4 py-2 text-xs font-bold text-red-700 transition hover:border-red-500 hover:bg-red-50 dark:border-red-900 dark:bg-gray-900 dark:text-red-300">Join Community ↗</a>
+              </div>
 
-  <p className="mt-2 text-xs font-semibold tracking-wide text-gray-600 dark:text-gray-300">
-    MARI KITA COSPLAY
-  </p>
-
-  <p className="text-[11px] font-medium tracking-wider text-gray-400">
-    MAKICOS ID
-  </p>
-</div>
+              <div className="space-y-3">
+                <p className="text-sm font-black text-gray-900 dark:text-white">Ikuti Kami</p>
+                <a href="https://www.instagram.com/makicos.id/" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full bg-red-600 px-4 py-2 text-xs font-bold text-white transition hover:bg-red-700"><span aria-hidden="true">◎</span> Instagram @makicos.id ↗</a>
+                <div className="border-t border-red-100 pt-3 text-xs text-gray-500 dark:border-red-950 dark:text-gray-400">© {new Date().getFullYear()} NGIPEN<br />MARI KITA COSPLAY<br />MAKICOS ID</div>
+              </div>
             </div>
           </footer>
         )}
