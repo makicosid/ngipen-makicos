@@ -1,308 +1,85 @@
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+import './globals.css';
+import type { Metadata } from 'next';
 
-:root {
-  --primary: #E53935;
-}
+const BASE_URL = 'https://ngipen-makicos-seven.vercel.app';
 
-body {
-  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
-}
+export const metadata: Metadata = {
+  metadataBase: new URL(BASE_URL),
 
-.line-clamp-2 {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
+  applicationName: 'NGIPEN',
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
+  alternates: {
+    canonical: BASE_URL,
+  },
 
-/* NGIPEN: animasi Hold-to-Preview event */
-@keyframes previewPopIn {
-  from { opacity: 0; transform: scale(0.94) translateY(8px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
-}
+  title: 'NGIPEN - Satu Hobby Satu Keseruan',
 
-@keyframes previewPopOut {
-  from { opacity: 1; transform: scale(1) translateY(0); }
-  to { opacity: 0; transform: scale(0.95) translateY(6px); }
-}
+  description:
+    'Temukan berbagai event jejepangan di seluruh Indonesia melalui NGIPEN. Jelajahi jadwal event cosplay, anime, performance, market, komunitas, serta informasi menarik lainnya dalam satu platform.',
 
-@keyframes previewFadeOut {
-  from { opacity: 1; }
-  to { opacity: 0; }
-}
+  icons: {
+    icon: '/logo.png',
+  },
 
-/* Rosehot: font eksklusif untuk elemen Subscription rental */
-@font-face {
-  font-family: "Rosehot";
-  src: url("/fonts/Rosehot.ttf") format("truetype");
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-}
+  openGraph: {
+    title: 'NGIPEN - Satu Hobby Satu Keseruan',
 
-.font-rosehot {
-  font-family: "Rosehot", Georgia, serif;
-}
+    description:
+      'Temukan berbagai event jejepangan di seluruh Indonesia melalui NGIPEN. Jelajahi jadwal event cosplay, anime, performance, market, komunitas, serta informasi menarik lainnya dalam satu platform.',
 
+    url: BASE_URL,
+    siteName: 'NGIPEN',
+    locale: 'id_ID',
+    type: 'website',
 
-/* NGIPEN Guide Book: modal buku digital */
-@keyframes guideBookEnter {
-  from {
-    opacity: 0;
-    transform: translateY(14px) scale(0.985);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
+    images: [
+      {
+        url: '/ngipen-og-preview.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'NGIPEN - Satu Hobby Satu Keseruan',
+      },
+    ],
+  },
 
-.guide-book-overlay {
-  background: rgba(8, 10, 18, 0.72);
-  -webkit-backdrop-filter: blur(9px);
-  backdrop-filter: blur(9px);
-  animation: fadeIn 0.18s ease-out;
-}
+  twitter: {
+    card: 'summary_large_image',
 
-.guide-book-shell {
-  animation: guideBookEnter 0.22s ease-out;
-}
+    title: 'NGIPEN - Satu Hobby Satu Keseruan',
 
-.guide-book-paper {
-  box-shadow:
-    inset 0 0 28px rgba(153, 104, 35, 0.08),
-    0 2px 10px rgba(92, 53, 14, 0.12);
-}
+    description:
+      'Temukan berbagai event jejepangan di seluruh Indonesia melalui NGIPEN. Jelajahi jadwal event cosplay, anime, performance, market, komunitas, serta informasi menarik lainnya dalam satu platform.',
 
-@media (max-width: 639px) {
-  .guide-book-overlay {
-    align-items: flex-start;
-  }
-}
+    images: ['/ngipen-og-preview.jpg'],
+  },
+};
 
-@media (prefers-reduced-motion: reduce) {
-  .guide-book-overlay,
-  .guide-book-shell {
-    animation: none;
-  }
-}
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const websiteStructuredData = {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: 'NGIPEN',
+    alternateName: 'NGIPEN - Satu Hobby Satu Keseruan',
+    url: BASE_URL,
+  };
 
+  return (
+    <html lang="id" suppressHydrationWarning>
+      <body className="bg-[#F7F7F8] dark:bg-[#121212] text-[#242424] dark:text-white antialiased">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(websiteStructuredData),
+          }}
+        />
 
-/* NGIPEN Matsuri visual layer — decorative only; application logic is untouched. */
-.ngipen-jp-header {
-  position: sticky;
-  isolation: isolate;
-  overflow: visible;
-  box-shadow: 0 5px 24px rgba(151, 22, 33, .07);
-}
-.ngipen-jp-header::before {
-  content: "";
-  position: absolute;
-  z-index: 0;
-  pointer-events: none;
-  left: 0;
-  right: 0;
-  bottom: -1px;
-  height: 42px;
-  opacity: .98;
-  background: url("/ngipen-matsuri-header.svg") center bottom / 100% 100% no-repeat;
-}
-.ngipen-jp-header::after { content: none; }
-.ngipen-jp-header > div { position: relative; z-index: 2; }
-
-.ngipen-hero-wrap {
-  background:
-    radial-gradient(ellipse at 50% 0%, rgba(255, 220, 221, .68), transparent 55%),
-    linear-gradient(180deg, #fff5f5 0%, #fffafa 62%, #fff 100%);
-}
-.ngipen-hero {
-  isolation: isolate;
-  background-color: #fff8f7;
-  border-radius: 2rem;
-}
-.ngipen-hero-landscape {
-  position: absolute;
-  z-index: 0;
-  inset: 0;
-  pointer-events: none;
-  opacity: .92;
-  background-image: url("/ngipen-matsuri-hero.svg");
-  background-position: center bottom;
-  background-repeat: no-repeat;
-  background-size: cover;
-}
-.ngipen-hero-festival-lights {
-  position: absolute;
-  z-index: 1;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 74px;
-  pointer-events: none;
-  opacity: .92;
-  background: url("/ngipen-matsuri-header.svg") center top / 100% 100% no-repeat;
-}
-.ngipen-hero-copy {
-  padding: 1.25rem 1.5rem 1.75rem;
-  border-radius: 1.6rem;
-  background: rgba(255, 250, 249, .76);
-  box-shadow: 0 10px 35px rgba(153, 24, 35, .07);
-  backdrop-filter: blur(2px);
-}
-.ngipen-hero-eyebrow { text-shadow: 0 1px 0 white; }
-.ngipen-hero-title { text-shadow: 0 2px 0 rgba(255,255,255,.85); }
-.ngipen-hero-subtitle {
-  display: table;
-  padding: .55rem 1.4rem;
-  color: white;
-  font-weight: 700;
-  background: linear-gradient(90deg, rgba(174, 18, 32, .92), rgba(213, 35, 47, .96), rgba(174, 18, 32, .92));
-  border-radius: 48% 8% 44% 10% / 18% 26% 20% 25%;
-  box-shadow: 0 5px 14px rgba(158, 20, 31, .16);
-}
-.ngipen-hero-mascot {
-  position: absolute;
-  z-index: 10;
-  bottom: 0;
-  height: 96%;
-  width: auto;
-  max-width: clamp(160px, 24vw, 355px);
-  object-fit: contain;
-  object-position: bottom;
-  pointer-events: none;
-  filter: drop-shadow(0 12px 12px rgba(128, 25, 35, .16));
-}
-.ngipen-hero-mascot-left { left: clamp(4px, 2vw, 32px); }
-.ngipen-hero-mascot-right { right: clamp(4px, 2vw, 32px); }
-.ngipen-hero-sakura {
-  position: absolute;
-  z-index: 3;
-  color: #e98994;
-  opacity: .82;
-  font-size: 36px;
-  pointer-events: none;
-  text-shadow: 0 2px 6px rgba(255,255,255,.7);
-}
-.ngipen-hero-sakura-left { left: 24%; top: 20%; }
-.ngipen-hero-sakura-right { right: 24%; top: 17%; }
-.ngipen-hero-kitsune-seal {
-  position: absolute;
-  z-index: 21;
-  top: 7%;
-  left: 50%;
-  transform: translateX(-50%);
-  color: #c71925;
-  font-size: 2.1rem;
-  font-weight: 900;
-  text-shadow: 0 2px 0 white;
-  pointer-events: none;
-}
-
-.ngipen-event-info {
-  background:
-    radial-gradient(circle at 100% 100%, rgba(255, 225, 222, .65), transparent 32%),
-    linear-gradient(180deg, #fff 0%, #fffafa 100%);
-}
-.ngipen-card-mascot-sticker {
-  position: absolute;
-  right: 7px;
-  bottom: 5px;
-  display: flex;
-  align-items: flex-end;
-  justify-content: flex-end;
-  width: 82px;
-  height: 62px;
-  pointer-events: none;
-  filter: drop-shadow(0 3px 4px rgba(160, 30, 40, .14));
-}
-.ngipen-card-mascot-sticker img {
-  width: 48px;
-  height: 58px;
-  object-fit: contain;
-  object-position: top center;
-}
-.ngipen-card-mascot-sticker img + img { margin-left: -17px; transform: rotate(7deg); }
-.ngipen-fox-sticker { transition: transform .2s ease; }
-.group:hover .ngipen-fox-sticker { transform: rotate(0deg) scale(1.06); }
-
-.ngipen-jp-footer {
-  isolation: isolate;
-  position: relative;
-  background-color: #fffafa;
-  background-image: url("/ngipen-matsuri-footer.svg");
-  background-repeat: no-repeat;
-  background-position: center bottom;
-  background-size: 100% 170px;
-}
-.dark .ngipen-jp-footer { background-color: #111827; }
-
-@media (max-width: 1279px) {
-  .ngipen-jp-header::before { height: 28px; }
-}
-@media (max-width: 1023px) {
-  .ngipen-hero { min-height: 570px; padding-bottom: 185px; }
-  .ngipen-hero-copy { max-width: 100%; padding: 1rem .8rem 1.2rem; }
-  .ngipen-hero-mascot { height: 42%; max-width: 38vw; bottom: 0; }
-  .ngipen-hero-mascot-left { left: 0; }
-  .ngipen-hero-mascot-right { right: 0; }
-  .ngipen-hero-sakura { font-size: 22px; }
-  .ngipen-hero-sakura-left { left: 10%; top: 8%; }
-  .ngipen-hero-sakura-right { right: 10%; top: 8%; }
-  .ngipen-hero-kitsune-seal { top: 3%; font-size: 1.5rem; }
-  .ngipen-hero-landscape { background-size: auto 100%; }
-  .ngipen-jp-footer { background-size: auto 125px; }
-}
-@media (max-width: 639px) {
-  .ngipen-jp-header::before { height: 19px; opacity: .76; background-size: auto 100%; }
-  .ngipen-hero-wrap { padding-left: .65rem; padding-right: .65rem; }
-  .ngipen-hero { min-height: 540px; padding: 3.6rem .7rem 165px; border-radius: 1.35rem; }
-  .ngipen-hero-copy { padding: .9rem .45rem 1rem; background: rgba(255,250,249,.82); }
-  .ngipen-hero-copy h1 { font-size: clamp(1.65rem, 7vw, 2.3rem); }
-  .ngipen-hero-subtitle { font-size: .8rem; line-height: 1.45rem; padding: .45rem .75rem; }
-  .ngipen-hero-mascot { height: 34%; max-width: 42vw; }
-  .ngipen-hero-kitsune-seal { top: 1.5%; }
-  .ngipen-hero-festival-lights { height: 42px; }
-  .ngipen-card-mascot-sticker { transform: scale(.84); transform-origin: bottom right; }
-}
-@media (max-width: 390px) {
-  .ngipen-hero { min-height: 555px; }
-  .ngipen-hero-mascot { max-width: 43vw; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .ngipen-fox-sticker { transition: none; }
-}
-.ngipen-hero-copy { max-width: 640px; }
-.ngipen-about-mascots { isolation: isolate; }
-.ngipen-about-mascots::before {
-  content: "";
-  position: absolute;
-  z-index: -1;
-  inset: 18% 8% 0;
-  border-radius: 50% 50% 0 0;
-  background: radial-gradient(ellipse, rgba(255, 222, 220, .3), transparent 68%);
-}
-.ngipen-event-card {
-  border-color: rgba(231, 174, 164, .56);
-  box-shadow: 0 4px 16px rgba(142, 27, 36, .045);
-}
-.ngipen-event-card:hover {
-  border-color: rgba(215, 63, 72, .5);
-  box-shadow: 0 12px 26px rgba(142, 27, 36, .10);
-}
-.dark .ngipen-event-info {
-  background: radial-gradient(circle at 100% 100%, rgba(112, 31, 40, .18), transparent 35%), #111827;
+        {children}
+      </body>
+    </html>
+  );
 }
