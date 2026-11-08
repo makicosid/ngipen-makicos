@@ -29,17 +29,18 @@ function hashToken(token: string) {
   return createHash("sha256").update(token).digest("hex");
 }
 
-async function hasValidAdminSession(request: NextRequest, supabase: ReturnType<typeof getSupabaseAdmin>) {
+async function getAdminActor(request: NextRequest, supabase: ReturnType<typeof getSupabaseAdmin>) {
   const token = request.cookies.get(ADMIN_COOKIE_NAME)?.value;
-  if (!token) return false;
+  if (!token) return null;
+  const tokenHash = hashToken(token);
   const { data, error } = await supabase
     .from("admin_sessions")
     .select("token_hash")
-    .eq("token_hash", hashToken(token))
+    .eq("token_hash", tokenHash)
     .gt("expires_at", new Date().toISOString())
     .maybeSingle();
   if (error) throw new Error("Gagal memeriksa sesi admin.");
-  return Boolean(data);
+  return data ? `admin_session:${tokenHash.slice(0, 16)}` : null;
 }
 
 function jakartaDate(date = new Date()) {
@@ -217,7 +218,7 @@ async function getCandidate(supabase: ReturnType<typeof getSupabaseAdmin>, event
 export async function GET(request: NextRequest) {
   try {
     const supabase = getSupabaseAdmin();
-    if (!(await hasValidAdminSession(request, supabase))) return json({ error: "Sesi admin tidak valid atau sudah berakhir." }, 401);
+    if (!(await getAdminActor(request, supabase))) return json({ error: "Sesi admin tidak valid atau sudah berakhir." }, 401);
 
     const cutoff = cutoffDate();
     const { data: events, error } = await supabase
@@ -277,12 +278,14 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   let supabase: ReturnType<typeof getSupabaseAdmin> | null = null;
   let auditId: string | null = null;
+  let claimToken: string | null = null;
   try {
     const origin = request.headers.get("origin");
     if (!origin || origin !== request.nextUrl.origin) return json({ error: "Origin request tidak valid." }, 403);
 
     supabase = getSupabaseAdmin();
-    if (!(await hasValidAdminSession(request, supabase))) return json({ error: "Sesi admin tidak valid atau sudah berakhir." }, 401);
+    const adminActor = await getAdminActor(request, supabase);
+    if (!adminActor) return json({ error: "Sesi admin tidak valid atau sudah berakhir." }, 401);
 
     let body: { id?: unknown; confirm?: unknown; confirmSponsored?: unknown };
     try { body = await request.json(); } catch { return json({ error: "Format request tidak valid." }, 400); }
@@ -318,9 +321,9 @@ export async function POST(request: NextRequest) {
     // instead of creating a second active cleanup for the same event.
     const { data: activeAudit, error: activeAuditError } = await supabase
       .from("event_cleanup_audit")
-      .select("id, status, created_at, deleted_storage_paths, already_missing_paths")
+      .select("id, status, created_at, deleted_storage_paths, already_missing_paths, processing_token, processing_started_at")
       .eq("event_id", event.id)
-      .in("status", ["pending", "storage_deleted"])
+      .in("status", ["pending", "storage_deleted", "failed"])
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -328,17 +331,13 @@ export async function POST(request: NextRequest) {
 
     let previousDeletedPaths: string[] = [];
     let previousMissingPaths: string[] = [];
-    if (activeAudit?.status === "pending") {
-      const ageMs = Date.now() - new Date(activeAudit.created_at).getTime();
-      if (ageMs < 30 * 60 * 1000) {
+    if (activeAudit) {
+      const leaseAge = activeAudit.processing_started_at
+        ? Date.now() - new Date(activeAudit.processing_started_at).getTime()
+        : Number.POSITIVE_INFINITY;
+      if (activeAudit.processing_token && leaseAge < 30 * 60 * 1000) {
         return json({ error: "Event ini sedang diproses oleh permintaan cleanup lain. Periksa kembali beberapa saat lagi." }, 409);
       }
-      const { error: staleAuditError } = await supabase
-        .from("event_cleanup_audit")
-        .update({ status: "failed", error_message: "Proses sebelumnya terhenti sebelum tahap Storage selesai; dapat dicoba ulang." })
-        .eq("id", activeAudit.id);
-      if (staleAuditError) throw new Error("Proses cleanup sebelumnya belum dapat ditandai gagal. Coba lagi nanti.");
-    } else if (activeAudit?.status === "storage_deleted") {
       auditId = activeAudit.id;
       previousDeletedPaths = Array.isArray(activeAudit.deleted_storage_paths) ? activeAudit.deleted_storage_paths : [];
       previousMissingPaths = Array.isArray(activeAudit.already_missing_paths) ? activeAudit.already_missing_paths : [];
@@ -352,7 +351,7 @@ export async function POST(request: NextRequest) {
           event_title: event.title,
           event_start_date: event.start_date,
           event_end_date: event.end_date,
-          admin_actor: "admin",
+          admin_actor: adminActor,
           special_status_confirmed: body.confirmSponsored === true,
           status: "pending",
           file_manifest: fileManifest,
@@ -369,24 +368,52 @@ export async function POST(request: NextRequest) {
       auditId = audit.id;
     }
 
+    claimToken = crypto.randomUUID();
+    const { data: claimed, error: claimError } = await supabase.rpc("claim_event_cleanup", {
+      p_event_id: event.id,
+      p_audit_id: auditId,
+      p_claim_token: claimToken,
+    });
+    if (claimError) throw new Error("Gagal mengunci proses cleanup. Pastikan migration checkpoint sudah diterapkan pada database pengujian.");
+    if (claimed !== true) return json({ error: "Event sedang diproses oleh admin lain. Coba lagi setelah proses sebelumnya selesai." }, 409);
+
     const buckets: BucketName[] = ["posters", "documentations"];
     const alreadyMissing: string[] = [...previousMissingPaths];
     const deletedPaths: string[] = [...previousDeletedPaths];
+    const checkpoint = async () => {
+      const { data, error } = await supabase
+        .from("event_cleanup_audit")
+        .update({
+          deleted_storage_paths: Array.from(new Set(deletedPaths)),
+          already_missing_paths: Array.from(new Set(alreadyMissing.filter((path) => !deletedPaths.includes(path)))),
+          deleted_file_count: new Set(deletedPaths).size,
+          processing_started_at: new Date().toISOString(),
+        })
+        .eq("id", auditId)
+        .eq("processing_token", claimToken)
+        .select("id")
+        .maybeSingle();
+      if (error || !data) throw new Error("Gagal menyimpan checkpoint Storage. Event database tetap dipertahankan.");
+    };
     for (const bucket of buckets) {
       const targets = removableTargets.filter((target) => target.bucket === bucket);
       for (let offset = 0; offset < targets.length; offset += 100) {
         const batch = targets.slice(offset, offset + 100);
         const existing: string[] = [];
         for (const target of batch) {
+          const key = `${target.bucket}:${target.path}`;
+          if (deletedPaths.includes(key) || alreadyMissing.includes(key)) continue;
           const info = await objectInfo(supabase, target);
           if (info.exists) existing.push(target.path);
-          else alreadyMissing.push(`${target.bucket}:${target.path}`);
+          else alreadyMissing.push(key);
         }
         if (existing.length) {
           const { error: removeError } = await supabase.storage.from(bucket).remove(existing);
           if (removeError) throw new Error(`Gagal menghapus file pada bucket ${bucket}. Database event tetap dipertahankan.`);
           deletedPaths.push(...existing.map((path) => `${bucket}:${path}`));
         }
+        // Persist every successful batch and lease heartbeat before proceeding.
+        await checkpoint();
       }
     }
 
@@ -396,10 +423,13 @@ export async function POST(request: NextRequest) {
         status: "storage_deleted",
         deleted_storage_paths: Array.from(new Set(deletedPaths)),
         already_missing_paths: Array.from(new Set(alreadyMissing.filter((path) => !deletedPaths.includes(path)))),
-        deleted_file_count: deletedPaths.length,
+        deleted_file_count: new Set(deletedPaths).size,
         storage_deleted_at: new Date().toISOString(),
+        processing_token: null,
+        processing_started_at: null,
       })
-      .eq("id", auditId);
+      .eq("id", auditId)
+      .eq("processing_token", claimToken);
     if (storageAuditError) throw new Error("File Storage telah diproses, tetapi pembaruan audit gagal. Event database belum dihapus.");
 
     const { error: finalizeError } = await supabase.rpc("finalize_event_cleanup", {
@@ -420,12 +450,13 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Terjadi kesalahan pada server.";
-    if (supabase && auditId) {
-      // Do not downgrade storage_deleted: it is the resumable checkpoint if DB finalization fails.
+    if (supabase && auditId && claimToken) {
+      // Preserve all persisted checkpoints; release the lease for a safe retry.
       await supabase.from("event_cleanup_audit")
-        .update({ status: "failed", error_message: message })
+        .update({ status: "failed", error_message: message, processing_token: null, processing_started_at: null })
         .eq("id", auditId)
-        .eq("status", "pending");
+        .eq("processing_token", claimToken)
+        .in("status", ["pending", "storage_deleted"]);
     }
     console.error("Event cleanup execution error:", error);
     return json({ error: message }, 500);
