@@ -12,10 +12,10 @@
 ## Files
 
 - `app/api/admin/events/cleanup/route.ts`: authenticated preview and cleanup endpoints.
-- `app/admin-cleanup-panel.tsx`: admin UI for candidates, history, and failed/incomplete attempts.
-- `app/page.tsx`: adds the Event Cleanup admin tab and routes completed-event deletion through the new flow.
-- `app/api/admin/events/delete-completed/route.ts`: legacy endpoint now returns HTTP 410 after validating the admin session.
-- `app/api/admin/events/bulk-delete/route.ts`: bulk deletion remains available for rejected events only; completed events must use Event Cleanup.
+- `app/admin-cleanup-panel.tsx`: admin UI for candidates, history, and failed/incomplete attempts; missing poster images render a fallback.
+- `app/page.tsx`: adds the Event Cleanup admin tab; completed events no longer expose legacy direct-delete controls and must use Event Cleanup.
+- `app/api/admin/events/delete-completed/route.ts`: legacy endpoint returns HTTP 410 after validating origin and admin session.
+- `app/api/admin/events/bulk-delete/route.ts`: server accepts only `Rejected`; `Completed` requests are rejected with HTTP 400 and must use Event Cleanup.
 - `supabase/migrations/202611090001_event_cleanup.sql`: audit table, active-process guard, and transactional database finalization function.
 
 ## Activation
@@ -49,3 +49,4 @@
 ## Separate existing deletion path
 
 - The existing bulk-delete API for `Rejected` events remains outside this seven-day cleanup workflow. It deletes eligible database rows but does not remove poster Storage objects. This is a pre-existing behavior and should be reviewed separately if the requirement is to guarantee Storage cleanup for every event deletion path, not only expired-event cleanup.
+- Completed events are intentionally excluded from both legacy direct-delete and bulk-delete routes. They remain visible in the Completed admin list and are eligible for deletion only through Event Cleanup after the seven-day retention and audit checks.
