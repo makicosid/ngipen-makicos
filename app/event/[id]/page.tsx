@@ -462,7 +462,7 @@ export default async function EventPage({ params }: Props) {
           </div>
         </article>
 
-        <footer className="ngipen-jp-footer relative isolate mt-6 overflow-hidden border-t border-red-100 px-4 pb-16 pt-8 text-center text-xs text-gray-500 dark:border-red-950 dark:text-gray-400">
+        <footer className="py-8 text-center text-xs text-gray-500">
           NGIPEN – Satu Hobby Satu Keseruan.
           <br />
           MARI KITA COSPLAY, MAKICOS ID
