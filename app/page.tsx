@@ -2095,7 +2095,11 @@ const logout = async () => {
       start_time: String(event.start_time || "09:00").slice(0, 5),
       end_time: String(event.end_time || "18:00").slice(0, 5),
     });
-    setAdminEditCategories((event.categories || []).map((item) => item === "Pefomance" ? "Performance" : item).filter((item): item is Category => eventCategoryOptions.includes(item as Category)));
+    setAdminEditCategories(
+      (event.categories || [])
+        .map((item) => item === "Pefomance" ? "Performance" : item)
+        .filter((item) => eventCategoryOptions.some((option) => option === item)) as Category[]
+    );
     setAdminEditPoster(null);
     setAdminEditPosterPreview(event.poster_url || "");
   };
