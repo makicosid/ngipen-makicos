@@ -193,6 +193,10 @@ function slugify(value: string) {
     .replace(/^-|-$/g, "");
 }
 
+function getCategoryLabel(category: string) {
+  return category === "Pefomance" ? "Performance" : category;
+}
+
 
 const GUIDE_BOOK_PAGES = [
   {
@@ -2091,7 +2095,7 @@ const logout = async () => {
       start_time: String(event.start_time || "09:00").slice(0, 5),
       end_time: String(event.end_time || "18:00").slice(0, 5),
     });
-    setAdminEditCategories((event.categories || []).filter((item) => eventCategoryOptions.includes(item)));
+    setAdminEditCategories((event.categories || []).map((item) => item === "Pefomance" ? "Performance" : item).filter((item): item is Category => eventCategoryOptions.includes(item as Category)));
     setAdminEditPoster(null);
     setAdminEditPosterPreview(event.poster_url || "");
   };
@@ -2883,7 +2887,11 @@ useEffect(() => {
 
     if (selectedCat !== "Semua") {
       result = result.filter((event) =>
-        event.categories?.includes(selectedCat as Category)
+        event.categories?.some((category) =>
+          selectedCat === "Performance"
+            ? category === "Performance" || category === "Pefomance"
+            : category === selectedCat
+        )
       );
     }
 
@@ -3015,7 +3023,11 @@ return {
 
     if (selectedCat !== "Semua") {
       result = result.filter((event) =>
-        event.categories?.includes(selectedCat as Category)
+        event.categories?.some((category) =>
+          selectedCat === "Performance"
+            ? category === "Performance" || category === "Pefomance"
+            : category === selectedCat
+        )
       );
     }
 
@@ -3128,7 +3140,7 @@ return {
       const searchable = [event.title, event.organizer_name, event.organizer_id, event.city, event.province, event.venue_address]
         .filter(Boolean).join(" ").toLocaleLowerCase("id-ID");
       if (query && !searchable.includes(query)) return false;
-      if (adminEventCategoryFilter !== "Semua" && !(event.categories || []).includes(adminEventCategoryFilter as Category)) return false;
+      if (adminEventCategoryFilter !== "Semua" && !(event.categories || []).some((category) => adminEventCategoryFilter === "Performance" ? category === "Performance" || category === "Pefomance" : category === adminEventCategoryFilter)) return false;
       if (adminEventProvinceFilter !== "Semua" && event.province !== adminEventProvinceFilter) return false;
       if (adminEventSponsorFilter === "Sponsor" && !event.is_sponsored) return false;
       if (adminEventSponsorFilter === "Non-Sponsor" && event.is_sponsored) return false;
@@ -3544,7 +3556,7 @@ const shareEvent = async (event: Event) => {
                 }}
                 className="text-sm font-semibold text-red-600 hover:text-red-700"
               >
-                + Upload Event
+                + Upload Poster Event
               </button>
 
               {currentRole === "admin" && (
@@ -4598,7 +4610,7 @@ const shareEvent = async (event: Event) => {
                                 key={cat}
                                 className="rounded-md bg-red-50 px-2 py-1 text-[10px] font-semibold text-red-700 dark:bg-red-950 dark:text-red-300"
                               >
-                                {cat}
+                                {getCategoryLabel(cat)}
                               </span>
                             ))}
                           </div>
@@ -7303,8 +7315,8 @@ accept="image/jpeg,image/png,image/webp"
                           <p className="text-xs font-bold text-gray-900 dark:text-gray-100">Kategori</p>
                           <div className="mt-2 flex flex-wrap gap-2">
                             {activeEventPreview.categories?.length ? activeEventPreview.categories.map((category) => (
-                              <span key={category} className="rounded-full bg-red-100 px-2.5 py-1 text-[11px] font-bold text-red-700 dark:bg-red-950/60 dark:text-red-300">{category}</span>
-                            )) : <span className="text-sm text-gray-500 dark:text-gray-400">Kategori belum tersedia.</span>}
+                              <span key={category} className="rounded-full bg-red-100 px-2.5 py-1 text-[11px] font-bold text-red-700 dark:bg-red-950/60 dark:text-red-300">{getCategoryLabel(category)}</span>
+                            )) : <span> className="text-sm text-gray-500 dark:text-gray-400">Kategori belum tersedia.</span>}
                           </div>
                         </div>
                       </div>
