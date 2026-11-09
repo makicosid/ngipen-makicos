@@ -8,6 +8,113 @@ ALTER TABLE public.event_cleanup_audit
   ADD COLUMN IF NOT EXISTS in_flight_storage_paths jsonb NOT NULL DEFAULT '[]'::jsonb,
   ADD COLUMN IF NOT EXISTS uncertain_storage_paths jsonb NOT NULL DEFAULT '[]'::jsonb;
 
+
+-- Serialize documentation and poster-reference mutations with cleanup claims.
+CREATE OR REPLACE FUNCTION public.block_new_event_cleanup_references()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = pg_catalog
+AS $guard$
+DECLARE
+  v_event_id uuid;
+  v_locked_event_id uuid;
+BEGIN
+  IF TG_TABLE_NAME = 'events' THEN
+    v_event_id := OLD.id;
+  ELSIF TG_TABLE_NAME = 'documentations' THEN
+    BEGIN
+      v_event_id := NEW.event_id::uuid;
+    EXCEPTION WHEN invalid_text_representation THEN
+      RETURN NEW;
+    END;
+  ELSE
+    v_event_id := NEW.event_id;
+  END IF;
+
+  SELECT id INTO v_locked_event_id
+    FROM public.events
+   WHERE id = v_event_id
+   FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RETURN NEW;
+  END IF;
+
+  IF EXISTS (
+    SELECT 1
+      FROM public.event_cleanup_audit a
+     WHERE a.event_id = v_event_id
+       AND (a.status IN ('pending', 'storage_deleted') OR a.processing_token IS NOT NULL)
+  ) THEN
+    RAISE EXCEPTION 'Event is currently locked for cleanup; new file references are not allowed';
+  END IF;
+
+  RETURN NEW;
+END;
+$guard$;
+
+DROP TRIGGER IF EXISTS event_documentations_cleanup_guard ON public.event_documentations;
+CREATE TRIGGER event_documentations_cleanup_guard
+BEFORE INSERT OR UPDATE OF event_id, image_url ON public.event_documentations
+FOR EACH ROW EXECUTE FUNCTION public.block_new_event_cleanup_references();
+
+DROP TRIGGER IF EXISTS legacy_documentations_cleanup_guard ON public.documentations;
+CREATE TRIGGER legacy_documentations_cleanup_guard
+BEFORE INSERT OR UPDATE OF event_id, image_url ON public.documentations
+FOR EACH ROW EXECUTE FUNCTION public.block_new_event_cleanup_references();
+
+DROP TRIGGER IF EXISTS events_poster_cleanup_guard ON public.events;
+CREATE TRIGGER events_poster_cleanup_guard
+BEFORE UPDATE OF poster_url ON public.events
+FOR EACH ROW
+WHEN (OLD.poster_url IS DISTINCT FROM NEW.poster_url)
+EXECUTE FUNCTION public.block_new_event_cleanup_references();
+
+-- Make claim acquisition follow the same event-then-audit lock order.
+CREATE OR REPLACE FUNCTION public.claim_event_cleanup(
+  p_event_id uuid,
+  p_audit_id uuid,
+  p_claim_token uuid
+)
+RETURNS boolean
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = pg_catalog
+AS $claim$
+DECLARE
+  v_locked_event_id uuid;
+BEGIN
+  SELECT id INTO v_locked_event_id
+    FROM public.events
+   WHERE id = p_event_id
+   FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RETURN false;
+  END IF;
+
+  UPDATE public.event_cleanup_audit
+     SET processing_token = p_claim_token,
+         processing_started_at = now()
+   WHERE id = p_audit_id
+     AND event_id = p_event_id
+     AND status IN ('pending', 'storage_deleted', 'failed')
+     AND (
+       processing_token IS NULL
+       OR processing_started_at IS NULL
+       OR processing_started_at < now() - interval '30 minutes'
+     );
+
+  RETURN FOUND;
+END;
+$claim$;
+
+REVOKE ALL ON FUNCTION public.claim_event_cleanup(uuid, uuid, uuid)
+  FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.claim_event_cleanup(uuid, uuid, uuid)
+  TO service_role;
+
 -- Remove the old callable signature so finalization cannot bypass lease ownership.
 DROP FUNCTION IF EXISTS public.finalize_event_cleanup(uuid, uuid);
 
@@ -69,17 +176,6 @@ BEGIN
   IF jsonb_typeof(COALESCE(v_in_flight, '[]'::jsonb)) <> 'array'
      OR jsonb_array_length(COALESCE(v_in_flight, '[]'::jsonb)) <> 0 THEN
     RAISE EXCEPTION 'Storage deletion has unresolved in-flight objects';
-  END IF;
-
-  -- Lock and revalidate event immediately before database deletion.
-  SELECT end_date, COALESCE(is_sponsored, false), COALESCE(is_pinned, false)
-    INTO v_end_date, v_is_sponsored, v_is_pinned
-    FROM public.events
-   WHERE id = p_event_id
-   FOR UPDATE;
-
-  IF NOT FOUND THEN
-    RAISE EXCEPTION 'Event not found during cleanup finalization';
   END IF;
 
   IF v_end_date IS NULL OR v_end_date > ((now() AT TIME ZONE 'Asia/Jakarta')::date - 7) THEN
