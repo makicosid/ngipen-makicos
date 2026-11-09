@@ -32,7 +32,18 @@ DECLARE
   v_in_flight jsonb;
   v_deleted integer;
 BEGIN
-  -- Lock audit first and prove the caller still owns a fresh processing lease.
+  -- Lock event first, matching the claim/reference-trigger lock order.
+  SELECT end_date, COALESCE(is_sponsored, false), COALESCE(is_pinned, false)
+    INTO v_end_date, v_is_sponsored, v_is_pinned
+    FROM public.events
+   WHERE id = p_event_id
+   FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Event not found during cleanup finalization';
+  END IF;
+
+  -- Then lock audit and prove the caller still owns a fresh processing lease.
   SELECT status, special_status_confirmed, processing_token,
          processing_started_at, in_flight_storage_paths
     INTO v_status, v_special_status_confirmed, v_processing_token,
@@ -51,7 +62,6 @@ BEGIN
      OR v_processing_started_at < now() - interval '30 minutes' THEN
     RAISE EXCEPTION 'Cleanup lease is not owned by this request or has expired';
   END IF;
-
   IF v_status IS DISTINCT FROM 'storage_deleted' THEN
     RAISE EXCEPTION 'Cleanup audit Storage phase is not complete';
   END IF;
