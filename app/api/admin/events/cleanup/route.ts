@@ -293,16 +293,17 @@ export async function POST(request: NextRequest) {
       return json({ error: "ID event atau konfirmasi penghapusan tidak valid." }, 400);
     }
 
-    const { event, details } = await getCandidate(supabase, body.id);
+    const { event, details: initialDetails } = await getCandidate(supabase, body.id);
+    let details = initialDetails;
     if (!event || !details) return json({ error: "Event tidak ditemukan." }, 404);
     if ((event.is_sponsored || event.is_pinned) && body.confirmSponsored !== true) {
       return json({ error: "Event masih sponsored atau pinned. Konfirmasi khusus diperlukan sebelum penghapusan." }, 409);
     }
 
-    const references = await collectReferences(supabase, body.id);
-    const sharedTargets: string[] = [];
-    const removableTargets: StorageTarget[] = [];
-    const detailTargets: StorageTarget[] = [];
+    let references = await collectReferences(supabase, body.id);
+    let sharedTargets: string[] = [];
+    let removableTargets: StorageTarget[] = [];
+    let detailTargets: StorageTarget[] = [];
     details.targets.forEach((target) => detailTargets.push(target));
     for (let index = 0; index < detailTargets.length; index += 1) {
       const target = detailTargets[index];
@@ -311,7 +312,7 @@ export async function POST(request: NextRequest) {
       else removableTargets.push(target);
     }
 
-    const fileManifest = [];
+    let fileManifest: { bucket: BucketName; path: string; sources: string[]; existsBeforeDelete: boolean; sizeBytes: number }[] = [];
     for (const target of removableTargets) {
       const info = await objectInfo(supabase, target);
       fileManifest.push({ bucket: target.bucket, path: target.path, sources: target.sources, existsBeforeDelete: info.exists, sizeBytes: info.sizeBytes });
@@ -378,6 +379,38 @@ export async function POST(request: NextRequest) {
     });
     if (claimError) throw new Error("Gagal mengunci proses cleanup. Pastikan migration checkpoint sudah diterapkan pada database pengujian.");
     if (claimed !== true) return json({ error: "Event sedang diproses oleh admin lain. Coba lagi setelah proses sebelumnya selesai." }, 409);
+
+    // Re-read all references only after the event row is locked and the cleanup
+    // audit is active. Database triggers reject new file references from this point.
+    const refreshed = await getCandidate(supabase, body.id);
+    if (!refreshed.event || !refreshed.details) throw new Error("Event berubah atau tidak lagi memenuhi syarat cleanup.");
+    details = refreshed.details;
+    references = await collectReferences(supabase, body.id);
+    sharedTargets = [];
+    removableTargets = [];
+    detailTargets = [];
+    details.targets.forEach((target) => detailTargets.push(target));
+    for (const target of detailTargets) {
+      const key = `${target.bucket}:${target.path}`;
+      if (references.has(key)) sharedTargets.push(key);
+      else removableTargets.push(target);
+    }
+    fileManifest = [];
+    for (const target of removableTargets) {
+      const info = await objectInfo(supabase, target);
+      fileManifest.push({ bucket: target.bucket, path: target.path, sources: target.sources, existsBeforeDelete: info.exists, sizeBytes: info.sizeBytes });
+    }
+    const { error: manifestError } = await supabase
+      .from("event_cleanup_audit")
+      .update({
+        file_manifest: fileManifest,
+        preserved_shared_paths: sharedTargets,
+        moderation_snapshot: details.moderationLogs,
+        record_counts: details.counts,
+      })
+      .eq("id", auditId)
+      .eq("processing_token", claimToken);
+    if (manifestError) throw new Error("Gagal menyimpan manifest final setelah penguncian event.");
 
     const buckets: BucketName[] = ["posters", "documentations"];
     const alreadyMissing: string[] = [...previousMissingPaths];
