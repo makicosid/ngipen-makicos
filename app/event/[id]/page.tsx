@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { createClient } from "@supabase/supabase-js";
 import { notFound } from "next/navigation";
 
-const BASE_URL = "https://ngipen-makicos-seven.vercel.app";
+const BASE_URL = "https://ngipen.my.id";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
