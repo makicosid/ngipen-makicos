@@ -377,6 +377,7 @@ export async function POST(request: NextRequest) {
     const buckets: BucketName[] = ["posters", "documentations"];
     const alreadyMissing: string[] = [...previousMissingPaths];
     const deletedPaths: string[] = [...previousDeletedPaths];
+    const uncertainPaths: string[] = [];
     const checkpoint = async () => {
       if (!supabase) throw new Error("Koneksi database cleanup tidak tersedia.");
       const { data, error } = await supabase
@@ -406,9 +407,38 @@ export async function POST(request: NextRequest) {
           else alreadyMissing.push(key);
         }
         if (existing.length) {
+          const inFlight = existing.map((path) => `${bucket}:${path}`);
+          const { data: marked, error: markError } = await supabase
+            .from("event_cleanup_audit")
+            .update({ in_flight_storage_paths: inFlight })
+            .eq("id", auditId)
+            .eq("processing_token", claimToken)
+            .select("id")
+            .maybeSingle();
+          if (markError || !marked) throw new Error("Gagal menandai file Storage yang sedang diproses. Tidak ada penghapusan batch yang dimulai.");
           const { error: removeError } = await supabase.storage.from(bucket).remove(existing);
-          if (removeError) throw new Error(`Gagal menghapus file pada bucket ${bucket}. Database event tetap dipertahankan.`);
-          deletedPaths.push(...existing.map((path) => `${bucket}:${path}`));
+          if (removeError) {
+            const { error: uncertainError } = await supabase
+              .from("event_cleanup_audit")
+              .update({
+                uncertain_storage_paths: Array.from(new Set([...uncertainPaths, ...inFlight])),
+                in_flight_storage_paths: [],
+              })
+              .eq("id", auditId)
+              .eq("processing_token", claimToken);
+            if (uncertainError) console.error("Failed to persist uncertain Storage paths:", uncertainError);
+            throw new Error(`Gagal menghapus file pada bucket ${bucket}. Sebagian status file mungkin perlu diverifikasi sebelum retry.`);
+          }
+          deletedPaths.push(...inFlight);
+          const { error: clearFlightError } = await supabase
+            .from("event_cleanup_audit")
+            .update({ in_flight_storage_paths: [] })
+            .eq("id", auditId)
+            .eq("processing_token", claimToken);
+          if (clearFlightError) {
+            uncertainPaths.push(...inFlight);
+            throw new Error("Storage remove berhasil, tetapi checkpoint status file gagal. File ditandai perlu verifikasi saat pemulihan.");
+          }
         }
         await checkpoint();
       }
@@ -418,6 +448,7 @@ export async function POST(request: NextRequest) {
       .from("event_cleanup_audit")
       .update({
         status: "storage_deleted",
+        in_flight_storage_paths: [],
         deleted_storage_paths: Array.from(new Set(deletedPaths)),
         already_missing_paths: Array.from(new Set(alreadyMissing.filter((path) => !deletedPaths.includes(path)))),
         deleted_file_count: new Set(deletedPaths).size,
@@ -435,17 +466,11 @@ export async function POST(request: NextRequest) {
     const { error: finalizeError } = await supabase.rpc("finalize_event_cleanup", {
       p_event_id: event.id,
       p_audit_id: auditId,
+      p_claim_token: claimToken,
     });
     if (finalizeError) throw new Error("File Storage sudah diproses, tetapi penghapusan database gagal. Proses tercatat dan perlu dicoba ulang.");
 
-    // Release the lease only after the database finalizer has completed.
-    await supabase
-      .from("event_cleanup_audit")
-      .update({ processing_token: null, processing_started_at: null })
-      .eq("id", auditId)
-      .eq("processing_token", claimToken)
-      .eq("status", "completed");
-
+    // The SQL finalizer atomically marks completed and releases the lease.
     return json({
       success: true,
       auditId,
@@ -460,7 +485,14 @@ export async function POST(request: NextRequest) {
     const message = error instanceof Error ? error.message : "Terjadi kesalahan pada server.";
     if (supabase && auditId && claimToken) {
       await supabase.from("event_cleanup_audit")
-        .update({ status: "failed", error_message: message, processing_token: null, processing_started_at: null })
+        .update({
+          status: "failed",
+          error_message: message,
+          uncertain_storage_paths: Array.from(new Set(uncertainPaths)),
+          in_flight_storage_paths: [],
+          processing_token: null,
+          processing_started_at: null,
+        })
         .eq("id", auditId)
         .eq("processing_token", claimToken)
         .in("status", ["pending", "storage_deleted"]);
