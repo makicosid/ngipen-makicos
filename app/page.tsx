@@ -3797,12 +3797,21 @@ const shareEvent = async (event: Event) => {
                   </p>
 
                   <h1 className="text-3xl font-black leading-tight sm:text-5xl">
-                    Temukan Keseruan Event Favoritmu!
+                    Your Next Event Starts Here!
                   </h1>
 
-                  <p className="mt-4 max-w-2xl text-sm leading-6 text-red-50 sm:text-base">
-                    Cari event cosplay, idol, toys, dan berbagai kegiatan
-                    komunitas di seluruh Indonesia dalam satu tempat.
+                  <p className="mt-4 max-w-2xl text-sm font-semibold leading-6 text-white sm:text-base">
+                    Cari keseruannya, temukan teman se-hobi, dan buat cerita baru!
+                  </p>
+
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-red-50 sm:text-base">
+                    Mulai dari cosplay, festival jejepangan, sampai gathering komunitas.
+                    Temukan berbagai event seru dari seluruh Indonesia dan jangan sampai
+                    ketinggalan keseruannya!
+                  </p>
+
+                  <p className="mt-3 text-xs font-bold tracking-wide text-red-100 sm:text-sm">
+                    Satu hobby satu keseruan.
                   </p>
 
                   <div className="mt-6 flex flex-wrap gap-3">
@@ -3814,7 +3823,7 @@ const shareEvent = async (event: Event) => {
     }
     className="rounded-full bg-white px-5 py-3 text-sm font-bold text-red-700 hover:bg-red-50"
   >
-    Jelajahi Event ↓
+    Jelajahi Event
   </button>
 
   {currentRole === "user" && (
