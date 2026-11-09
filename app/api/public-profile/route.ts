@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { createHash } from "crypto";
 
 export const runtime = "nodejs";
 
@@ -25,18 +26,52 @@ function getSupabaseAdmin() {
   });
 }
 
-// Profil publik terbatas. Endpoint ini tidak pernah memilih atau mengirim username/bio.
+const hashToken = (token: string) =>
+  createHash("sha256").update(token).digest("hex");
+
+async function hasAuthenticatedSession(request: NextRequest) {
+  const supabase = getSupabaseAdmin();
+  const userToken = request.cookies.get("ngipen_session")?.value;
+  if (userToken) {
+    const { data, error } = await supabase
+      .from("ngipen_sessions")
+      .select("user_id")
+      .eq("token_hash", hashToken(userToken))
+      .gt("expires_at", new Date().toISOString())
+      .maybeSingle();
+    if (!error && data) return true;
+  }
+
+  const adminToken = request.cookies.get("ngipen_admin_session")?.value;
+  if (adminToken) {
+    const { data, error } = await supabase
+      .from("admin_sessions")
+      .select("token_hash")
+      .eq("token_hash", hashToken(adminToken))
+      .gt("expires_at", new Date().toISOString())
+      .maybeSingle();
+    if (!error && data) return true;
+  }
+
+  return false;
+}
+
+// Profil kartu hanya tersedia untuk sesi User atau Admin yang valid.
 export async function GET(request: NextRequest) {
   try {
+    if (!(await hasAuthenticatedSession(request))) {
+      return json({ error: "Silakan login untuk melihat profil." }, 401);
+    }
+
     const userId = request.nextUrl.searchParams.get("id")?.trim();
 
-    if (!userId || userId.length > 100) {
+    if (!userId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(userId)) {
       return json({ error: "ID profil tidak valid." }, 400);
     }
 
     const { data, error } = await getSupabaseAdmin()
       .from("users")
-      .select("id, display_name, avatar_url")
+      .select("id, display_name, avatar_url, bio, instagram_url, tiktok_url")
       .eq("id", userId)
       .maybeSingle();
 
@@ -55,6 +90,9 @@ export async function GET(request: NextRequest) {
         id: data.id,
         display_name: data.display_name || "Pengguna",
         avatar_url: data.avatar_url || "",
+        bio: data.bio || "",
+        instagram_url: data.instagram_url || "",
+        tiktok_url: data.tiktok_url || "",
       },
     });
   } catch (error) {

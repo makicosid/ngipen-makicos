@@ -82,6 +82,24 @@ async function getVisibleEventIds(eventIds: string[]) {
 
 export async function GET(request: NextRequest) {
   try {
+    const session = await getSession(request);
+    const adminToken = request.cookies.get("ngipen_admin_session")?.value;
+    let isAdmin = false;
+
+    if (adminToken) {
+      const { data: adminSession, error: adminSessionError } = await getSupabaseAdmin()
+        .from("admin_sessions")
+        .select("token_hash")
+        .eq("token_hash", hashToken(adminToken))
+        .gt("expires_at", new Date().toISOString())
+        .maybeSingle();
+      isAdmin = !adminSessionError && Boolean(adminSession);
+    }
+
+    if (!session && !isAdmin) {
+      return json({ error: "Silakan login untuk melihat komentar event." }, 401);
+    }
+
     const eventId = request.nextUrl.searchParams.get("eventId");
 
     let query = getSupabaseAdmin()
@@ -100,7 +118,6 @@ export async function GET(request: NextRequest) {
       return json({ error: "Gagal mengambil ulasan event." }, 500);
     }
 
-    const session = await getSession(request);
     const myRatings: Record<string, number> = {};
     let personalReviews: Array<{ event_id: string; rating: number }> = [];
 
@@ -139,8 +156,8 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    // Profil publik terbatas: hanya display_name dan avatar_url.
-    // Username login, bio, dan kredensial tidak pernah dikirim.
+    // Data kartu profil hanya dikirim melalui endpoint terautentikasi.
+    // Username login dan kredensial tidak pernah dikirim.
     const reviewerIds = Array.from(new Set(
       publicReviews
         .map((review: any) => String(review.user_id || ""))
