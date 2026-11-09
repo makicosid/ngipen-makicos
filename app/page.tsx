@@ -7714,7 +7714,7 @@ accept="image/jpeg,image/png,image/webp"
                 </div>
 
                 {/* IKUTI KAMI */}
-                <div className="min-w-0 text-xs leading-relaxed">
+                <div className="col-span-2 min-w-0 text-xs leading-relaxed sm:col-span-1">
                   <p className="mb-2 font-bold text-gray-900 dark:text-white">
                     Ikuti Kami
                   </p>
