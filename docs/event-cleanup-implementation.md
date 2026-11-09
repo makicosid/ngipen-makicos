@@ -46,6 +46,11 @@
 - The date policy is calendar-day based (`end_date <= Jakarta current date - 7 days`), matching the agreed retention rule; it is not a rolling 168-hour calculation.
 - This change does not run against production, apply SQL, push Git changes, or deploy Vercel.
 
+## Poster replacement safety
+
+- Replacing an event poster no longer removes the previous Storage object immediately. The old object may still be referenced by another record; it is retained rather than risking deletion of a shared file.
+- Retained old poster objects may become orphaned. They require a future reference-aware cleanup process; this route intentionally does not delete them.
+
 ## Separate existing deletion path
 
 - The existing bulk-delete API for `Rejected` events remains outside this seven-day cleanup workflow. It deletes eligible database rows but does not remove poster Storage objects. This is a pre-existing behavior and should be reviewed separately if the requirement is to guarantee Storage cleanup for every event deletion path, not only expired-event cleanup.
