@@ -83,7 +83,7 @@ function isSafeSocialUrl(value: string, platform: "instagram" | "tiktok") {
       !url.username &&
       !url.password &&
       allowedHosts.has(url.hostname.toLowerCase()) &&
-      url.pathname.replace(/\\/+$/, "").length > 1;
+      url.pathname.replace(/\/+$/, "").length > 1;
   } catch {
     return false;
   }
