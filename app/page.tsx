@@ -5310,21 +5310,11 @@ const shareEvent = async (event: Event) => {
                     </button>
                   </div>
                 </div>
-              ) : (
-                <div className="mt-4 rounded-2xl bg-gray-100 p-5 dark:bg-gray-900">
-                  <p className="text-sm text-gray-600 dark:text-gray-300">
-                    Login untuk memberikan rating dan menulis komentar.
-                  </p>
-
-                  <button
-                    type="button"
-                    onClick={() => setShowLoginUser(true)}
-                    className="mt-3 rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white"
-                  >
-                    Masuk
-                  </button>
+              ) : currentRole === "admin" ? (
+                <div className="mt-4 rounded-2xl bg-gray-100 p-5 text-sm text-gray-600 dark:bg-gray-900 dark:text-gray-300">
+                  Admin dapat melihat komentar dan kartu profil pengguna. Fitur menulis komentar tersedia untuk akun User.
                 </div>
-              )}
+              ) : null}
 
               <div className="mt-5 space-y-3">
                 {reviews.filter(
