@@ -3540,6 +3540,16 @@ const shareEvent = async (event: Event) => {
               >
                 Buku Panduan
               </button>
+              <a
+                href="https://trakteer.id/makicos.id/tip"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Berikan Dukungan"
+                title="Berikan Dukungan"
+                className="text-sm font-semibold text-red-600 transition-colors hover:text-red-700"
+              >
+                Berikan Dukungan ↗
+              </a>
               {currentRole !== "admin" && (
               <button
                 onClick={() => {
@@ -3694,6 +3704,15 @@ const shareEvent = async (event: Event) => {
                   <div className="flex flex-col gap-1">
                     <button type="button" onClick={() => { setMobileOpen(false); setGuidePage(0); setShowGuideBook(true); }} aria-current={activeNavKey === "guide" ? "page" : undefined} className="rounded-xl px-3 py-3 text-left font-semibold hover:bg-gray-100 dark:hover:bg-gray-900">Buku Panduan</button>
                     <a href="/tentang-kami" onClick={() => setMobileOpen(false)} className="rounded-xl px-3 py-3 font-semibold hover:bg-gray-100 dark:hover:bg-gray-900">Tentang Kami</a>
+                    <a
+                      href="https://trakteer.id/makicos.id/tip"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => setMobileOpen(false)}
+                      className="rounded-xl px-3 py-3 font-semibold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
+                    >
+                      Berikan Dukungan ↗
+                    </a>
                   </div>
                 </div>
                 {currentRole !== "admin" && (
