@@ -7320,7 +7320,7 @@ accept="image/jpeg,image/png,image/webp"
                           <div className="mt-2 flex flex-wrap gap-2">
                             {activeEventPreview.categories?.length ? activeEventPreview.categories.map((category) => (
                               <span key={category} className="rounded-full bg-red-100 px-2.5 py-1 text-[11px] font-bold text-red-700 dark:bg-red-950/60 dark:text-red-300">{getCategoryLabel(category)}</span>
-                            )) : <span> className="text-sm text-gray-500 dark:text-gray-400">Kategori belum tersedia.</span>}
+                            )) : <span className="text-sm text-gray-500 dark:text-gray-400">Kategori belum tersedia.</span>}
                           </div>
                         </div>
                       </div>
