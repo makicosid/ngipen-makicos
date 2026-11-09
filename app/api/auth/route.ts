@@ -72,6 +72,23 @@ function validLoginPassword(value: string) {
   return value.length >= 1 && value.length <= 128;
 }
 
+function isSafeSocialUrl(value: string, platform: "instagram" | "tiktok") {
+  if (!value) return true;
+  try {
+    const url = new URL(value);
+    const allowedHosts = platform === "instagram"
+      ? new Set(["instagram.com", "www.instagram.com"])
+      : new Set(["tiktok.com", "www.tiktok.com"]);
+    return url.protocol === "https:" &&
+      !url.username &&
+      !url.password &&
+      allowedHosts.has(url.hostname.toLowerCase()) &&
+      url.pathname.replace(/\\/+$/, "").length > 1;
+  } catch {
+    return false;
+  }
+}
+
 function isSafeAvatarUrl(value: string) {
   try {
     const url = new URL(value);
@@ -382,6 +399,11 @@ export async function POST(request: NextRequest) {
           ? body.avatarUrl.trim()
           : "";
 
+      const instagramUrl =
+        typeof body.instagramUrl === "string" ? body.instagramUrl.trim() : "";
+      const tiktokUrl =
+        typeof body.tiktokUrl === "string" ? body.tiktokUrl.trim() : "";
+
       if (!displayName || displayName.length > 50) {
         return json(
           { error: "Nama tampilan wajib diisi dan maksimal 50 karakter." },
@@ -389,11 +411,19 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      if (bio.length > 300) {
+      if (bio.length > 160) {
         return json(
-          { error: "Bio maksimal 300 karakter." },
+          { error: "Bio maksimal 160 karakter." },
           400
         );
+      }
+
+      if (instagramUrl.length > 2048 || !isSafeSocialUrl(instagramUrl, "instagram")) {
+        return json({ error: "Tautan Instagram tidak valid." }, 400);
+      }
+
+      if (tiktokUrl.length > 2048 || !isSafeSocialUrl(tiktokUrl, "tiktok")) {
+        return json({ error: "Tautan TikTok tidak valid." }, 400);
       }
 
       if (avatarUrl.length > 2048) {
@@ -432,10 +462,12 @@ export async function POST(request: NextRequest) {
             display_name: displayName,
             bio,
             avatar_url: avatarUrl,
+            instagram_url: instagramUrl,
+            tiktok_url: tiktokUrl,
           })
           .eq("id", session.user_id)
           .select(
-            "id,username,display_name,bio,avatar_url,created_at"
+            "id,username,display_name,bio,avatar_url,instagram_url,tiktok_url,created_at"
           )
           .maybeSingle();
 
