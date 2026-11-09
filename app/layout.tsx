@@ -19,7 +19,12 @@ export const metadata: Metadata = {
     'Temukan berbagai event jejepangan di seluruh Indonesia melalui NGIPEN. Jelajahi jadwal event cosplay, anime, performance, market, komunitas, serta informasi menarik lainnya dalam satu platform.',
 
   icons: {
-    icon: '/logo.png',
+    icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/logo.png', sizes: '512x512', type: 'image/png' },
+    ],
+    shortcut: '/favicon.svg',
+    apple: '/logo.png',
   },
 
   openGraph: {
