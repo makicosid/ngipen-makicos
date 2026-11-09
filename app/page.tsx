@@ -7747,9 +7747,3 @@ accept="image/jpeg,image/png,image/webp"
     </div>
   );
 }
-
-        )}
-      </div>
-    </div>
-  );
-}
