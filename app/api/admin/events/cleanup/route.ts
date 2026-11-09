@@ -472,7 +472,13 @@ export async function POST(request: NextRequest) {
           deletedPaths.push(...inFlight);
           const { error: clearFlightError } = await supabase
             .from("event_cleanup_audit")
-            .update({ in_flight_storage_paths: [] })
+            .update({
+              in_flight_storage_paths: [],
+              deleted_storage_paths: Array.from(new Set(deletedPaths)),
+              already_missing_paths: Array.from(new Set(alreadyMissing.filter((path) => !deletedPaths.includes(path)))),
+              deleted_file_count: new Set(deletedPaths).size,
+              processing_started_at: new Date().toISOString(),
+            })
             .eq("id", auditId)
             .eq("processing_token", claimToken);
           if (clearFlightError) {
