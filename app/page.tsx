@@ -3510,6 +3510,7 @@ const shareEvent = async (event: Event) => {
 >
   Jelajahi Event
 </button>
+{currentRole === "user" && (
                             <button
   onClick={() => {
     setSelectedEvent(null);
@@ -3523,6 +3524,7 @@ const shareEvent = async (event: Event) => {
 >
   Cari Costume
 </button>
+)}
 <button
   onClick={openCalendarFromNavigation}
   aria-current={activeNavKey === "calendar" ? "page" : undefined}
@@ -3538,14 +3540,7 @@ const shareEvent = async (event: Event) => {
               >
                 Buku Panduan
               </button>
-              <a
-                href="https://trakteer.id/makicos.id/tip"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm font-semibold text-red-600 transition-colors hover:text-red-700"
-              >
-                Berikan Dukungan
-              </a>
+              {currentRole !== "admin" && (
               <button
                 onClick={() => {
                   if (currentRole !== "user") {
@@ -3562,6 +3557,7 @@ const shareEvent = async (event: Event) => {
               >
                 + Upload Poster Event
               </button>
+              )}
 
               {currentRole === "admin" && (
                 <button
@@ -3688,21 +3684,24 @@ const shareEvent = async (event: Event) => {
                   <p className="px-3 pb-1 text-[10px] font-bold uppercase tracking-[0.16em] text-gray-400">Navigasi</p>
                   <button onClick={() => { setSelectedEvent(null); setShowCostumeDirectory(false); setShowCalendar(false); setMobileOpen(false); setUserTab("Semua"); setActiveNav("home"); window.scrollTo({ top: 0, behavior: "smooth" }); }} aria-current={activeNavKey === "home" ? "page" : undefined} className={`rounded-xl px-3 py-3 text-left font-semibold transition-colors ${activeNavKey === "home" ? "bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-300" : "hover:bg-gray-100 dark:hover:bg-gray-900"}`}>Beranda</button>
                   <button onClick={() => { setSelectedEvent(null); setShowCostumeDirectory(false); setShowCalendar(false); setMobileOpen(false); setUserTab("Semua"); setActiveNav("explore"); window.scrollTo({ top: 0, behavior: "smooth" }); setTimeout(() => document.getElementById("daftar-event")?.scrollIntoView({ behavior: "smooth" }), 200); }} aria-current={activeNavKey === "explore" ? "page" : undefined} className={`rounded-xl px-3 py-3 text-left font-semibold transition-colors ${activeNavKey === "explore" ? "bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-300" : "hover:bg-gray-100 dark:hover:bg-gray-900"}`}>Jelajahi Event</button>
+                  {currentRole === "user" && (
                   <button onClick={() => { setMobileOpen(false); setSelectedEvent(null); setShowCostumeDirectory(true); setShowCalendar(false); setActiveNav("costume"); window.scrollTo({ top: 0, behavior: "smooth" }); }} aria-current={activeNavKey === "costume" ? "page" : undefined} className={`rounded-xl px-3 py-3 text-left font-semibold transition-colors ${activeNavKey === "costume" ? "bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-300" : "hover:bg-gray-100 dark:hover:bg-gray-900"}`}>Cari Costume</button>
+                  )}
                   <button onClick={() => { setMobileOpen(false); openCalendarFromNavigation(); }} aria-current={activeNavKey === "calendar" ? "page" : undefined} className={`rounded-xl px-3 py-3 text-left font-semibold transition-colors ${activeNavKey === "calendar" ? "bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-300" : "hover:bg-gray-100 dark:hover:bg-gray-900"}`}>Kalender</button>
                 </div>
                 <div className="border-t border-gray-200 pt-3 dark:border-gray-800">
                   <p className="px-3 pb-1 text-[10px] font-bold uppercase tracking-[0.16em] text-gray-400">Informasi & Dukungan</p>
                   <div className="flex flex-col gap-1">
                     <button type="button" onClick={() => { setMobileOpen(false); setGuidePage(0); setShowGuideBook(true); }} aria-current={activeNavKey === "guide" ? "page" : undefined} className="rounded-xl px-3 py-3 text-left font-semibold hover:bg-gray-100 dark:hover:bg-gray-900">Buku Panduan</button>
-                    <a href="https://trakteer.id/makicos.id/tip" target="_blank" rel="noopener noreferrer" onClick={() => setMobileOpen(false)} className="rounded-xl px-3 py-3 font-semibold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30">♥ Berikan Dukungan</a>
                     <a href="/tentang-kami" onClick={() => setMobileOpen(false)} className="rounded-xl px-3 py-3 font-semibold hover:bg-gray-100 dark:hover:bg-gray-900">Tentang Kami</a>
                   </div>
                 </div>
+                {currentRole !== "admin" && (
                 <div className="border-t border-gray-200 pt-3 dark:border-gray-800">
                   <p className="px-3 pb-1 text-[10px] font-bold uppercase tracking-[0.16em] text-gray-400">Publikasi</p>
                   <button onClick={() => { setMobileOpen(false); if (currentRole !== "user") { setToast("Silakan login sebagai user terlebih dahulu."); setShowLoginUser(true); return; } setPosterFile(null); setPosterPreview(""); setPosterError(""); setEventFormOpen(true); }} className="w-full rounded-xl bg-red-600 px-3 py-3 text-left font-bold text-white shadow-sm transition hover:bg-red-700">＋ Upload Poster Event</button>
                 </div>
+                )}
                 {currentRole === "admin" && <div className="border-t border-gray-200 pt-3 dark:border-gray-800"><button onClick={() => { setMobileOpen(false); setShowAdmin(true); }} className="w-full rounded-xl px-3 py-3 text-left font-bold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30">Panel Admin</button></div>}
                 {currentRole !== "guest" && <button onClick={() => { setMobileOpen(false); logout(); }} className="rounded-xl px-3 py-3 text-left font-semibold hover:bg-gray-100 dark:hover:bg-gray-900">Keluar</button>}
               </div>
