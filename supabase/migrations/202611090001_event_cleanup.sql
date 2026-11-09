@@ -80,44 +80,6 @@ CREATE UNIQUE INDEX IF NOT EXISTS event_cleanup_audit_one_active_per_event_idx
   ON public.event_cleanup_audit (event_id)
   WHERE status IN ('pending', 'storage_deleted');
 
-
--- Resumable processing lease and per-batch Storage checkpoints.
-ALTER TABLE public.event_cleanup_audit
-  ADD COLUMN IF NOT EXISTS processing_token uuid,
-  ADD COLUMN IF NOT EXISTS processing_started_at timestamptz;
-
-CREATE OR REPLACE FUNCTION public.claim_event_cleanup(
-  p_event_id uuid,
-  p_audit_id uuid,
-  p_claim_token uuid
-)
-RETURNS boolean
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = pg_catalog
-AS $claim$
-DECLARE
-  v_claimed uuid;
-BEGIN
-  UPDATE public.event_cleanup_audit
-     SET processing_token = p_claim_token,
-         processing_started_at = now()
-   WHERE id = p_audit_id
-     AND event_id = p_event_id
-     AND status IN ('pending', 'storage_deleted', 'failed')
-     AND (
-       processing_token IS NULL
-       OR processing_started_at IS NULL
-       OR processing_started_at < now() - interval '30 minutes'
-     )
-  RETURNING processing_token INTO v_claimed;
-  RETURN v_claimed = p_claim_token;
-END;
-$claim$;
-
-REVOKE ALL ON FUNCTION public.claim_event_cleanup(uuid, uuid, uuid) FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.claim_event_cleanup(uuid, uuid, uuid) TO service_role;
-
 ALTER TABLE public.event_cleanup_audit ENABLE ROW LEVEL SECURITY;
 REVOKE ALL PRIVILEGES ON TABLE public.event_cleanup_audit FROM anon, authenticated, PUBLIC;
 GRANT SELECT, INSERT, UPDATE ON TABLE public.event_cleanup_audit TO service_role;
