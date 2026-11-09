@@ -1571,18 +1571,26 @@ const savedUserId =
 
         }
 
-        const reviewsResponse = await fetch("/api/event-reviews", {
-          method: "GET",
-          cache: "no-store",
-        });
-        const reviewsResult = await reviewsResponse.json();
+        if (savedUserId || sessionResult.isAdmin) {
+          const reviewsResponse = await fetch("/api/event-reviews", {
+            method: "GET",
+            credentials: "include",
+            cache: "no-store",
+          });
+          const reviewsResult = await reviewsResponse.json();
 
-        if (!reviewsResponse.ok || !reviewsResult.success) {
-          console.error("Gagal mengambil ulasan:", reviewsResult.error);
+          if (!reviewsResponse.ok || !reviewsResult.success) {
+            console.error("Gagal mengambil ulasan:", reviewsResult.error);
+            setReviews([]);
+            setMyRatings({});
+          } else {
+            setMyRatings(reviewsResult.myRatings || {});
+            setReviews(reviewsResult.reviews || []);
+          }
         } else {
-          setMyRatings(reviewsResult.myRatings || {});
-          // API publik hanya mengirim display_name dan avatar_url, tanpa username login.
-          setReviews(reviewsResult.reviews || []);
+          // Guest tidak memiliki akses komentar; hindari request yang pasti berakhir 401.
+          setReviews([]);
+          setMyRatings({});
         }
 
         const docsResponse = await fetch("/api/event-documentations", {
@@ -2641,6 +2649,8 @@ if (!allowedImageTypes.includes(docFile.type)) {
                 ...review,
                 display_name: updated.display_name,
                 avatar_url: updated.avatar_url || "",
+                instagram_url: updated.instagram_url || "",
+                tiktok_url: updated.tiktok_url || "",
               }
             : review
         )
@@ -6568,8 +6578,8 @@ accept="image/jpeg,image/png,image/webp"
               <h2 id="reviewer-profile-title" className="mt-4 text-xl font-black">{selectedReviewerProfile.display_name || "Pengguna"}</h2>
               <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-gray-600 dark:text-gray-300">{selectedReviewerProfile.bio || "Belum ada bio."}</p>
               <div className="mt-5 flex items-center justify-center gap-3">
-                {selectedReviewerProfile.instagram_url && <a href={selectedReviewerProfile.instagram_url} target="_blank" rel="noopener noreferrer" aria-label="Instagram" title="Instagram" className="flex h-11 w-11 items-center justify-center rounded-full border border-gray-200 text-xl hover:border-red-500 hover:text-red-600 dark:border-gray-700">◎</a>}
-                {selectedReviewerProfile.tiktok_url && <a href={selectedReviewerProfile.tiktok_url} target="_blank" rel="noopener noreferrer" aria-label="TikTok" title="TikTok" className="flex h-11 w-11 items-center justify-center rounded-full border border-gray-200 text-xl font-black hover:border-red-500 hover:text-red-600 dark:border-gray-700">♪</a>}
+                {selectedReviewerProfile.instagram_url && <a href={selectedReviewerProfile.instagram_url} target="_blank" rel="noopener noreferrer" aria-label="Instagram" title="Instagram" className="flex h-11 w-11 items-center justify-center rounded-full border border-gray-200 hover:border-red-500 hover:text-red-600 dark:border-gray-700"><svg viewBox="0 0 24 24" className="h-5 w-5 fill-none stroke-current" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="2.5" y="2.5" width="19" height="19" rx="5"/><circle cx="12" cy="12" r="4.2"/><circle cx="17.8" cy="6.3" r="1" className="fill-current stroke-none"/></svg></a>}
+                {selectedReviewerProfile.tiktok_url && <a href={selectedReviewerProfile.tiktok_url} target="_blank" rel="noopener noreferrer" aria-label="TikTok" title="TikTok" className="flex h-11 w-11 items-center justify-center rounded-full border border-gray-200 hover:border-red-500 hover:text-red-600 dark:border-gray-700"><svg viewBox="0 0 24 24" className="h-5 w-5 fill-current" aria-hidden="true"><path d="M19.6 6.7a5.3 5.3 0 0 1-3.9-4.6V1h-3.5v14.1a2.9 2.9 0 1 1-2.9-2.9c.3 0 .6 0 .9.1V8.7a7 7 0 1 0 5.5 6.8V8.2a8.6 8.6 0 0 0 4.9 1.5V6.2c-.4.2-.7.4-1 .5Z"/></svg></a>}
               </div>
             </section>
           </div>
