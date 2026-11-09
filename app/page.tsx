@@ -6172,7 +6172,21 @@ accept="image/jpeg,image/png,image/webp"
                           </div>
                         ) : (
                           <>
-                            <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-800">
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                              <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                                <span>Menampilkan {(currentPage - 1) * adminUsersPerPage + 1}–{Math.min(currentPage * adminUsersPerPage, sortedUsers.length)} dari {sortedUsers.length} pengguna</span>
+                                <select value={adminUsersPerPage} onChange={(event) => { setAdminUsersPerPage(Number(event.target.value)); setAdminUserPage(1); }} aria-label="Jumlah pengguna per halaman" className="rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs dark:border-gray-700 dark:bg-gray-900">
+                                  <option value={10}>10 / halaman</option><option value={25}>25 / halaman</option><option value={50}>50 / halaman</option>
+                                </select>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <button type="button" disabled={currentPage <= 1} onClick={() => setAdminUserPage((page) => Math.max(1, page - 1))} className="rounded-lg border border-gray-200 px-3 py-2 text-xs font-bold disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-700">Sebelumnya</button>
+                                <span className="min-w-[64px] text-center text-xs font-semibold tabular-nums">{currentPage} / {totalPages}</span>
+                                <button type="button" disabled={currentPage >= totalPages} onClick={() => setAdminUserPage((page) => Math.min(totalPages, page + 1))} className="rounded-lg border border-gray-200 px-3 py-2 text-xs font-bold disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-700">Berikutnya</button>
+                              </div>
+                            </div>
+                            <div className="max-h-[55vh] overflow-y-scroll rounded-xl border border-gray-200 dark:border-gray-800">
+                              <div className="overflow-x-auto">
                               <table className="w-full min-w-[760px] border-collapse text-left text-sm">
                                 <thead className="bg-gray-50 text-xs font-bold uppercase tracking-wide text-gray-500 dark:bg-gray-950 dark:text-gray-400">
                                   <tr>
@@ -6205,20 +6219,9 @@ accept="image/jpeg,image/png,image/webp"
                                   ))}
                                 </tbody>
                               </table>
-                            </div>
-                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                              <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
-                                <span>Menampilkan {(currentPage - 1) * adminUsersPerPage + 1}–{Math.min(currentPage * adminUsersPerPage, sortedUsers.length)} dari {sortedUsers.length} pengguna</span>
-                                <select value={adminUsersPerPage} onChange={(event) => { setAdminUsersPerPage(Number(event.target.value)); setAdminUserPage(1); }} aria-label="Jumlah pengguna per halaman" className="rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs dark:border-gray-700 dark:bg-gray-900">
-                                  <option value={10}>10 / halaman</option><option value={25}>25 / halaman</option><option value={50}>50 / halaman</option>
-                                </select>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <button type="button" disabled={currentPage <= 1} onClick={() => setAdminUserPage((page) => Math.max(1, page - 1))} className="rounded-lg border border-gray-200 px-3 py-2 text-xs font-bold disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-700">Sebelumnya</button>
-                                <span className="min-w-[64px] text-center text-xs font-semibold tabular-nums">{currentPage} / {totalPages}</span>
-                                <button type="button" disabled={currentPage >= totalPages} onClick={() => setAdminUserPage((page) => Math.min(totalPages, page + 1))} className="rounded-lg border border-gray-200 px-3 py-2 text-xs font-bold disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-700">Berikutnya</button>
                               </div>
                             </div>
+
                           </>
                         );
                       })()}
