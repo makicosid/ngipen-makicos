@@ -589,6 +589,7 @@ const [showCalendar, setShowCalendar] = useState(false);
 useEffect(() => {
   const checkScreenSize = () => {
     setIsMobileCalendar(window.innerWidth < 640);
+    setEventsPerPage(window.innerWidth >= 1024 ? 16 : 8);
   };
 
   checkScreenSize();
@@ -596,6 +597,10 @@ useEffect(() => {
 
   return () => window.removeEventListener("resize", checkScreenSize);
 }, []);
+
+useEffect(() => {
+  setCurrentEventPage(1);
+}, [eventsPerPage]);
 const [calendarMonth, setCalendarMonth] = useState(new Date());
 const [selectedCalendarDate, setSelectedCalendarDate] = useState("");
 const [eventStatusTab, setEventStatusTab] = useState<
@@ -4347,7 +4352,7 @@ const shareEvent = async (event: Event) => {
 {!showCostumeDirectory && (
             <section
               id="daftar-event"
-              className="mx-auto max-w-[1400px] scroll-mt-24 px-4 pb-12"
+              className="mx-auto w-full max-w-[1600px] scroll-mt-24 px-4 pb-12"
             >
               <div className="mb-5">
                 <h2 className="text-2xl font-black sm:text-3xl">
@@ -4531,7 +4536,7 @@ const shareEvent = async (event: Event) => {
                 </div>
               ) : (
                 <>
-                <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4">
+                <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-4 lg:gap-5">
                   {paginatedEvents.map((event) => (
                     <article
                       key={event.id}
@@ -4567,21 +4572,23 @@ const shareEvent = async (event: Event) => {
                               ★ PROMOTE
                             </span>
                           )}
-{(() => {
-  const start = new Date(event.start_date + "T00:00:00");
-  const end = new Date((event.end_date || event.start_date) + "T00:00:00");
-  const duration = Math.round(
-    (end.getTime() - start.getTime()) / 86400000
-  ) + 1;
-
-  if (duration < 1 || duration > 5) return null;
-
-  return (
-    <span className="absolute right-2 bottom-10 rounded-full bg-red-600 px-2.5 py-1 text-[11px] font-black text-white shadow-md">
-      {duration}D
-    </span>
-  );
-})()}
+{(showThisWeekOnly || eventStatusTab === "Upcoming" || eventStatusTab === "Ongoing") && (
+  <span
+    className={"absolute left-2 z-10 rounded-full px-2.5 py-1 text-[10px] font-black text-white shadow-md " + (event.is_sponsored ? "top-11 " : "top-2 ") + (
+      showThisWeekOnly
+        ? "bg-amber-500"
+        : eventStatusTab === "Upcoming"
+          ? "bg-red-600"
+          : "bg-green-600"
+    )}
+  >
+    {showThisWeekOnly
+      ? "MINGGU INI"
+      : eventStatusTab === "Upcoming"
+        ? "UPCOMING"
+        : "ONGOING"}
+  </span>
+)}
 
 {getTimeStatus(event) === "Completed" && (
   <span className="absolute right-2 top-2 rounded-full bg-gray-800 px-2 py-1 text-[10px] font-black text-white">
@@ -4589,18 +4596,35 @@ const shareEvent = async (event: Event) => {
   </span>
 )}
 
-                          <span
-                            className={`absolute bottom-2 left-2 rounded-full px-2 py-1 text-[10px] font-bold text-white shadow-sm md:px-3 md:py-1.5 md:text-sm ${
-                              event.ticket_type === "Gratis"
-                                ? "bg-green-600"
-                                : "bg-red-600"
-                            }`}
-                          >
-                            {event.ticket_type}
-                          </span>
+                          <div className="absolute inset-x-2 bottom-2 z-10 flex items-center justify-between gap-2">
+                            <span
+                              className={`rounded-full px-2 py-1 text-[10px] font-bold text-white shadow-sm md:px-3 md:py-1.5 md:text-sm ${
+                                event.ticket_type === "Gratis"
+                                  ? "bg-green-600"
+                                  : "bg-red-600"
+                              }`}
+                            >
+                              {event.ticket_type}
+                            </span>
+                            {(() => {
+                              const start = new Date(event.start_date + "T00:00:00");
+                              const end = new Date((event.end_date || event.start_date) + "T00:00:00");
+                              const duration = Math.round(
+                                (end.getTime() - start.getTime()) / 86400000
+                              ) + 1;
+
+                              if (duration < 1 || duration > 5) return null;
+
+                              return (
+                                <span className="rounded-full bg-red-600 px-2.5 py-1 text-[10px] font-black text-white shadow-md md:text-[11px]">
+                                  {duration}D
+                                </span>
+                              );
+                            })()}
+                          </div>
                         </div>
 
-                        <div className="relative min-h-[174px] p-3 pb-14">
+                        <div className="relative min-h-[174px] p-3 pb-14 lg:min-h-[190px]">
                           <h3 className="line-clamp-2 min-h-10 pr-1 text-sm font-bold">
                             {event.title}
                           </h3>
@@ -4631,14 +4655,24 @@ const shareEvent = async (event: Event) => {
   <span>{(event.views || 0).toLocaleString("id-ID")} views</span>
 </div>
                           <div className="mt-3 flex flex-wrap gap-1">
-                            {(event.categories || []).slice(0, 2).map((cat) => (
+                            {(event.categories || []).slice(0, 6).map((cat, index) => (
                               <span
                                 key={cat}
-                                className="rounded-md bg-red-50 px-2 py-1 text-[10px] font-semibold text-red-700 dark:bg-red-950 dark:text-red-300"
+                                className={"rounded-md bg-red-50 px-2 py-1 text-[10px] font-semibold text-red-700 dark:bg-red-950 dark:text-red-300 " + (index >= 3 ? "hidden lg:inline-flex" : "")}
                               >
                                 {getCategoryLabel(cat)}
                               </span>
                             ))}
+                            {(event.categories || []).length > 3 && (
+                              <span className="rounded-md bg-gray-100 px-2 py-1 text-[10px] font-semibold text-gray-600 dark:bg-gray-800 dark:text-gray-300 lg:hidden">
+                                +{(event.categories || []).length - 3}
+                              </span>
+                            )}
+                            {(event.categories || []).length > 6 && (
+                              <span className="hidden rounded-md bg-gray-100 px-2 py-1 text-[10px] font-semibold text-gray-600 dark:bg-gray-800 dark:text-gray-300 lg:inline-flex">
+                                +{(event.categories || []).length - 6}
+                              </span>
+                            )}
                           </div>
                           <img src="/mascots/kitsune-chan-head.png" alt="" aria-hidden="true" className="ngipen-fox-sticker pointer-events-none absolute bottom-1 right-2 h-12 w-12 object-contain drop-shadow-sm" />
                         </div>
