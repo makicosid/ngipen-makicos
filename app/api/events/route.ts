@@ -123,10 +123,12 @@ const MAX_POSTER_SIZE = 3 * 1024 * 1024;
 
 const ALLOWED_CATEGORIES = [
   "Cosplay",
+  "Performance",
   "Pefomance",
   "Market",
   "Game",
   "Comic",
+  "Roleplay",
 ];
 
 const ALLOWED_PROVINCES = [

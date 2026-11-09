@@ -17,7 +17,8 @@ type Category =
   | "Comic"
   | "Idol"
   | "Toys Event"
-  | "Market Event";
+  | "Market Event"
+  | "Roleplay";
 type ModStatus = "Pending" | "Approved" | "Rejected" | "Hidden";
 type TimeStatus = "Upcoming" | "Ongoing" | "Completed";
 type Role = "guest" | "user" | "admin";
@@ -152,10 +153,11 @@ const ALL_PROVINCES = [
 
 const eventCategoryOptions: Category[] = [
   "Cosplay",
-  "Pefomance",
+  "Performance",
   "Market",
   "Game",
   "Comic",
+  "Roleplay",
 ];
 
 
@@ -189,6 +191,10 @@ function slugify(value: string) {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
+}
+
+function getCategoryLabel(category: string) {
+  return category === "Pefomance" ? "Performance" : category;
 }
 
 
@@ -250,7 +256,7 @@ const GUIDE_BOOK_PAGES = [
     "bullets": [
       "Cari event berdasarkan nama atau informasinya.",
       "Filter berdasarkan provinsi dan kota.",
-      "Pilih kategori event: Cosplay, Pefomance, Market, Game, dan Comic.",
+      "Pilih kategori event: Cosplay, Performance, Market, Game, Comic, dan Roleplay.",
       "Gunakan filter jenis tiket jika tersedia.",
       "Urutkan event berdasarkan Terbaru atau Terpopuler.",
       "Lihat event pada minggu ini",
@@ -2089,7 +2095,11 @@ const logout = async () => {
       start_time: String(event.start_time || "09:00").slice(0, 5),
       end_time: String(event.end_time || "18:00").slice(0, 5),
     });
-    setAdminEditCategories((event.categories || []).filter((item) => eventCategoryOptions.includes(item)));
+    setAdminEditCategories(
+      (event.categories || [])
+        .map((item) => item === "Pefomance" ? "Performance" : item)
+        .filter((item) => eventCategoryOptions.some((option) => option === item)) as Category[]
+    );
     setAdminEditPoster(null);
     setAdminEditPosterPreview(event.poster_url || "");
   };
@@ -2881,7 +2891,11 @@ useEffect(() => {
 
     if (selectedCat !== "Semua") {
       result = result.filter((event) =>
-        event.categories?.includes(selectedCat as Category)
+        event.categories?.some((category) =>
+          selectedCat === "Performance"
+            ? category === "Performance" || category === "Pefomance"
+            : category === selectedCat
+        )
       );
     }
 
@@ -3013,7 +3027,11 @@ return {
 
     if (selectedCat !== "Semua") {
       result = result.filter((event) =>
-        event.categories?.includes(selectedCat as Category)
+        event.categories?.some((category) =>
+          selectedCat === "Performance"
+            ? category === "Performance" || category === "Pefomance"
+            : category === selectedCat
+        )
       );
     }
 
@@ -3126,7 +3144,7 @@ return {
       const searchable = [event.title, event.organizer_name, event.organizer_id, event.city, event.province, event.venue_address]
         .filter(Boolean).join(" ").toLocaleLowerCase("id-ID");
       if (query && !searchable.includes(query)) return false;
-      if (adminEventCategoryFilter !== "Semua" && !(event.categories || []).includes(adminEventCategoryFilter as Category)) return false;
+      if (adminEventCategoryFilter !== "Semua" && !(event.categories || []).some((category) => adminEventCategoryFilter === "Performance" ? category === "Performance" || category === "Pefomance" : category === adminEventCategoryFilter)) return false;
       if (adminEventProvinceFilter !== "Semua" && event.province !== adminEventProvinceFilter) return false;
       if (adminEventSponsorFilter === "Sponsor" && !event.is_sponsored) return false;
       if (adminEventSponsorFilter === "Non-Sponsor" && event.is_sponsored) return false;
@@ -3492,30 +3510,28 @@ const shareEvent = async (event: Event) => {
 >
   Jelajahi Event
 </button>
-                            {currentRole === "user" && (
-                <button
+{currentRole === "user" && (
+                            <button
   onClick={() => {
-  setSelectedEvent(null);
-  setShowCostumeDirectory(true);
-  setShowCalendar(false);
-  setActiveNav("costume");
-  window.scrollTo({ top: 0, behavior: "smooth" });
-}}
+    setSelectedEvent(null);
+    setShowCostumeDirectory(true);
+    setShowCalendar(false);
+    setActiveNav("costume");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }}
   aria-current={activeNavKey === "costume" ? "page" : undefined}
   className={`relative border-b-2 pb-2 text-sm font-semibold transition-colors duration-[250ms] ${activeNavKey === "costume" ? "border-amber-400 text-amber-700 dark:text-amber-300" : "border-transparent hover:border-amber-300 hover:text-amber-600"}`}
 >
   Cari Costume
 </button>
 )}
-{currentRole === "user" && (
-  <button
-    onClick={openCalendarFromNavigation}
-    aria-current={activeNavKey === "calendar" ? "page" : undefined}
-    className={`relative border-b-2 pb-2 text-sm font-semibold transition-colors duration-[250ms] ${activeNavKey === "calendar" ? "border-amber-400 text-amber-700 dark:text-amber-300" : "border-transparent hover:border-amber-300 hover:text-amber-600"}`}
-  >
-    Kalender
-  </button>
-)}
+<button
+  onClick={openCalendarFromNavigation}
+  aria-current={activeNavKey === "calendar" ? "page" : undefined}
+  className={`relative border-b-2 pb-2 text-sm font-semibold transition-colors duration-[250ms] ${activeNavKey === "calendar" ? "border-amber-400 text-amber-700 dark:text-amber-300" : "border-transparent hover:border-amber-300 hover:text-amber-600"}`}
+>
+  Kalender
+</button>
               <button
                 type="button"
                 onClick={() => { setGuidePage(0); setShowGuideBook(true); }}
@@ -3524,18 +3540,23 @@ const shareEvent = async (event: Event) => {
               >
                 Buku Panduan
               </button>
-              {currentRole === "user" && (
-                <button
-                  onClick={() => {
-                                  setPosterFile(null);
-                    setPosterPreview("");
-                    setPosterError("");
-                    setEventFormOpen(true);
-                  }}
-                  className="text-sm font-semibold text-red-600 hover:text-red-700"
-                >
-                  + Upload Event
-                </button>
+              {currentRole !== "admin" && (
+              <button
+                onClick={() => {
+                  if (currentRole !== "user") {
+                    setToast("Silakan login sebagai user terlebih dahulu.");
+                    setShowLoginUser(true);
+                    return;
+                  }
+                  setPosterFile(null);
+                  setPosterPreview("");
+                  setPosterError("");
+                  setEventFormOpen(true);
+                }}
+                className="text-sm font-semibold text-red-600 hover:text-red-700"
+              >
+                + Upload Poster Event
+              </button>
               )}
 
               {currentRole === "admin" && (
@@ -3658,130 +3679,31 @@ const shareEvent = async (event: Event) => {
           {/* MENU MOBILE */}
           {mobileOpen && (
             <div className="border-t border-gray-200 bg-white px-4 py-4 dark:border-gray-800 dark:bg-gray-950 md:hidden">
-              <div className="flex flex-col gap-2">
-                <button
-                  onClick={() => {
-  setSelectedEvent(null);
-  setShowCostumeDirectory(false);
-  setShowCalendar(false);
-  setMobileOpen(false);
-  setUserTab("Semua");
-  setActiveNav("home");
-  window.scrollTo({ top: 0, behavior: "smooth" });
-}}
-                  aria-current={activeNavKey === "home" ? "page" : undefined}
-                  className={`rounded-xl border-b-2 px-3 py-3 text-left font-semibold transition-colors duration-[250ms] ${activeNavKey === "home" ? "border-amber-400 text-amber-700 dark:text-amber-300" : "border-transparent hover:border-amber-300 hover:bg-gray-100 dark:hover:bg-gray-900"}`}
-                >
-                  Beranda
-                </button>
-
-               <button
- onClick={() => {
-  setSelectedEvent(null);
-  setShowCostumeDirectory(false);
-  setShowCalendar(false);
-  setMobileOpen(false);
-  setUserTab("Semua");
-  setActiveNav("explore");
-
-  window.scrollTo({ top: 0, behavior: "smooth" });
-
-  setTimeout(() => {
-    document
-      .getElementById("daftar-event")
-      ?.scrollIntoView({ behavior: "smooth" });
-  }, 200);
-}}
-  aria-current={activeNavKey === "explore" ? "page" : undefined}
-  className={`rounded-xl border-b-2 px-3 py-3 text-left font-semibold transition-colors duration-[250ms] ${activeNavKey === "explore" ? "border-amber-400 text-amber-700 dark:text-amber-300" : "border-transparent hover:border-amber-300 hover:bg-gray-100 dark:hover:bg-gray-900"}`}
->
-  Jelajahi Event
-</button>
-                               {currentRole === "user" && (
-  <button
-    onClick={() => {
-      setMobileOpen(false);
-      setSelectedEvent(null);
-      setShowCostumeDirectory(true);
-      setShowCalendar(false);
-      setActiveNav("costume");
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }}
-    aria-current={activeNavKey === "costume" ? "page" : undefined}
-    className={`rounded-xl border-b-2 px-3 py-3 text-left font-semibold transition-colors duration-[250ms] ${activeNavKey === "costume" ? "border-amber-400 text-amber-700 dark:text-amber-300" : "border-transparent hover:border-amber-300 hover:bg-gray-100 dark:hover:bg-gray-900"}`}
-  >
-    Cari Costume
-  </button>
-)}
-                
-{currentRole === "user" && (
-  <button
-    onClick={openCalendarFromNavigation}
-    aria-current={activeNavKey === "calendar" ? "page" : undefined}
-    className={`rounded-xl border-b-2 px-3 py-3 text-left font-semibold transition-colors duration-[250ms] ${activeNavKey === "calendar" ? "border-amber-400 text-amber-700 dark:text-amber-300" : "border-transparent hover:border-amber-300 hover:bg-gray-100 dark:hover:bg-gray-900"}`}
-  >
-    Kalender
-  </button>
-)}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMobileOpen(false);
-                    setGuidePage(0);
-                    setShowGuideBook(true);
-                  }}
-                  aria-current={activeNavKey === "guide" ? "page" : undefined}
-                  className={`rounded-xl border-b-2 px-3 py-3 text-left font-semibold transition-colors duration-[250ms] ${activeNavKey === "guide" ? "border-amber-400 text-amber-700 dark:text-amber-300" : "border-transparent text-red-700 hover:border-amber-300 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-950/30"}`}
-                >
-                  Buku Panduan
-                </button>
-
-                <a
-                  href="/tentang-kami"
-                  onClick={() => setMobileOpen(false)}
-                  className="rounded-xl border-b-2 border-transparent px-3 py-3 text-left font-semibold text-gray-700 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-700 dark:text-gray-200 dark:hover:bg-red-950/30"
-                >
-                  Tentang Kami
-                </a>
-
-                {currentRole === "user" && (
-                  <button
-                    onClick={() => {
-                      setMobileOpen(false);
-                                      setPosterFile(null);
-                      setPosterPreview("");
-                      setPosterError("");
-                      setEventFormOpen(true);
-                    }}
-                    className="rounded-xl bg-red-600 px-3 py-3 text-left font-bold text-white"
-                  >
-                    + Upload Poster Event
-                  </button>
+              <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-1">
+                  <p className="px-3 pb-1 text-[10px] font-bold uppercase tracking-[0.16em] text-gray-400">Navigasi</p>
+                  <button onClick={() => { setSelectedEvent(null); setShowCostumeDirectory(false); setShowCalendar(false); setMobileOpen(false); setUserTab("Semua"); setActiveNav("home"); window.scrollTo({ top: 0, behavior: "smooth" }); }} aria-current={activeNavKey === "home" ? "page" : undefined} className={`rounded-xl px-3 py-3 text-left font-semibold transition-colors ${activeNavKey === "home" ? "bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-300" : "hover:bg-gray-100 dark:hover:bg-gray-900"}`}>Beranda</button>
+                  <button onClick={() => { setSelectedEvent(null); setShowCostumeDirectory(false); setShowCalendar(false); setMobileOpen(false); setUserTab("Semua"); setActiveNav("explore"); window.scrollTo({ top: 0, behavior: "smooth" }); setTimeout(() => document.getElementById("daftar-event")?.scrollIntoView({ behavior: "smooth" }), 200); }} aria-current={activeNavKey === "explore" ? "page" : undefined} className={`rounded-xl px-3 py-3 text-left font-semibold transition-colors ${activeNavKey === "explore" ? "bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-300" : "hover:bg-gray-100 dark:hover:bg-gray-900"}`}>Jelajahi Event</button>
+                  {currentRole === "user" && (
+                  <button onClick={() => { setMobileOpen(false); setSelectedEvent(null); setShowCostumeDirectory(true); setShowCalendar(false); setActiveNav("costume"); window.scrollTo({ top: 0, behavior: "smooth" }); }} aria-current={activeNavKey === "costume" ? "page" : undefined} className={`rounded-xl px-3 py-3 text-left font-semibold transition-colors ${activeNavKey === "costume" ? "bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-300" : "hover:bg-gray-100 dark:hover:bg-gray-900"}`}>Cari Costume</button>
+                  )}
+                  <button onClick={() => { setMobileOpen(false); openCalendarFromNavigation(); }} aria-current={activeNavKey === "calendar" ? "page" : undefined} className={`rounded-xl px-3 py-3 text-left font-semibold transition-colors ${activeNavKey === "calendar" ? "bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-300" : "hover:bg-gray-100 dark:hover:bg-gray-900"}`}>Kalender</button>
+                </div>
+                <div className="border-t border-gray-200 pt-3 dark:border-gray-800">
+                  <p className="px-3 pb-1 text-[10px] font-bold uppercase tracking-[0.16em] text-gray-400">Informasi & Dukungan</p>
+                  <div className="flex flex-col gap-1">
+                    <button type="button" onClick={() => { setMobileOpen(false); setGuidePage(0); setShowGuideBook(true); }} aria-current={activeNavKey === "guide" ? "page" : undefined} className="rounded-xl px-3 py-3 text-left font-semibold hover:bg-gray-100 dark:hover:bg-gray-900">Buku Panduan</button>
+                    <a href="/tentang-kami" onClick={() => setMobileOpen(false)} className="rounded-xl px-3 py-3 font-semibold hover:bg-gray-100 dark:hover:bg-gray-900">Tentang Kami</a>
+                  </div>
+                </div>
+                {currentRole !== "admin" && (
+                <div className="border-t border-gray-200 pt-3 dark:border-gray-800">
+                  <p className="px-3 pb-1 text-[10px] font-bold uppercase tracking-[0.16em] text-gray-400">Publikasi</p>
+                  <button onClick={() => { setMobileOpen(false); if (currentRole !== "user") { setToast("Silakan login sebagai user terlebih dahulu."); setShowLoginUser(true); return; } setPosterFile(null); setPosterPreview(""); setPosterError(""); setEventFormOpen(true); }} className="w-full rounded-xl bg-red-600 px-3 py-3 text-left font-bold text-white shadow-sm transition hover:bg-red-700">＋ Upload Poster Event</button>
+                </div>
                 )}
-
-                {currentRole === "admin" && (
-                  <button
-                    onClick={() => {
-                      setMobileOpen(false);
-                      setShowAdmin(true);
-                    }}
-                    className="rounded-xl px-3 py-3 text-left font-bold text-red-600 hover:bg-gray-100 dark:hover:bg-gray-900"
-                  >
-                    Panel Admin
-                  </button>
-                )}
-
-                {currentRole !== "guest" && (
-                  <button
-                    onClick={() => {
-                      setMobileOpen(false);
-                      logout();
-                    }}
-                    className="rounded-xl px-3 py-3 text-left font-semibold hover:bg-gray-100 dark:hover:bg-gray-900"
-                  >
-                    Keluar
-                  </button>
-                )}
+                {currentRole === "admin" && <div className="border-t border-gray-200 pt-3 dark:border-gray-800"><button onClick={() => { setMobileOpen(false); setShowAdmin(true); }} className="w-full rounded-xl px-3 py-3 text-left font-bold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30">Panel Admin</button></div>}
+                {currentRole !== "guest" && <button onClick={() => { setMobileOpen(false); logout(); }} className="rounded-xl px-3 py-3 text-left font-semibold hover:bg-gray-100 dark:hover:bg-gray-900">Keluar</button>}
               </div>
             </div>
           )}
@@ -4691,7 +4613,7 @@ const shareEvent = async (event: Event) => {
                                 key={cat}
                                 className="rounded-md bg-red-50 px-2 py-1 text-[10px] font-semibold text-red-700 dark:bg-red-950 dark:text-red-300"
                               >
-                                {cat}
+                                {getCategoryLabel(cat)}
                               </span>
                             ))}
                           </div>
@@ -7396,7 +7318,7 @@ accept="image/jpeg,image/png,image/webp"
                           <p className="text-xs font-bold text-gray-900 dark:text-gray-100">Kategori</p>
                           <div className="mt-2 flex flex-wrap gap-2">
                             {activeEventPreview.categories?.length ? activeEventPreview.categories.map((category) => (
-                              <span key={category} className="rounded-full bg-red-100 px-2.5 py-1 text-[11px] font-bold text-red-700 dark:bg-red-950/60 dark:text-red-300">{category}</span>
+                              <span key={category} className="rounded-full bg-red-100 px-2.5 py-1 text-[11px] font-bold text-red-700 dark:bg-red-950/60 dark:text-red-300">{getCategoryLabel(category)}</span>
                             )) : <span className="text-sm text-gray-500 dark:text-gray-400">Kategori belum tersedia.</span>}
                           </div>
                         </div>
@@ -7797,6 +7719,16 @@ accept="image/jpeg,image/png,image/webp"
                       <svg className="h-4 w-4 fill-current" viewBox="0 0 24 24">
                         <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.298-.002.595.042.88.13V9.4a6.33 6.33 0 0 0-1-.08A6.34 6.34 0 0 0 3 15.66a6.34 6.34 0 0 0 10.82 4.49 6.27 6.27 0 0 0 1.88-4.49V8.8a8.28 8.28 0 0 0 4.89 1.58V6.93a4.85 4.85 0 0 1-1-.24z" />
                       </svg>
+                    </a>
+                    <a
+                      href="https://trakteer.id/makicos.id/tip"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label="Berikan Dukungan"
+                      title="Berikan Dukungan"
+                      className="flex h-8 items-center justify-center gap-1.5 rounded-lg bg-[#bb212d] px-3 text-[11px] font-bold text-white transition hover:bg-red-700"
+                    >
+                      ♥ <span>Dukung MAKICOS</span>
                     </a>
                   </div>
                 </div>

@@ -8,7 +8,7 @@ const ADMIN_COOKIE_NAME = "ngipen_admin_session";
 const EVENT_COLUMNS = "id, organizer_id, title, slug, description, poster_url, categories, province, city, venue_address, start_date, end_date, start_time, end_time, ticket_type, ticket_url, registration_url, social_link, moderation_status, is_hidden, is_sponsored, sponsored_priority, sponsored_start, sponsored_end, views, saves_count, avg_rating, rating_count, organizer_name, created_at";
 const POSTER_BUCKET = "posters";
 const MAX_POSTER_SIZE = 3 * 1024 * 1024;
-const ALLOWED_CATEGORIES = ["Cosplay", "Pefomance", "Market", "Game", "Comic"];
+const ALLOWED_CATEGORIES = ["Cosplay", "Performance", "Pefomance", "Market", "Game", "Comic", "Roleplay"];
 const ALLOWED_PROVINCES = [
   "Aceh", "Sumatera Utara", "Sumatera Barat", "Riau", "Jambi", "Sumatera Selatan",
   "Bengkulu", "Lampung", "Kepulauan Bangka Belitung", "Kepulauan Riau", "DKI Jakarta",
