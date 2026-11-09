@@ -178,7 +178,6 @@ async function collectReferences(supabase: ReturnType<typeof getSupabaseAdmin>, 
       const { data, error } = await supabase
         .from(source.table)
         .select(`${source.column}, ${source.excludeColumn}`)
-        // Include NULL legacy event_id rows: they may still reference the same Storage URL.
         .or(`${source.excludeColumn}.neq.${eventId},${source.excludeColumn}.is.null`)
         .range(from, from + pageSize - 1);
       if (error) throw new Error("Gagal memeriksa apakah file digunakan oleh event atau dokumentasi lain.");
@@ -317,8 +316,6 @@ export async function POST(request: NextRequest) {
       fileManifest.push({ bucket: target.bucket, path: target.path, sources: target.sources, existsBeforeDelete: info.exists, sizeBytes: info.sizeBytes });
     }
 
-    // If a previous request stopped after Storage succeeded, resume its audit
-    // instead of creating a second active cleanup for the same event.
     const { data: activeAudit, error: activeAuditError } = await supabase
       .from("event_cleanup_audit")
       .select("id, status, created_at, deleted_storage_paths, already_missing_paths, processing_token, processing_started_at")
@@ -413,12 +410,11 @@ export async function POST(request: NextRequest) {
           if (removeError) throw new Error(`Gagal menghapus file pada bucket ${bucket}. Database event tetap dipertahankan.`);
           deletedPaths.push(...existing.map((path) => `${bucket}:${path}`));
         }
-        // Persist every successful batch and lease heartbeat before proceeding.
         await checkpoint();
       }
     }
 
-    const { error: storageAuditError } = await supabase
+    const { data: storageAudit, error: storageAuditError } = await supabase
       .from("event_cleanup_audit")
       .update({
         status: "storage_deleted",
@@ -426,18 +422,29 @@ export async function POST(request: NextRequest) {
         already_missing_paths: Array.from(new Set(alreadyMissing.filter((path) => !deletedPaths.includes(path)))),
         deleted_file_count: new Set(deletedPaths).size,
         storage_deleted_at: new Date().toISOString(),
-        processing_token: null,
-        processing_started_at: null,
       })
       .eq("id", auditId)
-      .eq("processing_token", claimToken);
-    if (storageAuditError) throw new Error("File Storage telah diproses, tetapi pembaruan audit gagal. Event database belum dihapus.");
+      .eq("processing_token", claimToken)
+      .select("id")
+      .maybeSingle();
+
+    if (storageAuditError || !storageAudit) {
+      throw new Error("Kepemilikan lease tidak valid atau pembaruan audit Storage gagal. Finalisasi database dibatalkan.");
+    }
 
     const { error: finalizeError } = await supabase.rpc("finalize_event_cleanup", {
       p_event_id: event.id,
       p_audit_id: auditId,
     });
     if (finalizeError) throw new Error("File Storage sudah diproses, tetapi penghapusan database gagal. Proses tercatat dan perlu dicoba ulang.");
+
+    // Release the lease only after the database finalizer has completed.
+    await supabase
+      .from("event_cleanup_audit")
+      .update({ processing_token: null, processing_started_at: null })
+      .eq("id", auditId)
+      .eq("processing_token", claimToken)
+      .eq("status", "completed");
 
     return json({
       success: true,
@@ -452,7 +459,6 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     const message = error instanceof Error ? error.message : "Terjadi kesalahan pada server.";
     if (supabase && auditId && claimToken) {
-      // Preserve all persisted checkpoints; release the lease for a safe retry.
       await supabase.from("event_cleanup_audit")
         .update({ status: "failed", error_message: message, processing_token: null, processing_started_at: null })
         .eq("id", auditId)
@@ -463,4 +469,3 @@ export async function POST(request: NextRequest) {
     return json({ error: message }, 500);
   }
 }
-
