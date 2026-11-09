@@ -98,6 +98,15 @@ interface Review {
   avatar_url?: string;
 }
 
+interface PublicProfile {
+  id: string;
+  display_name: string;
+  avatar_url: string;
+  bio: string;
+  instagram_url: string;
+  tiktok_url: string;
+}
+
 interface RegUser {
   id: string;
   username: string;
@@ -105,6 +114,8 @@ interface RegUser {
   display_name: string;
   bio?: string;
   avatar_url?: string;
+  instagram_url?: string;
+  tiktok_url?: string;
   created_at: string;
   savedEventsCount?: number;
   totalClicks?: number;
@@ -911,6 +922,8 @@ const sponsorCarouselPausedRef = useRef(false);
 
   const [savedIds, setSavedIds] = useState<string[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [selectedReviewerProfile, setSelectedReviewerProfile] = useState<PublicProfile | null>(null);
+  const [reviewerProfileLoading, setReviewerProfileLoading] = useState(false);
   const [myRatings, setMyRatings] = useState<Record<string, number>>({});
   const [docs, setDocs] = useState<Doc[]>([]);
 
@@ -2331,6 +2344,29 @@ const logout = async () => {
     }
   };
 
+  const openReviewerProfile = async (userId: string) => {
+    if (currentRole === "guest") {
+      setShowLoginUser(true);
+      return;
+    }
+    setReviewerProfileLoading(true);
+    setSelectedReviewerProfile(null);
+    try {
+      const response = await fetch(`/api/public-profile?id=${encodeURIComponent(userId)}`, {
+        method: "GET", credentials: "include", cache: "no-store",
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success || !result.profile) {
+        throw new Error(result.error || "Gagal mengambil profil pengguna.");
+      }
+      setSelectedReviewerProfile(result.profile as PublicProfile);
+    } catch (error) {
+      setToast(error instanceof Error ? error.message : "Gagal mengambil profil pengguna.");
+    } finally {
+      setReviewerProfileLoading(false);
+    }
+  };
+
   // Penilaian event melalui API server
   const handleRate = async (eventId: string, rating: number) => {
     if (currentRole !== "user") {
@@ -2536,13 +2572,16 @@ if (!allowedImageTypes.includes(docFile.type)) {
       document.getElementById("edit-user-bio") as HTMLTextAreaElement
     )?.value?.trim() || "";
 
+    const instagramUrl = (document.getElementById("edit-user-instagram") as HTMLInputElement)?.value?.trim() || "";
+    const tiktokUrl = (document.getElementById("edit-user-tiktok") as HTMLInputElement)?.value?.trim() || "";
+
     if (!displayName) {
       setToast("Nama profil wajib diisi.");
       return;
     }
 
-    if (displayName.length > 50 || bio.length > 300) {
-      setToast("Nama maksimal 50 karakter dan bio maksimal 300 karakter.");
+    if (displayName.length > 50 || bio.length > 160) {
+      setToast("Nama maksimal 50 karakter dan bio maksimal 160 karakter.");
       return;
     }
 
@@ -2569,6 +2608,8 @@ if (!allowedImageTypes.includes(docFile.type)) {
           displayName,
           bio,
           avatarUrl,
+          instagramUrl,
+          tiktokUrl,
         }),
       });
 
@@ -5198,8 +5239,8 @@ const shareEvent = async (event: Event) => {
               </div>
             </div>
 
-            {/* KOMENTAR */}
-            <section className="mt-10">
+            {/* KOMENTAR: hanya tersedia untuk sesi User/Admin */}
+            {currentRole !== "guest" && <section className="mt-10">
               <h2 className="text-xl font-black">
                 Komentar dan Pengalaman Pengunjung
               </h2>
@@ -5315,9 +5356,9 @@ const shareEvent = async (event: Event) => {
 
                           <div className="min-w-0 flex-1">
                             <div className="flex flex-wrap items-center justify-between gap-2">
-                              <p className="font-bold">
+                              <button type="button" onClick={() => void openReviewerProfile(review.user_id)} className="text-left font-bold hover:text-red-600 hover:underline" aria-label={`Lihat profil ${review.display_name || "Pengguna"}`}>
                                 {review.display_name || "Pengguna"}
-                              </p>
+                              </button>
 
                               <span className="text-xs text-gray-500">
                                 {review.created_at
@@ -5348,7 +5389,7 @@ const shareEvent = async (event: Event) => {
                     ))
                 )}
               </div>
-            </section>
+            </section>}
 
             {/* DOKUMENTASI EVENT */}
             <section className="mt-10">
@@ -6524,6 +6565,26 @@ accept="image/jpeg,image/png,image/webp"
         )}
 
 {/* MODAL PROFIL USER */}
+        {reviewerProfileLoading && (
+          <div className="fixed inset-0 z-[180] flex items-center justify-center bg-black/50 p-4" role="status">
+            <div className="rounded-2xl bg-white px-6 py-4 text-sm font-semibold shadow-xl dark:bg-gray-900">Memuat profil...</div>
+          </div>
+        )}
+        {selectedReviewerProfile && (
+          <div className="fixed inset-0 z-[181] flex items-center justify-center bg-black/60 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelectedReviewerProfile(null); }}>
+            <section role="dialog" aria-modal="true" aria-labelledby="reviewer-profile-title" className="relative w-full max-w-sm rounded-3xl bg-white p-6 text-center shadow-2xl dark:bg-gray-900">
+              <button type="button" onClick={() => setSelectedReviewerProfile(null)} aria-label="Tutup kartu profil" className="absolute right-3 top-3 rounded-full px-3 py-1 text-2xl text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800">×</button>
+              {selectedReviewerProfile.avatar_url ? <img src={selectedReviewerProfile.avatar_url} alt="" className="mx-auto h-24 w-24 rounded-full object-cover ring-4 ring-red-100 dark:ring-red-950" /> : <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-red-100 text-3xl font-black text-red-700 dark:bg-red-950 dark:text-red-300">{(selectedReviewerProfile.display_name || "P")[0].toUpperCase()}</div>}
+              <h2 id="reviewer-profile-title" className="mt-4 text-xl font-black">{selectedReviewerProfile.display_name || "Pengguna"}</h2>
+              <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-gray-600 dark:text-gray-300">{selectedReviewerProfile.bio || "Belum ada bio."}</p>
+              <div className="mt-5 flex items-center justify-center gap-3">
+                {selectedReviewerProfile.instagram_url && <a href={selectedReviewerProfile.instagram_url} target="_blank" rel="noopener noreferrer" aria-label="Instagram" title="Instagram" className="flex h-11 w-11 items-center justify-center rounded-full border border-gray-200 text-xl hover:border-red-500 hover:text-red-600 dark:border-gray-700">◎</a>}
+                {selectedReviewerProfile.tiktok_url && <a href={selectedReviewerProfile.tiktok_url} target="_blank" rel="noopener noreferrer" aria-label="TikTok" title="TikTok" className="flex h-11 w-11 items-center justify-center rounded-full border border-gray-200 text-xl font-black hover:border-red-500 hover:text-red-600 dark:border-gray-700">♪</a>}
+              </div>
+            </section>
+          </div>
+        )}
+
         {showUserProfile && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-black/60 p-4">
             <section className="my-auto w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl dark:bg-gray-900 sm:p-8">
@@ -6649,10 +6710,20 @@ accept="image/jpeg,image/png,image/webp"
                           )?.bio || ""
                         }
                         rows={3}
-                        maxLength={300}
+                        maxLength={160}
                         placeholder="Ceritakan sedikit tentang dirimu..."
                         className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-950"
                       />
+                    </div>
+
+                    <div>
+                      <label htmlFor="edit-user-instagram" className="mb-1 block text-sm font-semibold">Link Instagram</label>
+                      <input id="edit-user-instagram" type="url" defaultValue={registeredUsers.find((user) => user.id === currentUserId)?.instagram_url || ""} maxLength={2048} placeholder="https://www.instagram.com/username" className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-950" />
+                    </div>
+
+                    <div>
+                      <label htmlFor="edit-user-tiktok" className="mb-1 block text-sm font-semibold">Link TikTok</label>
+                      <input id="edit-user-tiktok" type="url" defaultValue={registeredUsers.find((user) => user.id === currentUserId)?.tiktok_url || ""} maxLength={2048} placeholder="https://www.tiktok.com/@username" className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-950" />
                     </div>
 
                     <button
