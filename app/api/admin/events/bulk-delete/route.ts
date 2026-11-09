@@ -57,21 +57,7 @@ async function hasValidAdminSession(
   return Boolean(data);
 }
 
-function isEventCompleted(event: {
-  start_date: string | null;
-  end_date: string | null;
-  end_time: string | null;
-}) {
-  if (!event.start_date || !event.end_date) return false;
-
-  const end = new Date(
-    `${event.end_date}T${event.end_time || "23:59:59"}+07:00`
-  );
-
-  return !Number.isNaN(end.getTime()) && Date.now() >= end.getTime();
-}
-
-type DeleteTarget = "Rejected" | "Completed";
+type DeleteTarget = "Rejected";
 
 export async function POST(request: NextRequest) {
   try {
@@ -97,8 +83,11 @@ export async function POST(request: NextRequest) {
       return json({ error: "Format request tidak valid." }, 400);
     }
 
-    if (body.target !== "Rejected" && body.target !== "Completed") {
-      return json({ error: "Target penghapusan tidak valid." }, 400);
+    if (body.target !== "Rejected") {
+      return json(
+        { error: "Bulk Delete hanya tersedia untuk event Rejected. Event Completed harus dihapus melalui Event Cleanup." },
+        400
+      );
     }
 
     if (
@@ -147,10 +136,7 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      const eligible =
-        target === "Rejected"
-          ? event.moderation_status === "Rejected"
-          : isEventCompleted(event);
+      const eligible = event.moderation_status === "Rejected";
 
       if (!eligible) {
         skipped += 1;
