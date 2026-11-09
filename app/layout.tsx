@@ -2,7 +2,7 @@
 import './globals.css';
 import type { Metadata } from 'next';
 
-const BASE_URL = 'https://ngipen-makicos-seven.vercel.app';
+const BASE_URL = 'https://ngipen.my.id';
 
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
