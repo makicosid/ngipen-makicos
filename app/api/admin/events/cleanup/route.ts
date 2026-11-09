@@ -262,7 +262,7 @@ export async function GET(request: NextRequest) {
 
     const { data: history, error: historyError } = await supabase
       .from("event_cleanup_audit")
-      .select("id, event_id, event_title, status, error_message, created_at, completed_at, deleted_file_count")
+      .select("id, event_id, event_title, status, error_message, created_at, completed_at, deleted_file_count, uncertain_storage_paths, in_flight_storage_paths")
       .order("created_at", { ascending: false })
       .limit(40);
     if (historyError) throw new Error("Tabel audit Event Cleanup belum tersedia. Terapkan migration Event Cleanup terlebih dahulu.");
@@ -457,6 +457,7 @@ export async function POST(request: NextRequest) {
           if (markError || !marked) throw new Error("Gagal menandai file Storage yang sedang diproses. Tidak ada penghapusan batch yang dimulai.");
           const { error: removeError } = await supabase.storage.from(bucket).remove(existing);
           if (removeError) {
+            uncertainPaths.push(...inFlight);
             const { error: uncertainError } = await supabase
               .from("event_cleanup_audit")
               .update({
