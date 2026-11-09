@@ -7594,9 +7594,9 @@ accept="image/jpeg,image/png,image/webp"
 
         {/* FOOTER */}
         {!selectedEvent && (
-          <footer className="border-t border-gray-200 bg-white py-7 text-gray-700 dark:border-gray-800 dark:bg-[#0e121a] dark:text-gray-200 sm:py-8">
+          <footer className="border-t border-gray-200 bg-white py-6 text-gray-700 dark:border-gray-800 dark:bg-[#0e121a] dark:text-gray-200 sm:py-8">
             <div className="mx-auto max-w-[1300px] px-4 sm:px-6">
-              <div className="grid grid-cols-2 items-start gap-x-6 gap-y-7 sm:grid-cols-3 sm:gap-x-8 lg:grid-cols-[1.35fr_1fr_1fr_1fr_auto] lg:gap-x-10">
+              <div className="grid grid-cols-2 items-start gap-x-6 gap-y-5 sm:grid-cols-3 sm:gap-x-8 lg:grid-cols-[1.35fr_1fr_1fr_1fr_auto] lg:gap-x-10">
                 {/* BRAND */}
                 <div className="col-span-2 flex items-center gap-3 sm:col-span-1">
                   <img
@@ -7620,7 +7620,7 @@ accept="image/jpeg,image/png,image/webp"
                 {/* NGIPEN LINKS */}
                 <div className="min-w-0 text-xs leading-relaxed">
                   <p className="mb-2 font-bold text-gray-900 dark:text-white">
-                    NGIPEN
+                    Jelajahi
                   </p>
                   <div className="flex flex-col items-start gap-1.5 text-gray-600 dark:text-gray-300">
                     <a
@@ -7716,29 +7716,12 @@ accept="image/jpeg,image/png,image/webp"
                         <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.298-.002.595.042.88.13V9.4a6.33 6.33 0 0 0-1-.08A6.34 6.34 0 0 0 3 15.66a6.34 6.34 0 0 0 10.82 4.49 6.27 6.27 0 0 0 1.88-4.49V8.8a8.28 8.28 0 0 0 4.89 1.58V6.93a4.85 4.85 0 0 1-1-.24z" />
                       </svg>
                     </a>
-                    <a
-                      href="https://www.youtube.com/@makicos.id"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label="YouTube makicos.id"
-                      className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#bb212d] text-white transition hover:bg-red-700"
-                    >
-                      <svg className="h-4 w-4 fill-current" viewBox="0 0 24 24">
-                        <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
-                      </svg>
-                    </a>
                   </div>
                 </div>
 
                 {/* COPYRIGHT */}
                 <div className="col-span-2 border-t border-gray-200 pt-4 text-xs leading-relaxed sm:col-span-3 lg:col-span-1 lg:border-t-0 lg:pt-0 lg:text-right">
                   <p className="text-gray-500 dark:text-gray-400">© 2026 NGIPEN</p>
-                  <p className="mt-1 font-bold tracking-wide text-gray-800 dark:text-gray-200">
-                    MARI KITA COSPLAY
-                  </p>
-                  <p className="font-semibold tracking-wide text-gray-800 dark:text-gray-200">
-                    MAKICOS ID
-                  </p>
                 </div>
               </div>
             </div>
