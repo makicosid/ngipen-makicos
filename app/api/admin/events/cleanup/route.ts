@@ -278,6 +278,7 @@ export async function POST(request: NextRequest) {
   let supabase: ReturnType<typeof getSupabaseAdmin> | null = null;
   let auditId: string | null = null;
   let claimToken: string | null = null;
+  let uncertainPaths: string[] = [];
   try {
     const origin = request.headers.get("origin");
     if (!origin || origin !== request.nextUrl.origin) return json({ error: "Origin request tidak valid." }, 403);
@@ -318,7 +319,7 @@ export async function POST(request: NextRequest) {
 
     const { data: activeAudit, error: activeAuditError } = await supabase
       .from("event_cleanup_audit")
-      .select("id, status, created_at, deleted_storage_paths, already_missing_paths, processing_token, processing_started_at")
+      .select("id, status, created_at, deleted_storage_paths, already_missing_paths, uncertain_storage_paths, processing_token, processing_started_at")
       .eq("event_id", event.id)
       .in("status", ["pending", "storage_deleted", "failed"])
       .order("created_at", { ascending: false })
@@ -329,6 +330,10 @@ export async function POST(request: NextRequest) {
     let previousDeletedPaths: string[] = [];
     let previousMissingPaths: string[] = [];
     if (activeAudit) {
+      const priorUncertain = Array.isArray(activeAudit.uncertain_storage_paths) ? activeAudit.uncertain_storage_paths : [];
+      if (priorUncertain.length) {
+        return json({ error: "Ada file Storage dengan status belum pasti dari proses sebelumnya. Verifikasi file tersebut sebelum retry agar audit tidak salah mengklasifikasikan file yang terhapus." }, 409);
+      }
       const leaseAge = activeAudit.processing_started_at
         ? Date.now() - new Date(activeAudit.processing_started_at).getTime()
         : Number.POSITIVE_INFINITY;
@@ -377,7 +382,7 @@ export async function POST(request: NextRequest) {
     const buckets: BucketName[] = ["posters", "documentations"];
     const alreadyMissing: string[] = [...previousMissingPaths];
     const deletedPaths: string[] = [...previousDeletedPaths];
-    const uncertainPaths: string[] = [];
+
     const checkpoint = async () => {
       if (!supabase) throw new Error("Koneksi database cleanup tidak tersedia.");
       const { data, error } = await supabase
