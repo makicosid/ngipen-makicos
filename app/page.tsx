@@ -7676,6 +7676,22 @@ accept="image/jpeg,image/png,image/webp"
                       MARI KITA COSPLAY
                     </a>
                     <a
+                      href="https://www.instagram.com/angkringanevent.id/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="transition-colors hover:text-red-600 dark:hover:text-red-400"
+                    >
+                      ANGKRINGAN EVENT ID
+                    </a>
+                    <a
+                      href="https://www.instagram.com/wibufest.jabodetabek/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="transition-colors hover:text-red-600 dark:hover:text-red-400"
+                    >
+                      WIBUFEST JABODETABEK
+                    </a>
+                    <a
                       href="https://www.instagram.com/makicos.id/"
                       target="_blank"
                       rel="noopener noreferrer"
@@ -7726,6 +7742,12 @@ accept="image/jpeg,image/png,image/webp"
               </div>
             </div>
           </footer>
+        )}
+      </div>
+    </div>
+  );
+}
+
         )}
       </div>
     </div>
