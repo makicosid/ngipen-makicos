@@ -106,29 +106,15 @@ body {
 .ngipen-jp-header {
   position: relative;
 }
-.ngipen-hero::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  opacity: .22;
-  pointer-events: none;
-  background-image: url("/ngipen-japanese-trim.svg");
-  background-position: right bottom;
+.ngipen-hero {
+  background-color: #a30d18;
+  background-image:
+    linear-gradient(90deg, rgba(105, 0, 10, .12), rgba(105, 0, 10, .02)),
+    url("/images/hero/ngipen-hero-desktop.webp");
+  background-size: cover;
+  background-position: center;
   background-repeat: no-repeat;
-  background-size: auto 72%;
 }
-.ngipen-hero-cloud {
-  position: absolute;
-  width: 180px;
-  height: 72px;
-  border: 1px solid rgba(255,255,255,.22);
-  border-radius: 999px;
-  pointer-events: none;
-  opacity: .38;
-}
-.ngipen-hero-cloud-one { right: 32%; top: 12%; }
-.ngipen-hero-cloud-two { right: 4%; bottom: 8%; transform: scale(.7); }
 .ngipen-fox-sticker { transform: rotate(8deg); transition: transform .2s ease; }
 .group:hover .ngipen-fox-sticker { transform: rotate(0deg) scale(1.06); }
 .ngipen-jp-footer {
@@ -136,8 +122,12 @@ body {
   isolation: isolate;
 }
 @media (max-width: 767px) {
-  .ngipen-hero-cloud-one { right: -2rem; top: 2%; }
-  .ngipen-hero-cloud-two { right: -2rem; bottom: 34%; }
+  .ngipen-hero {
+    background-image:
+      linear-gradient(180deg, rgba(105, 0, 10, .08), rgba(105, 0, 10, .12)),
+      url("/images/hero/ngipen-hero-mobile.webp");
+    background-position: center;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .ngipen-fox-sticker { transition: none; }
