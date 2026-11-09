@@ -8,6 +8,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: '/',
       disallow: ['/api/'],
     },
-    sitemap: 'https://ngipen-makicos-seven.vercel.app/sitemap.xml',
+    sitemap: 'https://ngipen.my.id/sitemap.xml',
   };
 }
