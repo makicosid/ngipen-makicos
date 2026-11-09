@@ -892,6 +892,11 @@ const sponsorCarouselPausedRef = useRef(false);
   const [savedEventsList, setSavedEventsList] = useState<{ savedAt: string; event: Event }[]>([]);
   const [savedEventsLoading, setSavedEventsLoading] = useState(false);
   const [savedEventsError, setSavedEventsError] = useState("");
+  const [adminUserSearch, setAdminUserSearch] = useState("");
+  const [adminUserSort, setAdminUserSort] = useState<"Terbaru" | "Terlama" | "Klik terbanyak" | "Event tersimpan terbanyak">("Terbaru");
+  const [adminUserPage, setAdminUserPage] = useState(1);
+  const [adminUsersPerPage, setAdminUsersPerPage] = useState(10);
+  const [selectedAdminUser, setSelectedAdminUser] = useState<RegUser | null>(null);
 
   const [savedIds, setSavedIds] = useState<string[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -6116,86 +6121,137 @@ accept="image/jpeg,image/png,image/webp"
                                         </div>
                   ) : adminTab === "users" ? (
                     <>
-                    <div className="mt-4 max-h-[55vh] overflow-y-auto">
-                      <div className="mb-3 rounded-xl bg-gray-50 p-3 text-sm font-bold dark:bg-gray-950">
-                        Total {registeredUsers.length} pengguna terdaftar
+                    <div className="mt-4 space-y-3">
+                      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                        <div>
+                          <p className="text-sm font-bold">Daftar pengguna</p>
+                          <p className="mt-0.5 text-xs text-gray-500">{registeredUsers.length.toLocaleString("id-ID")} akun terdaftar</p>
+                        </div>
+                        <div className="flex flex-col gap-2 sm:flex-row">
+                          <label className="relative min-w-0 flex-1 sm:min-w-[240px]">
+                            <span className="sr-only">Cari pengguna</span>
+                            <svg viewBox="0 0 24 24" aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7"/><path strokeLinecap="round" d="m16 16 4 4"/></svg>
+                            <input value={adminUserSearch} onChange={(event) => { setAdminUserSearch(event.target.value); setAdminUserPage(1); }} placeholder="Cari nama atau username..." className="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-9 pr-3 text-sm outline-none transition focus:border-red-400 focus:ring-2 focus:ring-red-100 dark:border-gray-700 dark:bg-gray-900 dark:focus:ring-red-950" />
+                          </label>
+                          <select value={adminUserSort} onChange={(event) => { setAdminUserSort(event.target.value as typeof adminUserSort); setAdminUserPage(1); }} aria-label="Urutkan pengguna" className="rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900">
+                            <option value="Terbaru">Terbaru</option>
+                            <option value="Terlama">Terlama</option>
+                            <option value="Klik terbanyak">Klik terbanyak</option>
+                            <option value="Event tersimpan terbanyak">Event tersimpan terbanyak</option>
+                          </select>
+                        </div>
                       </div>
 
                       {adminUsersLoadError && (
-                        <p className="mb-3 rounded-xl bg-red-50 p-3 text-xs text-red-700 dark:bg-red-950 dark:text-red-300">
-                          Statistik pengguna tidak dapat dimuat: {adminUsersLoadError}
-                        </p>
+                        <p className="rounded-xl bg-red-50 p-3 text-xs text-red-700 dark:bg-red-950 dark:text-red-300">Statistik pengguna tidak dapat dimuat: {adminUsersLoadError}</p>
                       )}
-
                       {usersLoadError && !adminUsersLoadError && (
-                        <p className="mb-3 rounded-xl bg-red-50 p-3 text-xs text-red-700 dark:bg-red-950 dark:text-red-300">
-                          Data pengguna tidak dapat dimuat: {usersLoadError}
-                        </p>
+                        <p className="rounded-xl bg-red-50 p-3 text-xs text-red-700 dark:bg-red-950 dark:text-red-300">Data pengguna tidak dapat dimuat: {usersLoadError}</p>
                       )}
 
                       {adminUsersLoading ? (
-                        <p className="py-8 text-center text-sm text-gray-500">
-                          Memuat statistik pengguna...
-                        </p>
-                      ) : registeredUsers.length === 0 ? (
-                        <p className="py-8 text-center text-sm text-gray-500">
-                          Belum ada data pengguna.
-                        </p>
-                      ) : (
-                        registeredUsers.map((user) => (
-                          <div
-                            key={user.id}
-                            className="border-b border-gray-100 py-4 dark:border-gray-800"
-                          >
-                            <div className="flex items-center gap-3">
-                              {user.avatar_url ? (
-                                <img
-                                  src={user.avatar_url}
-                                  alt=""
-                                  className="h-10 w-10 rounded-full object-cover"
-                                />
-                              ) : (
-                                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 font-bold text-red-700">
-                                  {(user.display_name || user.username || "?")[0].toUpperCase()}
-                                </div>
-                              )}
-
-                              <div className="min-w-0 flex-1">
-                                <p className="truncate text-sm font-bold">
-                                  {user.display_name || user.username}
-                                </p>
-                                <p className="truncate text-xs text-gray-500">
-                                  @{user.username}
-                                </p>
-                                <p className="mt-1 whitespace-pre-wrap break-words text-xs text-gray-600 dark:text-gray-400">
-                                  {user.bio?.trim() || "Belum mengisi bio."}
-                                </p>
-                              </div>
-                            </div>
-
-                            <div className="mt-3 grid grid-cols-2 gap-2">
-                              <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-950">
-                                <p className="text-xs text-gray-500">Event tersimpan</p>
-                                <button
-                                  type="button"
-                                  onClick={() => void openUserSavedEvents(user)}
-                                  className="mt-1 text-left text-lg font-black text-red-600 underline-offset-2 hover:underline focus:outline-none focus:ring-2 focus:ring-red-400"
-                                  aria-label={`Lihat ${user.savedEventsCount ?? 0} event tersimpan milik ${user.username}`}
-                                >
-                                  {user.savedEventsCount ?? 0}
-                                </button>
-                              </div>
-                              <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-950">
-                                <p className="text-xs text-gray-500">Total klik unik</p>
-                                <p className="mt-1 text-lg font-black">
-                                  {user.totalClicks ?? 0}
-                                </p>
-                              </div>
-                            </div>
+                        <p className="py-10 text-center text-sm text-gray-500">Memuat statistik pengguna...</p>
+                      ) : (() => {
+                        const query = adminUserSearch.trim().toLocaleLowerCase("id-ID");
+                        const filteredUsers = registeredUsers.filter((user) =>
+                          !query || (user.display_name || "").toLocaleLowerCase("id-ID").includes(query) || (user.username || "").toLocaleLowerCase("id-ID").includes(query)
+                        );
+                        const sortedUsers = [...filteredUsers].sort((a, b) => {
+                          if (adminUserSort === "Terlama") return new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime();
+                          if (adminUserSort === "Klik terbanyak") return (b.totalClicks || 0) - (a.totalClicks || 0);
+                          if (adminUserSort === "Event tersimpan terbanyak") return (b.savedEventsCount || 0) - (a.savedEventsCount || 0);
+                          return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+                        });
+                        const totalPages = Math.max(1, Math.ceil(sortedUsers.length / adminUsersPerPage));
+                        const currentPage = Math.min(adminUserPage, totalPages);
+                        const visibleUsers = sortedUsers.slice((currentPage - 1) * adminUsersPerPage, currentPage * adminUsersPerPage);
+                        return sortedUsers.length === 0 ? (
+                          <div className="rounded-xl border border-dashed border-gray-300 px-4 py-12 text-center dark:border-gray-700">
+                            <p className="text-sm font-semibold">{query ? "Pengguna tidak ditemukan." : "Belum ada data pengguna."}</p>
+                            <p className="mt-1 text-xs text-gray-500">{query ? "Coba kata kunci lain." : "Data pengguna akan tampil di sini."}</p>
                           </div>
-                        ))
-                      )}
+                        ) : (
+                          <>
+                            <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-800">
+                              <table className="w-full min-w-[760px] border-collapse text-left text-sm">
+                                <thead className="bg-gray-50 text-xs font-bold uppercase tracking-wide text-gray-500 dark:bg-gray-950 dark:text-gray-400">
+                                  <tr>
+                                    <th className="px-4 py-3">Pengguna</th>
+                                    <th className="px-4 py-3">Bergabung</th>
+                                    <th className="px-4 py-3 text-center">Event tersimpan</th>
+                                    <th className="px-4 py-3 text-center">Klik unik</th>
+                                    <th className="px-4 py-3 text-right">Detail</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                                  {visibleUsers.map((user) => (
+                                    <tr key={user.id} onClick={() => setSelectedAdminUser(user)} className="cursor-pointer transition hover:bg-red-50/60 dark:hover:bg-red-950/20">
+                                      <td className="px-4 py-3">
+                                        <div className="flex min-w-0 items-center gap-3">
+                                          {user.avatar_url ? <img src={user.avatar_url} alt="" className="h-10 w-10 shrink-0 rounded-full object-cover" /> : <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-100 font-bold text-red-700 dark:bg-red-950 dark:text-red-300">{(user.display_name || user.username || "?")[0].toUpperCase()}</div>}
+                                          <div className="min-w-0">
+                                            <p className="max-w-[220px] truncate font-bold text-gray-900 dark:text-white">{user.display_name || user.username}</p>
+                                            <p className="max-w-[220px] truncate text-xs text-gray-500">@{user.username}</p>
+                                          </div>
+                                        </div>
+                                      </td>
+                                      <td className="whitespace-nowrap px-4 py-3 text-xs text-gray-500">{user.created_at ? new Date(user.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }) : "—"}</td>
+                                      <td className="px-4 py-3 text-center">
+                                        <button type="button" onClick={(event) => { event.stopPropagation(); void openUserSavedEvents(user); }} className="rounded-lg px-3 py-1.5 font-bold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40" aria-label={`Lihat ${user.savedEventsCount ?? 0} event tersimpan milik ${user.username}`}>{user.savedEventsCount ?? 0}</button>
+                                      </td>
+                                      <td className="px-4 py-3 text-center font-semibold tabular-nums">{(user.totalClicks ?? 0).toLocaleString("id-ID")}</td>
+                                      <td className="px-4 py-3 text-right"><button type="button" onClick={(event) => { event.stopPropagation(); setSelectedAdminUser(user); }} className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-bold text-gray-700 transition hover:border-red-300 hover:text-red-600 dark:border-gray-700 dark:text-gray-200">Lihat detail</button></td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                              <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                                <span>Menampilkan {(currentPage - 1) * adminUsersPerPage + 1}–{Math.min(currentPage * adminUsersPerPage, sortedUsers.length)} dari {sortedUsers.length} pengguna</span>
+                                <select value={adminUsersPerPage} onChange={(event) => { setAdminUsersPerPage(Number(event.target.value)); setAdminUserPage(1); }} aria-label="Jumlah pengguna per halaman" className="rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs dark:border-gray-700 dark:bg-gray-900">
+                                  <option value={10}>10 / halaman</option><option value={25}>25 / halaman</option><option value={50}>50 / halaman</option>
+                                </select>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <button type="button" disabled={currentPage <= 1} onClick={() => setAdminUserPage((page) => Math.max(1, page - 1))} className="rounded-lg border border-gray-200 px-3 py-2 text-xs font-bold disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-700">Sebelumnya</button>
+                                <span className="min-w-[64px] text-center text-xs font-semibold tabular-nums">{currentPage} / {totalPages}</span>
+                                <button type="button" disabled={currentPage >= totalPages} onClick={() => setAdminUserPage((page) => Math.min(totalPages, page + 1))} className="rounded-lg border border-gray-200 px-3 py-2 text-xs font-bold disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-700">Berikutnya</button>
+                              </div>
+                            </div>
+                          </>
+                        );
+                      })()}
                     </div>
+
+                    {selectedAdminUser && (
+                      <div className="fixed inset-0 z-[125] flex justify-end bg-black/45" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelectedAdminUser(null); }}>
+                        <aside role="dialog" aria-modal="true" aria-label={`Detail pengguna ${selectedAdminUser.username}`} className="flex h-full w-full max-w-md flex-col overflow-y-auto border-l border-gray-200 bg-white shadow-2xl dark:border-gray-800 dark:bg-gray-900" onMouseDown={(event) => event.stopPropagation()}>
+                          <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-200 bg-white/95 px-5 py-4 backdrop-blur dark:border-gray-800 dark:bg-gray-900/95">
+                            <div><p className="text-[10px] font-black uppercase tracking-[0.18em] text-red-600">Manajemen pengguna</p><h3 className="mt-1 text-lg font-black">Detail Pengguna</h3></div>
+                            <button type="button" onClick={() => setSelectedAdminUser(null)} aria-label="Tutup detail pengguna" className="rounded-full px-3 py-1 text-2xl text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800">×</button>
+                          </div>
+                          <div className="space-y-5 p-5">
+                            <div className="flex items-center gap-4">
+                              {selectedAdminUser.avatar_url ? <img src={selectedAdminUser.avatar_url} alt="" className="h-16 w-16 rounded-full object-cover ring-4 ring-red-50 dark:ring-red-950/50" /> : <div className="flex h-16 w-16 items-center justify-center rounded-full bg-red-100 text-xl font-black text-red-700 dark:bg-red-950 dark:text-red-300">{(selectedAdminUser.display_name || selectedAdminUser.username || "?")[0].toUpperCase()}</div>}
+                              <div className="min-w-0"><h4 className="truncate text-lg font-black">{selectedAdminUser.display_name || selectedAdminUser.username}</h4><p className="truncate text-sm text-gray-500">@{selectedAdminUser.username}</p><span className="mt-1 inline-flex rounded-full bg-green-50 px-2.5 py-1 text-[10px] font-bold text-green-700 dark:bg-green-950/50 dark:text-green-300">Akun terdaftar</span></div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                              <div className="rounded-xl bg-gray-50 p-3 dark:bg-gray-950"><p className="text-xs text-gray-500">Event tersimpan</p><p className="mt-1 text-2xl font-black text-red-600">{(selectedAdminUser.savedEventsCount ?? 0).toLocaleString("id-ID")}</p><button type="button" onClick={() => void openUserSavedEvents(selectedAdminUser)} className="mt-2 text-xs font-bold text-red-600 hover:underline">Lihat daftar event →</button></div>
+                              <div className="rounded-xl bg-gray-50 p-3 dark:bg-gray-950"><p className="text-xs text-gray-500">Total klik unik</p><p className="mt-1 text-2xl font-black">{(selectedAdminUser.totalClicks ?? 0).toLocaleString("id-ID")}</p></div>
+                            </div>
+                            <div className="space-y-3 rounded-xl border border-gray-200 p-4 dark:border-gray-800">
+                              <div><p className="text-[10px] font-bold uppercase tracking-wide text-gray-400">Nama tampilan</p><p className="mt-1 text-sm font-semibold">{selectedAdminUser.display_name || "Belum diatur"}</p></div>
+                              <div><p className="text-[10px] font-bold uppercase tracking-wide text-gray-400">Username</p><p className="mt-1 text-sm font-semibold">@{selectedAdminUser.username}</p></div>
+                              <div><p className="text-[10px] font-bold uppercase tracking-wide text-gray-400">Bio</p><p className="mt-1 whitespace-pre-wrap break-words text-sm text-gray-700 dark:text-gray-300">{selectedAdminUser.bio?.trim() || "Belum mengisi bio."}</p></div>
+                              <div><p className="text-[10px] font-bold uppercase tracking-wide text-gray-400">Tanggal bergabung</p><p className="mt-1 text-sm font-semibold">{selectedAdminUser.created_at ? new Date(selectedAdminUser.created_at).toLocaleString("id-ID", { dateStyle: "long", timeStyle: "short" }) : "Tidak tersedia"}</p></div>
+                              <div><p className="text-[10px] font-bold uppercase tracking-wide text-gray-400">ID pengguna</p><p className="mt-1 break-all font-mono text-xs text-gray-500">{selectedAdminUser.id}</p></div>
+                            </div>
+                            <p className="text-xs leading-5 text-gray-500">Panel ini hanya menampilkan informasi akun dan statistik yang tersedia. Tidak ada perubahan pada data akun pengguna.</p>
+                          </div>
+                        </aside>
+                      </div>
+                    )}
                     {savedEventsUser && (
                       <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 p-3 sm:p-5" role="dialog" aria-modal="true" aria-label="Daftar event tersimpan">
                         <div className="flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-gray-900">
