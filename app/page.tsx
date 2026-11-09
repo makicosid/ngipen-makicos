@@ -1571,7 +1571,7 @@ const savedUserId =
 
         }
 
-        if (savedUserId || sessionResult.isAdmin) {
+        if (savedUserId || currentRole === "admin") {
           const reviewsResponse = await fetch("/api/event-reviews", {
             method: "GET",
             credentials: "include",
