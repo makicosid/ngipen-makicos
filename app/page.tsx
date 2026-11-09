@@ -7594,46 +7594,35 @@ accept="image/jpeg,image/png,image/webp"
 
         {/* FOOTER */}
         {!selectedEvent && (
-          <footer className="ngipen-jp-footer relative isolate overflow-hidden border-t border-red-100 bg-white py-4 text-gray-700 dark:border-red-950 dark:bg-[#0e121a] dark:text-gray-200 sm:py-5">
-            {/* DECORATIVE BACKGROUND (4K ULTRA-HD SINGLE LAYER - NO SEAMS / NO OVERLAPS) */}
-            <div aria-hidden="true" className="pointer-events-none absolute inset-0 select-none">
-              <img
-                src="/ngipen-footer-hd.png"
-                alt=""
-                className="h-full w-full object-fill object-bottom opacity-100 dark:opacity-85"
-              />
-            </div>
-
-            {/* CONTENT LAYER */}
-            <div className="relative z-10 mx-auto max-w-[1300px] px-3 sm:px-6">
-              <div className="flex flex-wrap items-center justify-between gap-y-4 gap-x-4 pl-0 sm:pl-28 md:pl-36 lg:pl-44 pr-0 sm:pr-24 md:pr-28 lg:pr-36">
-                
-                {/* 1. BRAND & TAGLINE (HIGH-RES OFFICIAL LOGO) */}
-                <div className="flex items-center gap-2.5">
+          <footer className="border-t border-gray-200 bg-white py-7 text-gray-700 dark:border-gray-800 dark:bg-[#0e121a] dark:text-gray-200 sm:py-8">
+            <div className="mx-auto max-w-[1300px] px-4 sm:px-6">
+              <div className="grid grid-cols-2 items-start gap-x-6 gap-y-7 sm:grid-cols-3 sm:gap-x-8 lg:grid-cols-[1.35fr_1fr_1fr_1fr_auto] lg:gap-x-10">
+                {/* BRAND */}
+                <div className="col-span-2 flex items-center gap-3 sm:col-span-1">
                   <img
                     src="/ngipen-logo.png"
                     alt="Logo NGIPEN"
-                    className="h-9 w-9 sm:h-10 sm:w-10 shrink-0 object-contain drop-shadow-sm"
+                    className="h-10 w-10 shrink-0 object-contain"
                     onError={(event) => {
                       event.currentTarget.style.display = "none";
                     }}
                   />
-                  <div className="leading-tight">
-                    <span className="block text-base sm:text-lg font-black tracking-wide text-[#bb212d]">
+                  <div className="min-w-0 leading-tight">
+                    <span className="block text-lg font-black tracking-wide text-[#bb212d]">
                       NGIPEN
                     </span>
-                    <p className="mt-0.5 text-[10px] sm:text-[11px] text-gray-500 dark:text-gray-400">
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                       Satu hobby satu keseruan.
                     </p>
                   </div>
                 </div>
 
-                {/* 2. NGIPEN LINKS */}
-                <div className="text-[11px] leading-tight">
-                  <p className="font-black text-gray-900 dark:text-white">
+                {/* NGIPEN LINKS */}
+                <div className="min-w-0 text-xs leading-relaxed">
+                  <p className="mb-2 font-bold text-gray-900 dark:text-white">
                     NGIPEN
                   </p>
-                  <div className="mt-1 flex flex-col gap-1 text-[10px] text-gray-600 dark:text-gray-300">
+                  <div className="flex flex-col items-start gap-1.5 text-gray-600 dark:text-gray-300">
                     <a
                       href="/tentang-kami"
                       className="transition-colors hover:text-red-600 dark:hover:text-red-400"
@@ -7672,12 +7661,12 @@ accept="image/jpeg,image/png,image/webp"
                   </div>
                 </div>
 
-                {/* 3. KOMUNITAS */}
-                <div className="text-[11px] leading-tight">
-                  <p className="font-black text-gray-900 dark:text-white">
+                {/* KOMUNITAS */}
+                <div className="min-w-0 text-xs leading-relaxed">
+                  <p className="mb-2 font-bold text-gray-900 dark:text-white">
                     Komunitas
                   </p>
-                  <div className="mt-1 flex flex-col gap-1 text-[10px] text-gray-600 dark:text-gray-300">
+                  <div className="flex flex-col items-start gap-1.5 text-gray-600 dark:text-gray-300">
                     <a
                       href="https://teer.id/makicos.id"
                       target="_blank"
@@ -7697,29 +7686,20 @@ accept="image/jpeg,image/png,image/webp"
                   </div>
                 </div>
 
-                {/* VERTICAL DIVIDER */}
-                <div className="hidden h-9 w-px bg-gray-300 dark:bg-gray-700 md:block self-center" />
-
-                {/* 4. IKUTI KAMI */}
-                <div className="text-[11px] leading-tight">
-                  <p className="font-black text-gray-900 dark:text-white">
+                {/* IKUTI KAMI */}
+                <div className="min-w-0 text-xs leading-relaxed">
+                  <p className="mb-2 font-bold text-gray-900 dark:text-white">
                     Ikuti Kami
                   </p>
-                  <div className="mt-1.5 flex items-center gap-1.5">
+                  <div className="flex items-center gap-2">
                     <a
                       href="https://www.instagram.com/makicos.id/"
                       target="_blank"
                       rel="noopener noreferrer"
                       aria-label="Instagram makicos.id"
-                      className="flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded-md bg-[#bb212d] text-white shadow-sm transition hover:scale-105 hover:bg-red-700"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#bb212d] text-white transition hover:bg-red-700"
                     >
-                      <svg
-                        className="h-3.5 w-3.5 sm:h-4 sm:w-4 fill-none stroke-current"
-                        viewBox="0 0 24 24"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
+                      <svg className="h-4 w-4 fill-none stroke-current" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
                         <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
                         <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
@@ -7730,9 +7710,9 @@ accept="image/jpeg,image/png,image/webp"
                       target="_blank"
                       rel="noopener noreferrer"
                       aria-label="TikTok makicos.id"
-                      className="flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded-md bg-[#bb212d] text-white shadow-sm transition hover:scale-105 hover:bg-red-700"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#bb212d] text-white transition hover:bg-red-700"
                     >
-                      <svg className="h-3.5 w-3.5 sm:h-4 sm:w-4 fill-current" viewBox="0 0 24 24">
+                      <svg className="h-4 w-4 fill-current" viewBox="0 0 24 24">
                         <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.298-.002.595.042.88.13V9.4a6.33 6.33 0 0 0-1-.08A6.34 6.34 0 0 0 3 15.66a6.34 6.34 0 0 0 10.82 4.49 6.27 6.27 0 0 0 1.88-4.49V8.8a8.28 8.28 0 0 0 4.89 1.58V6.93a4.85 4.85 0 0 1-1-.24z" />
                       </svg>
                     </a>
@@ -7741,24 +7721,22 @@ accept="image/jpeg,image/png,image/webp"
                       target="_blank"
                       rel="noopener noreferrer"
                       aria-label="YouTube makicos.id"
-                      className="flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded-md bg-[#bb212d] text-white shadow-sm transition hover:scale-105 hover:bg-red-700"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#bb212d] text-white transition hover:bg-red-700"
                     >
-                      <svg className="h-3.5 w-3.5 sm:h-4 sm:w-4 fill-current" viewBox="0 0 24 24">
+                      <svg className="h-4 w-4 fill-current" viewBox="0 0 24 24">
                         <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
                       </svg>
                     </a>
                   </div>
                 </div>
 
-                {/* 5. COPYRIGHT */}
-                <div className="text-[11px] leading-tight">
-                  <p className="text-[10px] text-gray-500 dark:text-gray-400">
-                    © 2026 NGIPEN
-                  </p>
-                  <p className="mt-1 font-black tracking-wide text-gray-800 dark:text-gray-200">
+                {/* COPYRIGHT */}
+                <div className="col-span-2 border-t border-gray-200 pt-4 text-xs leading-relaxed sm:col-span-3 lg:col-span-1 lg:border-t-0 lg:pt-0 lg:text-right">
+                  <p className="text-gray-500 dark:text-gray-400">© 2026 NGIPEN</p>
+                  <p className="mt-1 font-bold tracking-wide text-gray-800 dark:text-gray-200">
                     MARI KITA COSPLAY
                   </p>
-                  <p className="mt-0.5 font-bold tracking-wider text-gray-800 dark:text-gray-200">
+                  <p className="font-semibold tracking-wide text-gray-800 dark:text-gray-200">
                     MAKICOS ID
                   </p>
                 </div>
