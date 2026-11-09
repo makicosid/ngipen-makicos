@@ -3787,9 +3787,7 @@ const shareEvent = async (event: Event) => {
           <main>
             {/* HERO */}
             <section className="mx-auto max-w-[1400px] px-4 pb-6 pt-8 sm:pt-10">
-              <div className="ngipen-hero relative isolate overflow-hidden rounded-3xl border border-red-200/70 bg-gradient-to-br from-red-800 via-red-700 to-red-600 p-6 text-white shadow-[0_18px_50px_rgba(153,27,27,0.12)] sm:p-10 lg:p-12">
-                <span aria-hidden="true" className="ngipen-hero-cloud ngipen-hero-cloud-one" />
-                <span aria-hidden="true" className="ngipen-hero-cloud ngipen-hero-cloud-two" />
+              <div className="ngipen-hero relative isolate overflow-hidden rounded-3xl border border-red-200/70 p-6 text-white shadow-[0_18px_50px_rgba(153,27,27,0.12)] sm:p-10 lg:p-12">
                 <div className="relative z-10 grid items-center gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(300px,0.85fr)] lg:gap-8">
                 <div className="max-w-3xl">
                   <p className="mb-3 text-xs font-bold uppercase tracking-[0.25em] text-red-100">
