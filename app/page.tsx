@@ -5084,6 +5084,26 @@ const shareEvent = async (event: Event) => {
   </div>
 </div>
 
+                {currentRole === "user" && (
+                  <div className="mt-5 border-t border-red-200 pt-5 dark:border-red-900">
+                    <div
+                      role="note"
+                      aria-label="Disclaimer informasi event"
+                      className="flex gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3.5 text-sm text-red-900 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200"
+                    >
+                      <span
+                        aria-hidden="true"
+                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white text-base font-black text-red-600 shadow-sm dark:bg-red-900 dark:text-red-200"
+                      >
+                        i
+                      </span>
+                      <p className="leading-6">
+                        Informasi event ini dapat berubah sewaktu-waktu. Pastikan untuk mendapatkan informasi terbaru dan resmi melalui media sosial penyelenggara event terkait.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 {/* TOMBOL AKSI */}
                 <div className="mt-6 flex flex-wrap gap-3">
                   <button
