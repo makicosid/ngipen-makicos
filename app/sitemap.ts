@@ -2,7 +2,7 @@
 import type { MetadataRoute } from "next";
 import { createClient } from "@supabase/supabase-js";
 
-const BASE_URL = "https://ngipen-makicos-seven.vercel.app";
+const BASE_URL = "https://ngipen.my.id";
 
 export const runtime = "nodejs";
 export const revalidate = 3600;
