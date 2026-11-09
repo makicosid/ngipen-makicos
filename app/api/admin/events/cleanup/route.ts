@@ -320,7 +320,7 @@ export async function POST(request: NextRequest) {
 
     const { data: activeAudit, error: activeAuditError } = await supabase
       .from("event_cleanup_audit")
-      .select("id, status, created_at, deleted_storage_paths, already_missing_paths, uncertain_storage_paths, processing_token, processing_started_at")
+      .select("id, status, created_at, deleted_storage_paths, already_missing_paths, uncertain_storage_paths, in_flight_storage_paths, processing_token, processing_started_at")
       .eq("event_id", event.id)
       .in("status", ["pending", "storage_deleted", "failed"])
       .order("created_at", { ascending: false })
@@ -332,7 +332,8 @@ export async function POST(request: NextRequest) {
     let previousMissingPaths: string[] = [];
     if (activeAudit) {
       const priorUncertain = Array.isArray(activeAudit.uncertain_storage_paths) ? activeAudit.uncertain_storage_paths : [];
-      if (priorUncertain.length) {
+      const priorInFlight = Array.isArray(activeAudit.in_flight_storage_paths) ? activeAudit.in_flight_storage_paths : [];
+      if (priorUncertain.length || priorInFlight.length) {
         return json({ error: "Ada file Storage dengan status belum pasti dari proses sebelumnya. Verifikasi file tersebut sebelum retry agar audit tidak salah mengklasifikasikan file yang terhapus." }, 409);
       }
       const leaseAge = activeAudit.processing_started_at
