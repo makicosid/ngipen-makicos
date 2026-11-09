@@ -109,6 +109,9 @@ BEGIN
 END;
 $function$;
 
+REVOKE ALL ON FUNCTION public.block_new_event_cleanup_references() FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.block_new_event_cleanup_references() TO service_role;
+
 REVOKE ALL ON FUNCTION public.finalize_event_cleanup(uuid, uuid, uuid)
   FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.finalize_event_cleanup(uuid, uuid, uuid)
