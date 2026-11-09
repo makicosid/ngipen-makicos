@@ -289,7 +289,7 @@ export async function GET(request: NextRequest) {
 
     const { data: user, error } = await getSupabaseAdmin()
       .from("users")
-      .select("id, username, display_name, bio, avatar_url, created_at")
+      .select("id, username, display_name, bio, avatar_url, instagram_url, tiktok_url, created_at")
       .eq("id", session.user_id)
       .maybeSingle();
 
