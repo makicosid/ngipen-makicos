@@ -589,6 +589,7 @@ const [showCalendar, setShowCalendar] = useState(false);
 useEffect(() => {
   const checkScreenSize = () => {
     setIsMobileCalendar(window.innerWidth < 640);
+    setEventsPerPage(window.innerWidth >= 1024 ? 16 : 8);
   };
 
   checkScreenSize();
@@ -596,6 +597,10 @@ useEffect(() => {
 
   return () => window.removeEventListener("resize", checkScreenSize);
 }, []);
+
+useEffect(() => {
+  setCurrentEventPage(1);
+}, [eventsPerPage]);
 const [calendarMonth, setCalendarMonth] = useState(new Date());
 const [selectedCalendarDate, setSelectedCalendarDate] = useState("");
 const [eventStatusTab, setEventStatusTab] = useState<
@@ -4347,7 +4352,7 @@ const shareEvent = async (event: Event) => {
 {!showCostumeDirectory && (
             <section
               id="daftar-event"
-              className="mx-auto max-w-[1400px] scroll-mt-24 px-4 pb-12"
+              className="mx-auto w-full max-w-[1600px] scroll-mt-24 px-4 pb-12"
             >
               <div className="mb-5">
                 <h2 className="text-2xl font-black sm:text-3xl">
@@ -4531,7 +4536,7 @@ const shareEvent = async (event: Event) => {
                 </div>
               ) : (
                 <>
-                <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4">
+                <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-4 lg:gap-5">
                   {paginatedEvents.map((event) => (
                     <article
                       key={event.id}
@@ -4600,7 +4605,7 @@ const shareEvent = async (event: Event) => {
                           </span>
                         </div>
 
-                        <div className="relative min-h-[174px] p-3 pb-14">
+                        <div className="relative min-h-[174px] p-3 pb-14 lg:min-h-[190px]">
                           <h3 className="line-clamp-2 min-h-10 pr-1 text-sm font-bold">
                             {event.title}
                           </h3>
