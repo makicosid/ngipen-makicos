@@ -1,0 +1,117 @@
+-- NGIPEN Event Cleanup Stage 4 hardening
+-- Add lease-bound database finalization and explicit in-flight/uncertain Storage states.
+-- Additive schema changes only; this migration does not delete event or Storage data.
+
+BEGIN;
+
+ALTER TABLE public.event_cleanup_audit
+  ADD COLUMN IF NOT EXISTS in_flight_storage_paths jsonb NOT NULL DEFAULT '[]'::jsonb,
+  ADD COLUMN IF NOT EXISTS uncertain_storage_paths jsonb NOT NULL DEFAULT '[]'::jsonb;
+
+-- Remove the old callable signature so finalization cannot bypass lease ownership.
+DROP FUNCTION IF EXISTS public.finalize_event_cleanup(uuid, uuid);
+
+CREATE OR REPLACE FUNCTION public.finalize_event_cleanup(
+  p_event_id uuid,
+  p_audit_id uuid,
+  p_claim_token uuid
+)
+RETURNS boolean
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = pg_catalog
+AS $function$
+DECLARE
+  v_status text;
+  v_special_status_confirmed boolean;
+  v_end_date date;
+  v_is_sponsored boolean;
+  v_is_pinned boolean;
+  v_processing_token uuid;
+  v_processing_started_at timestamptz;
+  v_in_flight jsonb;
+  v_deleted integer;
+BEGIN
+  -- Lock audit first and prove the caller still owns a fresh processing lease.
+  SELECT status, special_status_confirmed, processing_token,
+         processing_started_at, in_flight_storage_paths
+    INTO v_status, v_special_status_confirmed, v_processing_token,
+         v_processing_started_at, v_in_flight
+    FROM public.event_cleanup_audit
+   WHERE id = p_audit_id
+     AND event_id = p_event_id
+   FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Cleanup audit not found';
+  END IF;
+
+  IF v_processing_token IS DISTINCT FROM p_claim_token
+     OR v_processing_started_at IS NULL
+     OR v_processing_started_at < now() - interval '30 minutes' THEN
+    RAISE EXCEPTION 'Cleanup lease is not owned by this request or has expired';
+  END IF;
+
+  IF v_status IS DISTINCT FROM 'storage_deleted' THEN
+    RAISE EXCEPTION 'Cleanup audit Storage phase is not complete';
+  END IF;
+
+  IF jsonb_typeof(COALESCE(v_in_flight, '[]'::jsonb)) <> 'array'
+     OR jsonb_array_length(COALESCE(v_in_flight, '[]'::jsonb)) <> 0 THEN
+    RAISE EXCEPTION 'Storage deletion has unresolved in-flight objects';
+  END IF;
+
+  -- Lock and revalidate event immediately before database deletion.
+  SELECT end_date, COALESCE(is_sponsored, false), COALESCE(is_pinned, false)
+    INTO v_end_date, v_is_sponsored, v_is_pinned
+    FROM public.events
+   WHERE id = p_event_id
+   FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Event not found during cleanup finalization';
+  END IF;
+
+  IF v_end_date IS NULL OR v_end_date > ((now() AT TIME ZONE 'Asia/Jakarta')::date - 7) THEN
+    RAISE EXCEPTION 'Event no longer meets the seven-day retention rule';
+  END IF;
+
+  IF (v_is_sponsored OR v_is_pinned) AND NOT COALESCE(v_special_status_confirmed, false) THEN
+    RAISE EXCEPTION 'Sponsored or pinned event requires explicit admin confirmation';
+  END IF;
+
+  DELETE FROM public.documentations
+   WHERE event_id = p_event_id::text;
+
+  DELETE FROM public.events
+   WHERE id = p_event_id;
+  GET DIAGNOSTICS v_deleted = ROW_COUNT;
+
+  IF v_deleted <> 1 THEN
+    RAISE EXCEPTION 'Event could not be deleted during cleanup finalization';
+  END IF;
+
+  UPDATE public.event_cleanup_audit
+     SET status = 'completed',
+         database_deleted_at = now(),
+         completed_at = now(),
+         error_message = NULL,
+         processing_token = NULL,
+         processing_started_at = NULL
+   WHERE id = p_audit_id
+     AND processing_token = p_claim_token;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Cleanup lease changed during finalization';
+  END IF;
+
+  RETURN true;
+END;
+$function$;
+
+REVOKE ALL ON FUNCTION public.finalize_event_cleanup(uuid, uuid, uuid)
+  FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.finalize_event_cleanup(uuid, uuid, uuid)
+  TO service_role;
+
+COMMIT;
