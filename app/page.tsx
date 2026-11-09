@@ -172,6 +172,19 @@ const eventCategoryOptions: Category[] = [
 ];
 
 
+function getSocialUsername(value: string, platform: "instagram" | "tiktok"): string {
+  try {
+    const url = new URL(value);
+    const path = url.pathname.split("/").filter(Boolean);
+    const username = platform === "instagram"
+      ? path[0] || ""
+      : (path[0] || "").replace(/^@/, "");
+    return username ? `@${username}` : "@akun";
+  } catch {
+    return "@akun";
+  }
+}
+
 function getTimeStatus(event: Event): TimeStatus {
   const now = new Date();
 
@@ -5342,17 +5355,25 @@ const shareEvent = async (event: Event) => {
                         className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900"
                       >
                         <div className="flex items-start gap-3">
-                          {review.avatar_url ? (
-                            <img
-                              src={review.avatar_url}
-                              alt=""
-                              className="h-10 w-10 shrink-0 rounded-full object-cover"
-                            />
-                          ) : (
-                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-100 font-bold text-red-700 dark:bg-red-950 dark:text-red-300">
-                              {(review.display_name || "U")[0].toUpperCase()}
-                            </div>
-                          )}
+                          <button
+                            type="button"
+                            onClick={() => void openReviewerProfile(review.user_id)}
+                            className="shrink-0 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
+                            aria-label={`Lihat profil ${review.display_name || "Pengguna"}`}
+                            title="Lihat profil"
+                          >
+                            {review.avatar_url ? (
+                              <img
+                                src={review.avatar_url}
+                                alt=""
+                                className="h-10 w-10 rounded-full object-cover transition hover:ring-2 hover:ring-red-400"
+                              />
+                            ) : (
+                              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 font-bold text-red-700 transition hover:ring-2 hover:ring-red-400 dark:bg-red-950 dark:text-red-300">
+                                {(review.display_name || "U")[0].toUpperCase()}
+                              </div>
+                            )}
+                          </button>
 
                           <div className="min-w-0 flex-1">
                             <div className="flex flex-wrap items-center justify-between gap-2">
@@ -6577,9 +6598,33 @@ accept="image/jpeg,image/png,image/webp"
               {selectedReviewerProfile.avatar_url ? <img src={selectedReviewerProfile.avatar_url} alt="" className="mx-auto h-24 w-24 rounded-full object-cover ring-4 ring-red-100 dark:ring-red-950" /> : <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-red-100 text-3xl font-black text-red-700 dark:bg-red-950 dark:text-red-300">{(selectedReviewerProfile.display_name || "P")[0].toUpperCase()}</div>}
               <h2 id="reviewer-profile-title" className="mt-4 text-xl font-black">{selectedReviewerProfile.display_name || "Pengguna"}</h2>
               <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-gray-600 dark:text-gray-300">{selectedReviewerProfile.bio || "Belum ada bio."}</p>
-              <div className="mt-5 flex items-center justify-center gap-3">
-                {selectedReviewerProfile.instagram_url && <a href={selectedReviewerProfile.instagram_url} target="_blank" rel="noopener noreferrer" aria-label="Instagram" title="Instagram" className="flex h-11 w-11 items-center justify-center rounded-full border border-gray-200 hover:border-red-500 hover:text-red-600 dark:border-gray-700"><svg viewBox="0 0 24 24" className="h-5 w-5 fill-none stroke-current" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="2.5" y="2.5" width="19" height="19" rx="5"/><circle cx="12" cy="12" r="4.2"/><circle cx="17.8" cy="6.3" r="1" className="fill-current stroke-none"/></svg></a>}
-                {selectedReviewerProfile.tiktok_url && <a href={selectedReviewerProfile.tiktok_url} target="_blank" rel="noopener noreferrer" aria-label="TikTok" title="TikTok" className="flex h-11 w-11 items-center justify-center rounded-full border border-gray-200 hover:border-red-500 hover:text-red-600 dark:border-gray-700"><svg viewBox="0 0 24 24" className="h-5 w-5 fill-current" aria-hidden="true"><path d="M19.6 6.7a5.3 5.3 0 0 1-3.9-4.6V1h-3.5v14.1a2.9 2.9 0 1 1-2.9-2.9c.3 0 .6 0 .9.1V8.7a7 7 0 1 0 5.5 6.8V8.2a8.6 8.6 0 0 0 4.9 1.5V6.2c-.4.2-.7.4-1 .5Z"/></svg></a>}
+              <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+                {selectedReviewerProfile.instagram_url && (
+                  <a
+                    href={selectedReviewerProfile.instagram_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`Instagram ${getSocialUsername(selectedReviewerProfile.instagram_url, "instagram")}`}
+                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-gray-200 px-4 py-2 text-sm font-semibold transition hover:border-red-500 hover:bg-red-50 hover:text-red-600 dark:border-gray-700 dark:hover:bg-red-950/30"
+                  >
+                    <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0 fill-none stroke-current" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="2.5" y="2.5" width="19" height="19" rx="5"/><circle cx="12" cy="12" r="4.2"/><circle cx="17.8" cy="6.3" r="1" className="fill-current stroke-none"/></svg>
+                    <span>Instagram</span>
+                    <span className="text-gray-500">{getSocialUsername(selectedReviewerProfile.instagram_url, "instagram")}</span>
+                  </a>
+                )}
+                {selectedReviewerProfile.tiktok_url && (
+                  <a
+                    href={selectedReviewerProfile.tiktok_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`TikTok ${getSocialUsername(selectedReviewerProfile.tiktok_url, "tiktok")}`}
+                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-gray-200 px-4 py-2 text-sm font-semibold transition hover:border-red-500 hover:bg-red-50 hover:text-red-600 dark:border-gray-700 dark:hover:bg-red-950/30"
+                  >
+                    <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0 fill-current" aria-hidden="true"><path d="M19.6 6.7a5.3 5.3 0 0 1-3.9-4.6V1h-3.5v14.1a2.9 2.9 0 1 1-2.9-2.9c.3 0 .6 0 .9.1V8.7a7 7 0 1 0 5.5 6.8V8.2a8.6 8.6 0 0 0 4.9 1.5V6.2c-.4.2-.7.4-1 .5Z"/></svg>
+                    <span>TikTok</span>
+                    <span className="text-gray-500">{getSocialUsername(selectedReviewerProfile.tiktok_url, "tiktok")}</span>
+                  </a>
+                )}
               </div>
             </section>
           </div>
