@@ -84,6 +84,8 @@ SET search_path = pg_catalog
 AS $claim$
 DECLARE
   v_locked_event_id uuid;
+  v_in_flight jsonb;
+  v_uncertain jsonb;
 BEGIN
   SELECT id INTO v_locked_event_id
     FROM public.events
@@ -94,9 +96,9 @@ BEGIN
     RETURN false;
   END IF;
 
-  UPDATE public.event_cleanup_audit
-     SET processing_token = p_claim_token,
-         processing_started_at = now()
+  SELECT in_flight_storage_paths, uncertain_storage_paths
+    INTO v_in_flight, v_uncertain
+    FROM public.event_cleanup_audit
    WHERE id = p_audit_id
      AND event_id = p_event_id
      AND status IN ('pending', 'storage_deleted', 'failed')
@@ -104,7 +106,22 @@ BEGIN
        processing_token IS NULL
        OR processing_started_at IS NULL
        OR processing_started_at < now() - interval '30 minutes'
-     );
+     )
+   FOR UPDATE;
+
+  IF NOT FOUND
+     OR jsonb_typeof(COALESCE(v_in_flight, '[]'::jsonb)) <> 'array'
+     OR jsonb_array_length(COALESCE(v_in_flight, '[]'::jsonb)) <> 0
+     OR jsonb_typeof(COALESCE(v_uncertain, '[]'::jsonb)) <> 'array'
+     OR jsonb_array_length(COALESCE(v_uncertain, '[]'::jsonb)) <> 0 THEN
+    RETURN false;
+  END IF;
+
+  UPDATE public.event_cleanup_audit
+     SET processing_token = p_claim_token,
+         processing_started_at = now()
+   WHERE id = p_audit_id
+     AND event_id = p_event_id;
 
   RETURN FOUND;
 END;
@@ -137,6 +154,7 @@ DECLARE
   v_processing_token uuid;
   v_processing_started_at timestamptz;
   v_in_flight jsonb;
+  v_uncertain jsonb;
   v_deleted integer;
 BEGIN
   -- Lock event first, matching the claim/reference-trigger lock order.
@@ -152,9 +170,9 @@ BEGIN
 
   -- Then lock audit and prove the caller still owns a fresh processing lease.
   SELECT status, special_status_confirmed, processing_token,
-         processing_started_at, in_flight_storage_paths
+         processing_started_at, in_flight_storage_paths, uncertain_storage_paths
     INTO v_status, v_special_status_confirmed, v_processing_token,
-         v_processing_started_at, v_in_flight
+         v_processing_started_at, v_in_flight, v_uncertain
     FROM public.event_cleanup_audit
    WHERE id = p_audit_id
      AND event_id = p_event_id
@@ -174,8 +192,10 @@ BEGIN
   END IF;
 
   IF jsonb_typeof(COALESCE(v_in_flight, '[]'::jsonb)) <> 'array'
-     OR jsonb_array_length(COALESCE(v_in_flight, '[]'::jsonb)) <> 0 THEN
-    RAISE EXCEPTION 'Storage deletion has unresolved in-flight objects';
+     OR jsonb_array_length(COALESCE(v_in_flight, '[]'::jsonb)) <> 0
+     OR jsonb_typeof(COALESCE(v_uncertain, '[]'::jsonb)) <> 'array'
+     OR jsonb_array_length(COALESCE(v_uncertain, '[]'::jsonb)) <> 0 THEN
+    RAISE EXCEPTION 'Storage deletion has unresolved in-flight or uncertain objects';
   END IF;
 
   IF v_end_date IS NULL OR v_end_date > ((now() AT TIME ZONE 'Asia/Jakarta')::date - 7) THEN
