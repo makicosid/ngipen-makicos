@@ -209,13 +209,9 @@ export async function POST(request: NextRequest) {
       return json({ error: "Gagal menyimpan perubahan event. Status event mungkin sudah berubah." }, 409);
     }
 
-    if (uploadedPath) {
-      const oldPath = getOldPosterPath(String(current.poster_url || ""));
-      if (oldPath && oldPath !== uploadedPath) {
-        const { error: cleanupError } = await supabase.storage.from(POSTER_BUCKET).remove([oldPath]);
-        if (cleanupError) console.error("Old event poster cleanup error:", cleanupError);
-      }
-    }
+    // Poster lama sengaja tidak dihapus langsung di sini.
+    // Objek Storage mungkin masih direferensikan record lain; penghapusan
+    // hanya boleh dilakukan melalui Event Cleanup setelah pemeriksaan referensi.
     return json({ success: true, event: updated });
   } catch (error) {
     console.error("Admin event update error:", error);
