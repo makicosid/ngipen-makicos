@@ -1,3 +1,4 @@
+import { formDataLimitResponse, readFormDataWithinLimit } from "../../../lib/request-body";
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
@@ -263,7 +264,11 @@ export async function POST(request: NextRequest) {
       return json({ error: "Sesi admin tidak valid." }, 401);
     }
 
-    const form = await request.formData();
+    const boundedForm = await readFormDataWithinLimit(request, MAX_FILE_SIZE + 128 * 1024);
+    if (!boundedForm.ok) {
+      return json(formDataLimitResponse(boundedForm.reason), boundedForm.reason === "too_large" ? 413 : 400);
+    }
+    const form = boundedForm.formData;
 
     const name = String(form.get("name") || "").trim();
     const region = String(form.get("region") || "").trim();
