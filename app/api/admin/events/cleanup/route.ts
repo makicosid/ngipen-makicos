@@ -1,3 +1,4 @@
+import { readJsonObjectWithinLimit } from "../../../../../lib/request-body";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { createHash } from "crypto";
@@ -287,8 +288,9 @@ export async function POST(request: NextRequest) {
     const adminActor = await getAdminActor(request, supabase);
     if (!adminActor) return json({ error: "Sesi admin tidak valid atau sudah berakhir." }, 401);
 
-    let body: { id?: unknown; confirm?: unknown; confirmSponsored?: unknown };
-    try { body = await request.json(); } catch { return json({ error: "Format request tidak valid." }, 400); }
+    const parsedBody = await readJsonObjectWithinLimit(request, 16 * 1024);
+    if (!parsedBody.ok) return json({ error: "Format request tidak valid atau terlalu besar." }, parsedBody.reason === "too_large" ? 413 : 400);
+    const body = parsedBody.value as { id?: unknown; confirm?: unknown; confirmSponsored?: unknown };
     if (typeof body.id !== "string" || !UUID_PATTERN.test(body.id) || body.confirm !== true) {
       return json({ error: "ID event atau konfirmasi penghapusan tidak valid." }, 400);
     }
