@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { requestAndRegisterPushToken } from "../lib/firebase/messaging";
+import { listenForForegroundMessages, requestAndRegisterPushToken } from "../lib/firebase/messaging";
 
 type AttendanceRole = "user" | "admin";
 type AttendanceStatus = "attending" | "not_attending";
@@ -80,6 +80,27 @@ export default function EventAttendance({ event, role, onOpenProfile }: EventAtt
       setNotificationPermission(Notification.permission);
     }
   }, []);
+
+  useEffect(() => {
+    if (notificationPermission !== "granted") return;
+
+    let cancelled = false;
+    let unsubscribe: (() => void) | undefined;
+
+    void listenForForegroundMessages(({ title, body }) => {
+      setNotificationMessage(`${title}: ${body}`);
+    }).then((stop) => {
+      if (cancelled) stop();
+      else unsubscribe = stop;
+    }).catch((foregroundError) => {
+      console.error("FCM foreground listener failed:", foregroundError);
+    });
+
+    return () => {
+      cancelled = true;
+      unsubscribe?.();
+    };
+  }, [notificationPermission]);
 
   const activateNotifications = async () => {
     if (notificationBusy) return;
