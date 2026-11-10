@@ -1,3 +1,4 @@
+import { readJsonObjectWithinLimit } from "../../../../../lib/request-body";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { createHash } from "crypto";
@@ -54,12 +55,9 @@ export async function POST(request: NextRequest) {
       return json({ success: false, error: "Sesi admin tidak valid atau telah berakhir." }, 401);
     }
 
-    let body: { ids?: unknown };
-    try {
-      body = await request.json();
-    } catch {
-      return json({ success: false, error: "Format JSON tidak valid." }, 400);
-    }
+    const parsedBody = await readJsonObjectWithinLimit(request, 128 * 1024);
+    if (!parsedBody.ok) return json({ success: false, error: "Format JSON tidak valid atau terlalu besar." }, parsedBody.reason === "too_large" ? 413 : 400);
+    const body = parsedBody.value as { ids?: unknown };
 
     if (!Array.isArray(body.ids) || body.ids.length < 1 || body.ids.length > 1000) {
       return json({ success: false, error: "Pilih antara 1 sampai 1000 event." }, 400);
