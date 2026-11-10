@@ -1,3 +1,4 @@
+import { readJsonObjectWithinLimit } from "../../../../../lib/request-body";
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
@@ -98,14 +99,9 @@ export async function POST(request: NextRequest) {
       priority?: unknown;
     };
 
-    try {
-      body = await request.json();
-    } catch {
-      return json(
-        { success: false, error: "Format JSON tidak valid." },
-        400
-      );
-    }
+    const parsedBody = await readJsonObjectWithinLimit(request, 16 * 1024);
+    if (!parsedBody.ok) return json({ success: false, error: "Format JSON tidak valid atau terlalu besar." }, parsedBody.reason === "too_large" ? 413 : 400);
+    body = parsedBody.value as typeof body;
 
     const { id, status, sponsor, priority } = body;
 
