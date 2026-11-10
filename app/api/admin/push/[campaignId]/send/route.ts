@@ -6,6 +6,9 @@ import { adminJson, isSameOrigin, requireAdmin } from "../../../../../../lib/ser
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
+// Keep production delivery locked in code until the owner separately approves it.
+const LIVE_SEND_APPROVED = false;
+
 function getFirebaseMessaging() {
   const projectId = process.env.FIREBASE_PROJECT_ID;
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
@@ -37,7 +40,7 @@ export async function POST(
     if (!supabase) return adminJson({ error: "Sesi admin tidak valid." }, 401);
 
     // Deliberately disabled until the owner separately approves live production sends.
-    if (process.env.PUSH_CAMPAIGNS_SEND_ENABLED !== "true") {
+    if (!LIVE_SEND_APPROVED || process.env.PUSH_CAMPAIGNS_SEND_ENABLED !== "true") {
       return adminJson({ error: "Pengiriman produksi belum diaktifkan. Persetujuan terpisah diperlukan." }, 423);
     }
 
