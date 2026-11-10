@@ -19,11 +19,40 @@ function json(data: object, status = 200) {
 
 async function readJsonBody(request: NextRequest): Promise<JsonBody | null> {
   const contentLength = Number(request.headers.get("content-length") || 0);
-  if (contentLength > MAX_BODY_BYTES) return null;
+  if (contentLength > MAX_BODY_BYTES || !request.body) return null;
 
-  const body: unknown = await request.json();
-  if (!body || typeof body !== "object" || Array.isArray(body)) return null;
-  return body as JsonBody;
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let totalBytes = 0;
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      totalBytes += value.byteLength;
+      if (totalBytes > MAX_BODY_BYTES) {
+        await reader.cancel();
+        return null;
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  try {
+    const bytes = new Uint8Array(totalBytes);
+    let offset = 0;
+    for (const chunk of chunks) {
+      bytes.set(chunk, offset);
+      offset += chunk.byteLength;
+    }
+    const body: unknown = JSON.parse(new TextDecoder().decode(bytes));
+    if (!body || typeof body !== "object" || Array.isArray(body)) return null;
+    return body as JsonBody;
+  } catch {
+    return null;
+  }
 }
 
 function getSupabaseAdmin() {
