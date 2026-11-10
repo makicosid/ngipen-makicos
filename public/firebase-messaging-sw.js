@@ -1,6 +1,10 @@
-/* Firebase Cloud Messaging service worker. Keep this file at the web root. */
+/* NGIPEN PWA + Firebase Cloud Messaging service worker. Keep at web root. */
 importScripts("https://www.gstatic.com/firebasejs/11.10.0/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/11.10.0/firebase-messaging-compat.js");
+
+const CACHE_NAME = "ngipen-static-v1";
+const OFFLINE_URL = "/offline.html";
+const STATIC_PREFIX = "/_next/static/";
 
 const configParams = new URL(self.location.href).searchParams;
 const firebaseConfig = {
@@ -15,6 +19,54 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const messaging = firebase.messaging();
 
+self.addEventListener("install", (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => cache.add(OFFLINE_URL))
+  );
+  self.skipWaiting();
+});
+
+self.addEventListener("activate", (event) => {
+  event.waitUntil((async () => {
+    const keys = await caches.keys();
+    await Promise.all(keys.filter((key) => key.startsWith("ngipen-static-") && key !== CACHE_NAME).map((key) => caches.delete(key)));
+    await self.clients.claim();
+  })());
+});
+
+self.addEventListener("fetch", (event) => {
+  const request = event.request;
+  const url = new URL(request.url);
+  if (request.method !== "GET" || url.origin !== self.location.origin) return;
+
+  // Cache only versioned Next.js build assets. Never cache API or user-specific HTML/data.
+  if (url.pathname.startsWith(STATIC_PREFIX)) {
+    event.respondWith((async () => {
+      const cache = await caches.open(CACHE_NAME);
+      const cached = await cache.match(request);
+      if (cached) return cached;
+      try {
+        const response = await fetch(request);
+        if (response.ok) await cache.put(request, response.clone());
+        return response;
+      } catch {
+        return new Response("", { status: 503, statusText: "Offline" });
+      }
+    })());
+    return;
+  }
+
+  if (request.mode === "navigate") {
+    event.respondWith((async () => {
+      try {
+        return await fetch(request);
+      } catch {
+        return (await caches.match(OFFLINE_URL)) || Response.error();
+      }
+    })());
+  }
+});
+
 messaging.onBackgroundMessage((payload) => {
   const title = payload.data?.title || "NGIPEN";
   const options = {
@@ -23,7 +75,7 @@ messaging.onBackgroundMessage((payload) => {
     badge: "/favicon.svg",
     data: { url: payload.data?.url || "/" },
   };
-  self.registration.showNotification(title, options);
+  return self.registration.showNotification(title, options);
 });
 
 self.addEventListener("notificationclick", (event) => {
