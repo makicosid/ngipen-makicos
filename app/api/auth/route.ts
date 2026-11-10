@@ -965,7 +965,6 @@ export async function POST(request: NextRequest) {
 
       /* LEGACY PASSWORD MIGRATION */
 
-      let passwordMigrationPending = false;
       if (!storedPassword.startsWith("scrypt$")) {
         const newHash = await hashPassword(password);
 
@@ -980,10 +979,14 @@ export async function POST(request: NextRequest) {
           .maybeSingle();
 
         if (updateError || !migratedUser) {
-          // Keep a correct legacy login usable during transient DB write failures.
-          // The plaintext fallback remains until this account can be migrated.
-          passwordMigrationPending = true;
-          console.error("Password hash migration failed; login will continue with migration pending.");
+          // Never create a session while a legacy plaintext credential remains stored.
+          // The user can safely retry; a concurrent successful migration is accepted
+          // on the next login through the normal scrypt verification path.
+          console.error("Legacy password migration failed; login blocked until the hash is stored.");
+          return json(
+            { error: "Akun sedang diamankan. Silakan coba login kembali beberapa saat lagi." },
+            503
+          );
         }
       }
 
@@ -1031,7 +1034,6 @@ export async function POST(request: NextRequest) {
           username: user.username,
           display_name: user.display_name,
         },
-        ...(passwordMigrationPending ? { passwordMigrationPending: true } : {}),
         ...(loginSecurityWarning ? { loginSecurityWarning: true } : {}),
       });
 
