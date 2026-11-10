@@ -72,11 +72,11 @@ export async function POST(request: NextRequest) {
       try {
         const messageId = await messaging.send({
           token: subscription.fcm_token,
-          notification: {
+          data: {
             title: "🎉 NGIPEN — Notifikasi Aktif!",
             body: "Perangkat ini berhasil terhubung dengan notifikasi NGIPEN.",
+            url: "/",
           },
-          data: { url: "/" },
           webpush: { fcmOptions: { link: "/" } },
         });
         return { id: subscription.id, success: true, messageId };
