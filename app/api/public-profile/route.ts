@@ -29,6 +29,26 @@ function getSupabaseAdmin() {
 const hashToken = (token: string) =>
   createHash("sha256").update(token).digest("hex");
 
+function safeSocialUrl(value: string | null, platform: "instagram" | "tiktok") {
+  if (!value) return "";
+  try {
+    const url = new URL(value);
+    const hosts = platform === "instagram"
+      ? ["instagram.com", "www.instagram.com"]
+      : ["tiktok.com", "www.tiktok.com"];
+    if (
+      url.protocol !== "https:" ||
+      url.username ||
+      url.password ||
+      !hosts.includes(url.hostname.toLowerCase()) ||
+      url.pathname.replace(/\\/+$/, "").length < 2
+    ) return "";
+    return url.toString();
+  } catch {
+    return "";
+  }
+}
+
 async function hasAuthenticatedSession(request: NextRequest) {
   const supabase = getSupabaseAdmin();
   const userToken = request.cookies.get("ngipen_session")?.value;
@@ -65,7 +85,7 @@ export async function GET(request: NextRequest) {
 
     const userId = request.nextUrl.searchParams.get("id")?.trim();
 
-    if (!userId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(userId)) {
+    if (!userId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(userId)) {
       return json({ error: "ID profil tidak valid." }, 400);
     }
 
@@ -91,8 +111,8 @@ export async function GET(request: NextRequest) {
         display_name: data.display_name || "Pengguna",
         avatar_url: data.avatar_url || "",
         bio: data.bio || "",
-        instagram_url: data.instagram_url || "",
-        tiktok_url: data.tiktok_url || "",
+        instagram_url: safeSocialUrl(data.instagram_url, "instagram"),
+        tiktok_url: safeSocialUrl(data.tiktok_url, "tiktok"),
       },
     });
   } catch (error) {
