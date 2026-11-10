@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { getFirebaseApp } from "@/lib/firebase/client";
+import { getFirebaseApp } from "../lib/firebase/client";
 
 export default function PwaServiceWorker() {
   useEffect(() => {
