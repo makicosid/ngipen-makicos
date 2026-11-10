@@ -1,3 +1,4 @@
+import { readJsonObjectWithinLimit } from "../../../lib/request-body";
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
@@ -330,7 +331,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body = await request.json();
+    const parsedBody = await readJsonObjectWithinLimit(request);
+    if (!parsedBody.ok) {
+      return json(
+        { error: parsedBody.reason === "too_large" ? "Ukuran permintaan terlalu besar." : "Format permintaan tidak valid." },
+        parsedBody.reason === "too_large" ? 413 : 400
+      );
+    }
+    const body = parsedBody.value;
     const action = body.action;
 
     /* -----------------------------------------------------
