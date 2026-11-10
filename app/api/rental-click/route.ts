@@ -1,3 +1,4 @@
+import { readJsonObjectWithinLimit } from "../../../lib/request-body";
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
@@ -38,7 +39,9 @@ export async function POST(request: NextRequest) {
       return json({ error: "Invalid request origin" }, 403);
     }
 
-    const body = await request.json();
+    const parsedBody = await readJsonObjectWithinLimit(request);
+    if (!parsedBody.ok) return json({ error: "Format permintaan tidak valid atau terlalu besar." }, parsedBody.reason === "too_large" ? 413 : 400);
+    const body = parsedBody.value;
 
     const rentalId =
       typeof body.rental_id === "string"
