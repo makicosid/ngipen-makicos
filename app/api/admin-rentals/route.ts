@@ -1,3 +1,4 @@
+import { readJsonObjectWithinLimit } from "../../../lib/request-body";
 import { formDataLimitResponse, readFormDataWithinLimit } from "../../../lib/request-body";
 
 import { NextRequest, NextResponse } from "next/server";
@@ -577,7 +578,9 @@ export async function DELETE(request: NextRequest) {
       return json({ error: "Sesi admin tidak valid." }, 401);
     }
 
-    const body = await request.json();
+    const parsedBody = await readJsonObjectWithinLimit(request);
+    if (!parsedBody.ok) return json({ error: "Format permintaan tidak valid atau terlalu besar." }, parsedBody.reason === "too_large" ? 413 : 400);
+    const body = parsedBody.value;
     const id = typeof body.id === "string" ? body.id.trim() : "";
 
     if (!id) {
