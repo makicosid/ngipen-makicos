@@ -28,7 +28,7 @@ messaging.onBackgroundMessage((payload) => {
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const target = new URL(event.notification.data?.url || "/", self.location.origin).href;
+  const requestedTarget = new URL(event.notification.data?.url || "/", self.location.origin);\n  const target = requestedTarget.origin === self.location.origin ? requestedTarget.href : self.location.origin + "/";
   event.waitUntil((async () => {
     const clients = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
     for (const client of clients) {
