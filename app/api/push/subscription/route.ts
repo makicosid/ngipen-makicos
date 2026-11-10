@@ -67,6 +67,17 @@ export async function POST(request: NextRequest) {
       return json({ error: "Token perangkat tidak valid." }, 400);
     }
 
+    const { data: existingToken, error: lookupError } = await supabase
+      .from("push_subscriptions")
+      .select("user_id")
+      .eq("fcm_token", token)
+      .maybeSingle();
+
+    if (lookupError) throw new Error("Gagal memeriksa token perangkat.");
+    if (existingToken && existingToken.user_id !== userId) {
+      return json({ error: "Token perangkat sudah terhubung ke akun lain." }, 409);
+    }
+
     const { error } = await supabase.from("push_subscriptions").upsert(
       {
         user_id: userId,
