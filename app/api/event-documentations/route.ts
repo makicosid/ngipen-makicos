@@ -1,3 +1,4 @@
+import { formDataLimitResponse, readFormDataWithinLimit } from "../../../lib/request-body";
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
@@ -267,7 +268,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const formData = await request.formData();
+    const boundedForm = await readFormDataWithinLimit(request, MAX_FILE_SIZE + 128 * 1024);
+    if (!boundedForm.ok) {
+      return json(formDataLimitResponse(boundedForm.reason), boundedForm.reason === "too_large" ? 413 : 400);
+    }
+    const formData = boundedForm.formData;
 
     const eventId =
       typeof formData.get("eventId") === "string"
