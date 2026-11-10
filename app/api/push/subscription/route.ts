@@ -94,7 +94,7 @@ function validToken(value: unknown): value is string {
   return typeof value === "string" &&
     value.length > 0 &&
     value.length <= MAX_TOKEN_LENGTH &&
-    !/\\s/.test(value);
+    !/\s/.test(value);
 }
 
 function isSameOrigin(request: NextRequest) {
