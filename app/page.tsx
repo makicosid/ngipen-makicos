@@ -4,6 +4,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { supabase } from "../lib/supabase";
 import AdminCleanupPanel from "./admin-cleanup-panel";
+import EventAttendance from "./event-attendance";
 
 type TicketType = "Gratis" | "Berbayar";
 type Category =
@@ -5039,6 +5040,19 @@ const shareEvent = async (event: Event) => {
                   <div className="mt-3 rounded-xl bg-amber-100 px-4 py-3 text-sm font-bold text-amber-900 dark:bg-amber-950 dark:text-amber-200">
                     ★ Event Promote
                   </div>
+                )}
+
+                {currentRole !== "guest" && (
+                  <EventAttendance
+                    event={{
+                      id: selectedEvent.id,
+                      start_date: selectedEvent.start_date,
+                      end_date: selectedEvent.end_date,
+                      start_time: selectedEvent.start_time,
+                      province: selectedEvent.province,
+                    }}
+                    role={currentRole}
+                  />
                 )}
               </div>
 
