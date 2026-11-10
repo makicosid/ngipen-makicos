@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { listenForForegroundMessages, requestAndRegisterPushToken } from "../lib/firebase/messaging";
 
 type AttendanceRole = "user" | "admin";
 type AttendanceStatus = "attending" | "not_attending";
@@ -69,6 +70,97 @@ export default function EventAttendance({ event, role, onOpenProfile }: EventAtt
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [notificationPromptOpen, setNotificationPromptOpen] = useState(false);
+  const [notificationBusy, setNotificationBusy] = useState(false);
+  const [notificationMessage, setNotificationMessage] = useState("");
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>("default");
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && "Notification" in window) {
+      setNotificationPermission(Notification.permission);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (notificationPermission !== "granted") return;
+
+    let cancelled = false;
+    let unsubscribe: (() => void) | undefined;
+
+    void listenForForegroundMessages(({ title, body }) => {
+      setNotificationMessage(`${title}: ${body}`);
+    }).then((stop) => {
+      if (cancelled) stop();
+      else unsubscribe = stop;
+    }).catch((foregroundError) => {
+      console.error("FCM foreground listener failed:", foregroundError);
+    });
+
+    return () => {
+      cancelled = true;
+      unsubscribe?.();
+    };
+  }, [notificationPermission]);
+
+  const activateNotifications = async () => {
+    if (notificationBusy) return;
+    setNotificationBusy(true);
+    setNotificationMessage("");
+    try {
+      const token = await requestAndRegisterPushToken();
+      const response = await fetch("/api/push/subscription", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          token,
+          platform: "web",
+          deviceLabel: navigator.userAgent.slice(0, 100),
+        }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || "Gagal menghubungkan perangkat dengan NGIPEN.");
+      }
+
+      setNotificationPermission("granted");
+      setNotificationMessage("Notifikasi berhasil diaktifkan pada perangkat ini.");
+      setNotificationPromptOpen(false);
+    } catch (activationError) {
+      setNotificationMessage(
+        activationError instanceof Error
+          ? activationError.message
+          : "Gagal mengaktifkan notifikasi."
+      );
+      if ("Notification" in window) setNotificationPermission(Notification.permission);
+    } finally {
+      setNotificationBusy(false);
+    }
+  };
+
+  const sendTestNotification = async () => {
+    setNotificationBusy(true);
+    setNotificationMessage("");
+    try {
+      const response = await fetch("/api/push/test", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: "{}",
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || "Notifikasi percobaan gagal dikirim.");
+      }
+      setNotificationMessage(
+        `Notifikasi percobaan dikirim ke ${result.sent} perangkat; gagal ${result.failed}.`
+      );
+    } catch (testError) {
+      setNotificationMessage(testError instanceof Error ? testError.message : "Notifikasi percobaan gagal.");
+    } finally {
+      setNotificationBusy(false);
+    }
+  };
 
   const availableDates = useMemo(
     () => dateRange(event.start_date, event.end_date),
@@ -145,6 +237,9 @@ export default function EventAttendance({ event, role, onOpenProfile }: EventAtt
 
       setNotice("Pilihan kehadiran berhasil disimpan.");
       await loadAttendance();
+      if (selectedStatus === "attending" && notificationPermission !== "granted") {
+        setNotificationPromptOpen(true);
+      }
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : "Gagal menyimpan pilihan kehadiran.");
     } finally {
@@ -256,6 +351,46 @@ export default function EventAttendance({ event, role, onOpenProfile }: EventAtt
             </div>
           )}
 
+          {role === "user" && (
+            <div className="mt-4 rounded-xl border border-gray-200 p-3 dark:border-gray-700">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-bold">Notifikasi NGIPEN</p>
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    {notificationPermission === "granted"
+                      ? "Izin notifikasi browser sudah diberikan. Hubungkan perangkat ini untuk menerima pengingat event."
+                      : notificationPermission === "denied"
+                        ? "Izin notifikasi diblokir. Ubah izin NGIPEN melalui pengaturan browser."
+                        : "Aktifkan notifikasi agar tidak melewatkan pengingat event yang kamu pilih Hadir."}
+                  </p>
+                </div>
+                {notificationPermission !== "denied" && (
+                  <button
+                    type="button"
+                    onClick={() => void activateNotifications()}
+                    disabled={notificationBusy}
+                    className="rounded-lg bg-red-600 px-3 py-2 text-xs font-bold text-white hover:bg-red-700 disabled:opacity-50"
+                  >
+                    {notificationBusy ? "Memproses…" : notificationPermission === "granted" ? "Hubungkan Perangkat" : "Aktifkan Notifikasi"}
+                  </button>
+                )}
+                {notificationPermission === "granted" && (
+                  <button
+                    type="button"
+                    onClick={() => void sendTestNotification()}
+                    disabled={notificationBusy}
+                    className="rounded-lg border border-gray-300 px-3 py-2 text-xs font-bold dark:border-gray-600 disabled:opacity-50"
+                  >
+                    Tes Notifikasi
+                  </button>
+                )}
+              </div>
+              {notificationMessage && (
+                <p role="status" className="mt-3 text-xs text-gray-600 dark:text-gray-300">{notificationMessage}</p>
+              )}
+            </div>
+          )}
+
           {role === "admin" && (
             <p className="mt-4 rounded-xl bg-gray-50 p-3 text-xs text-gray-600 dark:bg-gray-800 dark:text-gray-300">
               Mode admin: hanya dapat melihat daftar kehadiran. Pengiriman absensi dilakukan oleh pengguna melalui akun masing-masing.
@@ -315,6 +450,35 @@ export default function EventAttendance({ event, role, onOpenProfile }: EventAtt
             )}
           </div>
         </>
+      )}
+
+      {notificationPromptOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4" role="dialog" aria-modal="true" aria-labelledby="notification-prompt-title">
+          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl dark:bg-gray-900">
+            <div className="text-3xl" aria-hidden="true">🔔</div>
+            <h3 id="notification-prompt-title" className="mt-2 text-lg font-black">Aktifkan Pengingat Event?</h3>
+            <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
+              Kamu berhasil memilih Hadir. Aktifkan notifikasi agar NGIPEN dapat mengingatkanmu sebelum event dimulai dan pada hari event.
+            </p>
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setNotificationPromptOpen(false)}
+                className="rounded-xl border border-gray-300 px-3 py-3 text-sm font-bold dark:border-gray-700"
+              >
+                Nanti Saja
+              </button>
+              <button
+                type="button"
+                onClick={() => void activateNotifications()}
+                disabled={notificationBusy}
+                className="rounded-xl bg-red-600 px-3 py-3 text-sm font-bold text-white hover:bg-red-700 disabled:opacity-50"
+              >
+                {notificationBusy ? "Memproses…" : "Aktifkan Notifikasi"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {error && attendance && (

@@ -1,0 +1,51 @@
+name: FCM dependency lockfile and build check
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fcm-dependency-check
+  cancel-in-progress: false
+
+jobs:
+  lockfile-and-build:
+    if: github.ref == 'refs/heads/feature/push-notifications-ngipen'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout FCM branch
+        uses: actions/checkout@v4
+        with:
+          ref: feature/push-notifications-ngipen
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Resolve dependencies and update lockfile
+        run: npm install --package-lock-only --ignore-scripts
+
+      - name: Install exact locked dependencies
+        run: npm ci
+
+      - name: Run production build
+        run: npm run build
+
+      - name: Commit updated package-lock.json
+        run: |
+          if git diff --quiet -- package-lock.json; then
+            echo "package-lock.json is already up to date."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json
+          git commit -m "chore(fcm): update dependency lockfile"
+          git push origin HEAD:feature/push-notifications-ngipen
