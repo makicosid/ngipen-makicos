@@ -110,7 +110,6 @@ interface PublicProfile {
 interface RegUser {
   id: string;
   username: string;
-  password_hash?: string;
   display_name: string;
   bio?: string;
   avatar_url?: string;
