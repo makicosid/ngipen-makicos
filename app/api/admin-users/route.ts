@@ -36,7 +36,7 @@ function safeSocialUrl(value: string | null, platform: "instagram" | "tiktok") {
       : ["tiktok.com", "www.tiktok.com"];
     if (url.protocol !== "https:" || url.username || url.password ||
         !hosts.includes(url.hostname.toLowerCase()) ||
-        url.pathname.replace(/\\/+$/, "").length < 2) return "";
+        url.pathname.replace(/\/+$/, "").length < 2) return "";
     return url.toString();
   } catch {
     return "";
