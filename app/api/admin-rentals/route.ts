@@ -368,7 +368,11 @@ export async function PATCH(request: NextRequest) {
       return json({ error: "Sesi admin tidak valid." }, 401);
     }
 
-    const form = await request.formData();
+    const boundedForm = await readFormDataWithinLimit(request, MAX_FILE_SIZE + 128 * 1024);
+    if (!boundedForm.ok) {
+      return json(formDataLimitResponse(boundedForm.reason), boundedForm.reason === "too_large" ? 413 : 400);
+    }
+    const form = boundedForm.formData;
 
     const id = String(form.get("id") || "").trim();
     const name = String(form.get("name") || "").trim();
