@@ -5052,6 +5052,7 @@ const shareEvent = async (event: Event) => {
                       province: selectedEvent.province,
                     }}
                     role={currentRole}
+                    onOpenProfile={(userId) => void openReviewerProfile(userId)}
                   />
                 )}
               </div>
@@ -5499,16 +5500,27 @@ accept="image/jpeg,image/png,image/webp"
 
                       <div className="p-3">
                         <div className="flex items-center gap-2">
-                          {doc.avatar_url ? (
-                            <img src={doc.avatar_url} alt="" className="h-7 w-7 rounded-full object-cover" />
-                          ) : (
-                            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-red-100 text-xs font-bold text-red-700">
-                              {(doc.display_name || "P")[0].toUpperCase()}
-                            </span>
-                          )}
-                          <p className="text-xs font-bold">
+                          <button
+                            type="button"
+                            onClick={() => void openReviewerProfile(doc.user_id)}
+                            aria-label={`Lihat profil ${doc.display_name || "Pengunjung"}`}
+                            className="shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                          >
+                            {doc.avatar_url ? (
+                              <img src={doc.avatar_url} alt="" className="h-7 w-7 rounded-full object-cover" />
+                            ) : (
+                              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-red-100 text-xs font-bold text-red-700">
+                                {(doc.display_name || "P")[0].toUpperCase()}
+                              </span>
+                            )}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void openReviewerProfile(doc.user_id)}
+                            className="text-left text-xs font-bold hover:text-red-600 hover:underline"
+                          >
                             {doc.display_name || "Pengunjung"}
-                          </p>
+                          </button>
                         </div>
 
                         {doc.caption && (
@@ -6302,6 +6314,13 @@ accept="image/jpeg,image/png,image/webp"
                               <div><p className="text-[10px] font-bold uppercase tracking-wide text-gray-400">Nama tampilan</p><p className="mt-1 text-sm font-semibold">{selectedAdminUser.display_name || "Belum diatur"}</p></div>
                               <div><p className="text-[10px] font-bold uppercase tracking-wide text-gray-400">Username</p><p className="mt-1 text-sm font-semibold">@{selectedAdminUser.username}</p></div>
                               <div><p className="text-[10px] font-bold uppercase tracking-wide text-gray-400">Bio</p><p className="mt-1 whitespace-pre-wrap break-words text-sm text-gray-700 dark:text-gray-300">{selectedAdminUser.bio?.trim() || "Belum mengisi bio."}</p></div>
+                              <div>
+                                <p className="text-[10px] font-bold uppercase tracking-wide text-gray-400">Sosial Media</p>
+                                <div className="mt-2 space-y-2 text-sm">
+                                  {selectedAdminUser.instagram_url ? <a href={selectedAdminUser.instagram_url} target="_blank" rel="noopener noreferrer" className="block break-all font-semibold text-red-600 hover:underline">Instagram · {getSocialUsername(selectedAdminUser.instagram_url, "instagram")}</a> : <p className="text-gray-500">Instagram · Belum ditambahkan</p>}
+                                  {selectedAdminUser.tiktok_url ? <a href={selectedAdminUser.tiktok_url} target="_blank" rel="noopener noreferrer" className="block break-all font-semibold text-red-600 hover:underline">TikTok · {getSocialUsername(selectedAdminUser.tiktok_url, "tiktok")}</a> : <p className="text-gray-500">TikTok · Belum ditambahkan</p>}
+                                </div>
+                              </div>
                               <div><p className="text-[10px] font-bold uppercase tracking-wide text-gray-400">Tanggal bergabung</p><p className="mt-1 text-sm font-semibold">{selectedAdminUser.created_at ? new Date(selectedAdminUser.created_at).toLocaleString("id-ID", { dateStyle: "long", timeStyle: "short" }) : "Tidak tersedia"}</p></div>
                               <div><p className="text-[10px] font-bold uppercase tracking-wide text-gray-400">ID pengguna</p><p className="mt-1 break-all font-mono text-xs text-gray-500">{selectedAdminUser.id}</p></div>
                             </div>
@@ -6606,14 +6625,14 @@ accept="image/jpeg,image/png,image/webp"
           </div>
         )}
         {selectedReviewerProfile && (
-          <div className="fixed inset-0 z-[181] flex items-center justify-center bg-black/60 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelectedReviewerProfile(null); }}>
-            <section role="dialog" aria-modal="true" aria-labelledby="reviewer-profile-title" className="relative w-full max-w-sm rounded-3xl bg-white p-6 text-center shadow-2xl dark:bg-gray-900">
+          <div className="fixed inset-0 z-[181] flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelectedReviewerProfile(null); }}>
+            <section role="dialog" aria-modal="true" aria-labelledby="reviewer-profile-title" className="relative max-h-[88dvh] w-full max-w-sm overflow-y-auto rounded-t-3xl bg-white px-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-7 text-center shadow-2xl sm:rounded-3xl sm:pb-6 dark:bg-gray-900">
               <button type="button" onClick={() => setSelectedReviewerProfile(null)} aria-label="Tutup kartu profil" className="absolute right-3 top-3 rounded-full px-3 py-1 text-2xl text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800">×</button>
               {selectedReviewerProfile.avatar_url ? <img src={selectedReviewerProfile.avatar_url} alt="" className="mx-auto h-24 w-24 rounded-full object-cover ring-4 ring-red-100 dark:ring-red-950" /> : <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-red-100 text-3xl font-black text-red-700 dark:bg-red-950 dark:text-red-300">{(selectedReviewerProfile.display_name || "P")[0].toUpperCase()}</div>}
               <h2 id="reviewer-profile-title" className="mt-4 text-xl font-black">{selectedReviewerProfile.display_name || "Pengguna"}</h2>
               <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-gray-600 dark:text-gray-300">{selectedReviewerProfile.bio || "Belum ada bio."}</p>
-              <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
-                {selectedReviewerProfile.instagram_url && (
+              <div className="mt-5 space-y-2">
+                {selectedReviewerProfile.instagram_url ? (
                   <a
                     href={selectedReviewerProfile.instagram_url}
                     target="_blank"
@@ -6625,8 +6644,10 @@ accept="image/jpeg,image/png,image/webp"
                     <span>Instagram</span>
                     <span className="text-gray-500">{getSocialUsername(selectedReviewerProfile.instagram_url, "instagram")}</span>
                   </a>
+                ) : (
+                  <p className="rounded-xl border border-dashed border-gray-200 px-4 py-3 text-xs text-gray-500 dark:border-gray-700">Instagram · Belum ditambahkan</p>
                 )}
-                {selectedReviewerProfile.tiktok_url && (
+                {selectedReviewerProfile.tiktok_url ? (
                   <a
                     href={selectedReviewerProfile.tiktok_url}
                     target="_blank"
@@ -6638,6 +6659,8 @@ accept="image/jpeg,image/png,image/webp"
                     <span>TikTok</span>
                     <span className="text-gray-500">{getSocialUsername(selectedReviewerProfile.tiktok_url, "tiktok")}</span>
                   </a>
+                ) : (
+                  <p className="rounded-xl border border-dashed border-gray-200 px-4 py-3 text-xs text-gray-500 dark:border-gray-700">TikTok · Belum ditambahkan</p>
                 )}
               </div>
             </section>
