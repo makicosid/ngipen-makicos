@@ -77,7 +77,6 @@ export async function POST(request: NextRequest) {
             body: "Perangkat ini berhasil terhubung dengan notifikasi NGIPEN.",
             url: "/",
           },
-          webpush: { fcmOptions: { link: "/" } },
         });
         return { id: subscription.id, success: true, messageId };
       } catch (sendError) {
