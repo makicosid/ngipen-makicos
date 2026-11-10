@@ -15,6 +15,7 @@ interface AttendanceEvent {
 
 interface Participant {
   attendance_id: string;
+  user_id: string;
   display_name: string;
   avatar_url: string | null;
   attendance_status: AttendanceStatus;
@@ -32,6 +33,7 @@ interface AttendancePayload {
 interface EventAttendanceProps {
   event: AttendanceEvent;
   role: AttendanceRole;
+  onOpenProfile: (userId: string) => void;
 }
 
 function dateRange(start: string, end: string) {
@@ -58,7 +60,7 @@ function formatDate(value: string) {
     .toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
 }
 
-export default function EventAttendance({ event, role }: EventAttendanceProps) {
+export default function EventAttendance({ event, role, onOpenProfile }: EventAttendanceProps) {
   const [attendance, setAttendance] = useState<AttendancePayload | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<AttendanceStatus>("attending");
   const [selectedDates, setSelectedDates] = useState<string[]>([]);
@@ -270,20 +272,33 @@ export default function EventAttendance({ event, role }: EventAttendanceProps) {
               <ul className="mt-3 space-y-3">
                 {participants.map((participant) => (
                   <li key={participant.attendance_id} className="flex items-start gap-3">
-                    {participant.avatar_url ? (
-                      <img
-                        src={participant.avatar_url}
-                        alt=""
-                        className="h-10 w-10 shrink-0 rounded-full object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-100 text-sm font-black text-red-700 dark:bg-red-950 dark:text-red-300">
-                        {(participant.display_name || "P")[0].toUpperCase()}
-                      </div>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => onOpenProfile(participant.user_id)}
+                      className="shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                      aria-label={`Lihat profil ${participant.display_name || "Pengguna"}`}
+                    >
+                      {participant.avatar_url ? (
+                        <img
+                          src={participant.avatar_url}
+                          alt=""
+                          className="h-10 w-10 rounded-full object-cover"
+                        />
+                      ) : (
+                        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 text-sm font-black text-red-700 dark:bg-red-950 dark:text-red-300">
+                          {(participant.display_name || "P")[0].toUpperCase()}
+                        </span>
+                      )}
+                    </button>
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-sm font-bold">{participant.display_name || "Pengguna NGIPEN"}</span>
+                        <button
+                          type="button"
+                          onClick={() => onOpenProfile(participant.user_id)}
+                          className="text-left text-sm font-bold hover:text-red-600 hover:underline"
+                        >
+                          {participant.display_name || "Pengguna NGIPEN"}
+                        </button>
                         <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${participant.attendance_status === "attending" ? "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300" : "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300"}`}>
                           {participant.attendance_status === "attending" ? "Hadir" : "Tidak Hadir"}
                         </span>
