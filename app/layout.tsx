@@ -1,7 +1,7 @@
 
 import './globals.css';
 import type { Metadata } from 'next';
-import PwaServiceWorker from '@/components/pwa-service-worker';
+import PwaServiceWorker from '../components/pwa-service-worker';
 
 const BASE_URL = 'https://ngipen.my.id';
 
