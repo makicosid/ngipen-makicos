@@ -1,6 +1,7 @@
 
 import './globals.css';
 import type { Metadata } from 'next';
+import PwaServiceWorker from '@/components/pwa-service-worker';
 
 const BASE_URL = 'https://ngipen.my.id';
 
@@ -8,6 +9,9 @@ export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
 
   applicationName: 'NGIPEN',
+  manifest: '/manifest.webmanifest',
+  appleWebApp: { capable: true, statusBarStyle: 'default', title: 'NGIPEN' },
+  themeColor: '#D9232E',
 
   alternates: {
     canonical: BASE_URL,
@@ -76,6 +80,7 @@ export default function RootLayout({
   return (
     <html lang="id" suppressHydrationWarning>
       <body className="bg-[#F7F7F8] dark:bg-[#121212] text-[#242424] dark:text-white antialiased">
+        <PwaServiceWorker />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
