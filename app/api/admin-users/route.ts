@@ -27,6 +27,22 @@ function hashToken(token: string) {
   return createHash("sha256").update(token).digest("hex");
 }
 
+function safeSocialUrl(value: string | null, platform: "instagram" | "tiktok") {
+  if (!value) return "";
+  try {
+    const url = new URL(value);
+    const hosts = platform === "instagram"
+      ? ["instagram.com", "www.instagram.com"]
+      : ["tiktok.com", "www.tiktok.com"];
+    if (url.protocol !== "https:" || url.username || url.password ||
+        !hosts.includes(url.hostname.toLowerCase()) ||
+        url.pathname.replace(/\\/+$/, "").length < 2) return "";
+    return url.toString();
+  } catch {
+    return "";
+  }
+}
+
 function json(data: object, status = 200) {
   const response = NextResponse.json(data, { status });
   response.headers.set("Cache-Control", "no-store");
@@ -91,7 +107,7 @@ export async function GET(request: NextRequest) {
 
     const { data: users, error: usersError } = await supabase
       .from("users")
-      .select("id,username,display_name,bio,avatar_url,created_at")
+      .select("id,username,display_name,bio,avatar_url,instagram_url,tiktok_url,created_at")
       .order("created_at", { ascending: false });
 
     if (usersError) {
@@ -125,6 +141,8 @@ export async function GET(request: NextRequest) {
 
     const result = (users || []).map((user) => ({
       ...user,
+      instagram_url: safeSocialUrl(user.instagram_url, "instagram"),
+      tiktok_url: safeSocialUrl(user.tiktok_url, "tiktok"),
       savedEventsCount: savedCounts.get(user.id) || 0,
       totalClicks: viewCounts.get(user.id) || 0,
     }));
