@@ -2664,7 +2664,7 @@ if (!allowedImageTypes.includes(docFile.type)) {
       const updated = { ...target, is_makicos_member: result.is_makicos_member, selected_frame_key: result.selected_frame_key };
       setRegisteredUsers((prev) => prev.map((user) => String(user.id) === String(target.id) ? { ...user, ...updated } : user));
       setSelectedAdminUser((prev) => prev && String(prev.id) === String(target.id) ? { ...prev, ...updated } : prev);
-      setToast(result.is_makicos_member ? "Membership MAKICOS berhasil diberikan." : "Membership dicabut. Frame dikembalikan ke Red.");
+      setToast(result.is_makicos_member ? "Membership MAKICOS berhasil diberikan. Frame kartu profil member aktif." : "Membership dicabut. Frame kartu profil member dinonaktifkan; pilihan frame foto profil tetap.");
     } catch (error) { setToast(error instanceof Error ? error.message : "Gagal memperbarui membership."); }
     finally { setMembershipSaving(false); }
   };
