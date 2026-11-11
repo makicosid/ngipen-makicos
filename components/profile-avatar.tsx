@@ -26,7 +26,7 @@ export default function ProfileAvatar({
 }: ProfileAvatarProps) {
   const frameSrc = frameKey ? FRAME_ASSETS[frameKey] : undefined;
   const isMemberFrame = frameKey === "kitsune_member";
-  const avatarScale = isMemberFrame ? 0.74 : 0.92;
+  const avatarScale = 0.92;
   const frameScale = isMemberFrame ? 1.5 : 1.3;
 
   return (
