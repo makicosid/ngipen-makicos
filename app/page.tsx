@@ -127,6 +127,7 @@ interface RegUser {
   created_at: string;
   savedEventsCount?: number;
   totalClicks?: number;
+  attendedEventsCount?: number;
 }
 
 const ALL_PROVINCES = [
@@ -6395,6 +6396,7 @@ accept="image/jpeg,image/png,image/webp"
                                     {adminUserListTab === "members" && <th className="px-4 py-3">Keanggotaan</th>}
                                     <th className="px-4 py-3">Bergabung</th>
                                     <th className="px-4 py-3 text-center">Event tersimpan</th>
+                                    <th className="px-4 py-3 text-center">Event dikunjungi</th>
                                     <th className="px-4 py-3 text-center">Klik unik</th>
                                     <th className="px-4 py-3 text-right">Detail</th>
                                   </tr>
@@ -6415,6 +6417,9 @@ accept="image/jpeg,image/png,image/webp"
                                       <td className="whitespace-nowrap px-4 py-3 text-xs text-gray-500">{user.created_at ? new Date(user.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }) : "—"}</td>
                                       <td className="px-4 py-3 text-center">
                                         <button type="button" onClick={(event) => { event.stopPropagation(); void openUserSavedEvents(user); }} className="rounded-lg px-3 py-1.5 font-bold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40" aria-label={`Lihat ${user.savedEventsCount ?? 0} event tersimpan milik ${user.username}`}>{user.savedEventsCount ?? 0}</button>
+                                      </td>
+                                      <td className="px-4 py-3 text-center">
+                                        <span className="font-bold tabular-nums text-green-700 dark:text-green-300" title="Jumlah event unik dengan pilihan absensi Hadir">{(user.attendedEventsCount ?? 0).toLocaleString("id-ID")}</span>
                                       </td>
                                       <td className="px-4 py-3 text-center font-semibold tabular-nums">{(user.totalClicks ?? 0).toLocaleString("id-ID")}</td>
                                       <td className="px-4 py-3 text-right"><button type="button" onClick={(event) => { event.stopPropagation(); setSelectedAdminUser(user); }} className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-bold text-gray-700 transition hover:border-red-300 hover:text-red-600 dark:border-gray-700 dark:text-gray-200">Lihat detail</button></td>
