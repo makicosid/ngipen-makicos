@@ -42,8 +42,13 @@ export async function PATCH(request: NextRequest) {
     const userId = typeof body.userId === "string" ? body.userId.trim() : "";
     if (!UUID_PATTERN.test(userId) || typeof body.isMember !== "boolean") return json({ error: "Data membership tidak valid." }, 400);
 
-    const update = body.isMember ? { is_makicos_member: true } : { is_makicos_member: false, selected_frame_key: "free_red" };
-    const { data: user, error } = await supabase.from("users").update(update).eq("id", userId).select("id, is_makicos_member, selected_frame_key").maybeSingle();
+    // Status member hanya mengendalikan frame KARTU profil. Jangan mengubah pilihan frame avatar pengguna.
+    const { data: user, error } = await supabase
+      .from("users")
+      .update({ is_makicos_member: body.isMember })
+      .eq("id", userId)
+      .select("id, is_makicos_member, selected_frame_key")
+      .maybeSingle();
     if (error) {
       console.error("Admin membership update failed:", error);
       return json({ error: "Gagal memperbarui status membership." }, 500);
