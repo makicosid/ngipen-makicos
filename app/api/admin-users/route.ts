@@ -64,6 +64,37 @@ async function isAdminAuthenticated(request: NextRequest) {
   return !error && Boolean(data);
 }
 
+async function fetchAllAttendanceRows(): Promise<Array<{
+  user_id: string | null;
+  event_id: string | null;
+  attendance_status: string | null;
+}>> {
+  const supabase = getSupabaseAdmin();
+  const rows: Array<{
+    user_id: string | null;
+    event_id: string | null;
+    attendance_status: string | null;
+  }> = [];
+
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data, error } = await supabase
+      .from("event_attendance")
+      .select("user_id,event_id,attendance_status")
+      .range(from, from + PAGE_SIZE - 1);
+
+    if (error) {
+      console.error("Admin event_attendance query error:", error);
+      throw new Error("Gagal mengambil statistik event dikunjungi.");
+    }
+
+    const page = data || [];
+    rows.push(...page);
+    if (page.length < PAGE_SIZE) break;
+  }
+
+  return rows;
+}
+
 async function fetchAllRows(
   table: "event_saves" | "event_views"
 ): Promise<Array<{ user_id: string | null }>> {
@@ -115,13 +146,15 @@ export async function GET(request: NextRequest) {
       return json({ error: "Gagal mengambil daftar pengguna." }, 500);
     }
 
-    const [savedRows, viewRows] = await Promise.all([
+    const [savedRows, viewRows, attendanceRows] = await Promise.all([
       fetchAllRows("event_saves"),
       fetchAllRows("event_views"),
+      fetchAllAttendanceRows(),
     ]);
 
     const savedCounts = new Map<string, number>();
     const viewCounts = new Map<string, number>();
+    const attendedEventIdsByUser = new Map<string, Set<string>>();
 
     for (const row of savedRows) {
       if (!row.user_id) continue;
@@ -139,12 +172,21 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Hitung event unik yang dipilih dengan status Hadir, bukan sekadar klik atau simpan.
+    for (const row of attendanceRows) {
+      if (!row.user_id || !row.event_id || row.attendance_status !== "attending") continue;
+      const eventIds = attendedEventIdsByUser.get(row.user_id) || new Set<string>();
+      eventIds.add(row.event_id);
+      attendedEventIdsByUser.set(row.user_id, eventIds);
+    }
+
     const result = (users || []).map((user) => ({
       ...user,
       instagram_url: safeSocialUrl(user.instagram_url, "instagram"),
       tiktok_url: safeSocialUrl(user.tiktok_url, "tiktok"),
       savedEventsCount: savedCounts.get(user.id) || 0,
       totalClicks: viewCounts.get(user.id) || 0,
+      attendedEventsCount: attendedEventIdsByUser.get(user.id)?.size || 0,
     }));
 
     return json({

@@ -132,3 +132,20 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .ngipen-fox-sticker { transition: none; }
 }
+
+
+/* Compact public profile popup. The member artwork is rendered as a responsive overlay in the modal. */
+.member-profile-card {
+  isolation: isolate;
+  scrollbar-width: thin;
+}
+.member-profile-card--makicos {
+  border: 2px solid #c99a35;
+  box-shadow: 0 18px 48px rgba(93, 24, 19, 0.18), 0 0 0 4px rgba(201, 154, 53, 0.12);
+}
+
+/* The profile popup is portrait at every breakpoint; use the portrait artwork without stretching it. */
+.member-profile-card__artwork {
+  object-fit: fill;
+  object-position: center;
+}

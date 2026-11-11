@@ -127,6 +127,7 @@ interface RegUser {
   created_at: string;
   savedEventsCount?: number;
   totalClicks?: number;
+  attendedEventsCount?: number;
 }
 
 const ALL_PROVINCES = [
@@ -935,6 +936,17 @@ const sponsorCarouselPausedRef = useRef(false);
   const [savedEventsList, setSavedEventsList] = useState<{ savedAt: string; event: Event }[]>([]);
   const [savedEventsLoading, setSavedEventsLoading] = useState(false);
   const [savedEventsError, setSavedEventsError] = useState("");
+  const [userAttendanceHistory, setUserAttendanceHistory] = useState<Array<{
+    attendanceId: string;
+    eventId: string;
+    attendanceStatus: "attending" | "not_attending";
+    selectedDates: string[];
+    submittedAt: string;
+    updatedAt: string;
+    event: { id: string; title: string; startDate: string; endDate: string; city: string; province: string };
+  }>>([]);
+  const [userAttendanceLoading, setUserAttendanceLoading] = useState(false);
+  const [userAttendanceError, setUserAttendanceError] = useState("");
   const [adminUserListTab, setAdminUserListTab] = useState<"all" | "members">("all");
   const [adminUserSearch, setAdminUserSearch] = useState("");
   const [adminUserSort, setAdminUserSort] = useState<"Terbaru" | "Terlama" | "Klik terbanyak" | "Event tersimpan terbanyak">("Terbaru");
@@ -1456,9 +1468,48 @@ const handleRentalImage = (file: File | null) => {
     }
   };
 
+  // Riwayat absensi dimuat hanya saat Admin membuka detail satu pengguna.
+  useEffect(() => {
+    const userId = selectedAdminUser?.id;
+    if (currentRole !== "admin" || !userId) {
+      setUserAttendanceHistory([]);
+      setUserAttendanceError("");
+      setUserAttendanceLoading(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    setUserAttendanceLoading(true);
+    setUserAttendanceError("");
+
+    fetch(`/api/admin-users/attendance?userId=${encodeURIComponent(userId)}`, {
+      method: "GET",
+      credentials: "include",
+      cache: "no-store",
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        const result = await response.json();
+        if (!response.ok || !Array.isArray(result.attendance)) {
+          throw new Error(result.error || "Gagal memuat riwayat absensi.");
+        }
+        setUserAttendanceHistory(result.attendance);
+      })
+      .catch((error) => {
+        if (error instanceof Error && error.name === "AbortError") return;
+        setUserAttendanceHistory([]);
+        setUserAttendanceError(error instanceof Error ? error.message : "Gagal memuat riwayat absensi.");
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setUserAttendanceLoading(false);
+      });
+
+    return () => controller.abort();
+  }, [currentRole, selectedAdminUser?.id]);
+
   // Statistik pengguna khusus Admin — data dihitung oleh API server.
   useEffect(() => {
-    if (currentRole !== "admin" || !showAdmin || adminTab !== "users") {
+    if (currentRole !== "admin") {
       return;
     }
 
@@ -1503,7 +1554,7 @@ const handleRentalImage = (file: File | null) => {
     return () => {
       active = false;
     };
-  }, [currentRole, showAdmin, adminTab]);
+  }, [currentRole]);
 
   // Pintasan admin: Ctrl + Shift + A
   useEffect(() => {
@@ -2613,7 +2664,7 @@ if (!allowedImageTypes.includes(docFile.type)) {
       const updated = { ...target, is_makicos_member: result.is_makicos_member, selected_frame_key: result.selected_frame_key };
       setRegisteredUsers((prev) => prev.map((user) => String(user.id) === String(target.id) ? { ...user, ...updated } : user));
       setSelectedAdminUser((prev) => prev && String(prev.id) === String(target.id) ? { ...prev, ...updated } : prev);
-      setToast(result.is_makicos_member ? "Membership MAKICOS berhasil diberikan." : "Membership dicabut. Frame dikembalikan ke Red.");
+      setToast(result.is_makicos_member ? "Membership MAKICOS berhasil diberikan. Frame kartu profil member aktif." : "Membership dicabut. Frame kartu profil member dinonaktifkan; pilihan frame foto profil tetap.");
     } catch (error) { setToast(error instanceof Error ? error.message : "Gagal memperbarui membership."); }
     finally { setMembershipSaving(false); }
   };
@@ -3810,6 +3861,12 @@ const shareEvent = async (event: Event) => {
                   )}
                   <button onClick={() => { setMobileOpen(false); openCalendarFromNavigation(); }} aria-current={activeNavKey === "calendar" ? "page" : undefined} className={`rounded-xl px-3 py-3 text-left font-semibold transition-colors ${activeNavKey === "calendar" ? "bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-300" : "hover:bg-gray-100 dark:hover:bg-gray-900"}`}>Kalender</button>
                 </div>
+                {currentRole === "user" && (
+                  <div className="border-t border-gray-200 pt-3 dark:border-gray-800">
+                    <p className="px-3 pb-1 text-[10px] font-bold uppercase tracking-[0.16em] text-gray-400">Akun</p>
+                    <button type="button" onClick={() => { setMobileOpen(false); setShowUserProfile(true); }} className="w-full rounded-xl px-3 py-3 text-left font-semibold transition-colors hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950/30">Profile Saya</button>
+                  </div>
+                )}
                 <div className="border-t border-gray-200 pt-3 dark:border-gray-800">
                   <p className="px-3 pb-1 text-[10px] font-bold uppercase tracking-[0.16em] text-gray-400">Informasi & Dukungan</p>
                   <div className="flex flex-col gap-1">
@@ -4448,6 +4505,30 @@ const shareEvent = async (event: Event) => {
                       </p>
                     </div>
                   </div>
+                  <div className="mt-3 overflow-hidden rounded-xl border border-red-100 bg-white dark:border-red-900/50 dark:bg-gray-900">
+                    <div className="border-b border-gray-100 px-4 py-3 dark:border-gray-800">
+                      <h3 className="text-sm font-black text-gray-900 dark:text-white">Informasi Pengguna & Member</h3>
+                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Ringkasan dari sumber data pengguna yang sama.</p>
+                    </div>
+                    {adminUsersLoading ? (
+                      <p className="px-4 py-4 text-sm text-gray-500">Memuat data pengguna...</p>
+                    ) : adminUsersLoadError ? (
+                      <p className="px-4 py-4 text-sm text-red-600 dark:text-red-300">Data pengguna belum dapat dimuat: {adminUsersLoadError}</p>
+                    ) : (
+                      <table className="w-full text-sm">
+                        <tbody>
+                          <tr className="border-b border-gray-100 dark:border-gray-800">
+                            <th scope="row" className="px-4 py-3 text-left font-semibold text-gray-600 dark:text-gray-300">Total pengguna</th>
+                            <td className="px-4 py-3 text-right font-black tabular-nums">{registeredUsers.length.toLocaleString("id-ID")}</td>
+                          </tr>
+                          <tr>
+                            <th scope="row" className="px-4 py-3 text-left font-semibold text-gray-600 dark:text-gray-300">Member MAKICOS aktif</th>
+                            <td className="px-4 py-3 text-right font-black tabular-nums text-amber-700 dark:text-amber-300">{registeredUsers.filter((user) => user.is_makicos_member).length.toLocaleString("id-ID")}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
                 </div>
               </section>
             )}
@@ -4468,12 +4549,10 @@ const shareEvent = async (event: Event) => {
               </div>
 
               <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-6">
-                <input
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Cari nama event, kota..."
-                  className="min-w-0 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-red-500 dark:border-gray-700 dark:bg-gray-900"
-                />
+                <div className="relative min-w-0">
+                  <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Cari nama event, kota..." aria-label="Cari nama event atau kota" className="w-full min-w-0 rounded-xl border border-gray-200 bg-white px-4 py-3 pr-10 text-sm outline-none focus:border-red-500 dark:border-gray-700 dark:bg-gray-900" />
+                  {search && <button type="button" onClick={() => setSearch("")} aria-label="Hapus pencarian event" className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full px-1.5 py-1 text-lg leading-none text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-800 dark:hover:text-gray-200">×</button>}
+                </div>
 
                 <select
                   value={selectedProv}
@@ -6041,7 +6120,10 @@ accept="image/jpeg,image/png,image/webp"
                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
                           <label className="text-xs font-bold text-gray-600 dark:text-gray-300 sm:col-span-2 xl:col-span-1">
                             Cari event / pengguna / lokasi
-                            <input value={adminEventSearch} onChange={(e) => setAdminEventSearch(e.target.value)} placeholder="Judul, username, kota, alamat..." className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm font-normal outline-none focus:border-red-500 dark:border-gray-700 dark:bg-gray-900" />
+                            <div className="relative mt-1">
+                              <input value={adminEventSearch} onChange={(e) => setAdminEventSearch(e.target.value)} placeholder="Judul, username, kota, alamat..." className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 pr-9 text-sm font-normal outline-none focus:border-red-500 dark:border-gray-700 dark:bg-gray-900" />
+                              {adminEventSearch && <button type="button" onClick={() => setAdminEventSearch("")} aria-label="Hapus pencarian event admin" className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full px-1.5 py-1 text-lg leading-none text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-800">×</button>}
+                            </div>
                           </label>
                           <label className="text-xs font-bold text-gray-600 dark:text-gray-300">
                             Kategori
@@ -6248,7 +6330,8 @@ accept="image/jpeg,image/png,image/webp"
                           <label className="relative min-w-0 flex-1 sm:min-w-[240px]">
                             <span className="sr-only">Cari pengguna</span>
                             <svg viewBox="0 0 24 24" aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7"/><path strokeLinecap="round" d="m16 16 4 4"/></svg>
-                            <input value={adminUserSearch} onChange={(event) => { setAdminUserSearch(event.target.value); setAdminUserPage(1); }} placeholder={adminUserListTab === "members" ? "Cari member berdasarkan nama atau username..." : "Cari nama atau username..."} className="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-9 pr-3 text-sm outline-none transition focus:border-red-400 focus:ring-2 focus:ring-red-100 dark:border-gray-700 dark:bg-gray-900 dark:focus:ring-red-950" />
+                            <input value={adminUserSearch} onChange={(event) => { setAdminUserSearch(event.target.value); setAdminUserPage(1); }} placeholder={adminUserListTab === "members" ? "Cari member berdasarkan nama atau username..." : "Cari nama atau username..."} className="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-9 pr-9 text-sm outline-none transition focus:border-red-400 focus:ring-2 focus:ring-red-100 dark:border-gray-700 dark:bg-gray-900 dark:focus:ring-red-950" />
+                            {adminUserSearch && <button type="button" onClick={() => { setAdminUserSearch(""); setAdminUserPage(1); }} aria-label="Hapus pencarian pengguna" className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full px-1.5 py-1 text-lg leading-none text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-800">×</button>}
                           </label>
                           <select value={adminUserSort} onChange={(event) => { setAdminUserSort(event.target.value as typeof adminUserSort); setAdminUserPage(1); }} aria-label="Urutkan pengguna" className="rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900">
                             <option value="Terbaru">Terbaru</option>
@@ -6313,6 +6396,7 @@ accept="image/jpeg,image/png,image/webp"
                                     {adminUserListTab === "members" && <th className="px-4 py-3">Keanggotaan</th>}
                                     <th className="px-4 py-3">Bergabung</th>
                                     <th className="px-4 py-3 text-center">Event tersimpan</th>
+                                    <th className="px-4 py-3 text-center">Event dikunjungi</th>
                                     <th className="px-4 py-3 text-center">Klik unik</th>
                                     <th className="px-4 py-3 text-right">Detail</th>
                                   </tr>
@@ -6333,6 +6417,9 @@ accept="image/jpeg,image/png,image/webp"
                                       <td className="whitespace-nowrap px-4 py-3 text-xs text-gray-500">{user.created_at ? new Date(user.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }) : "—"}</td>
                                       <td className="px-4 py-3 text-center">
                                         <button type="button" onClick={(event) => { event.stopPropagation(); void openUserSavedEvents(user); }} className="rounded-lg px-3 py-1.5 font-bold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40" aria-label={`Lihat ${user.savedEventsCount ?? 0} event tersimpan milik ${user.username}`}>{user.savedEventsCount ?? 0}</button>
+                                      </td>
+                                      <td className="px-4 py-3 text-center">
+                                        <span className="font-bold tabular-nums text-green-700 dark:text-green-300" title="Jumlah event unik dengan pilihan absensi Hadir">{(user.attendedEventsCount ?? 0).toLocaleString("id-ID")}</span>
                                       </td>
                                       <td className="px-4 py-3 text-center font-semibold tabular-nums">{(user.totalClicks ?? 0).toLocaleString("id-ID")}</td>
                                       <td className="px-4 py-3 text-right"><button type="button" onClick={(event) => { event.stopPropagation(); setSelectedAdminUser(user); }} className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-bold text-gray-700 transition hover:border-red-300 hover:text-red-600 dark:border-gray-700 dark:text-gray-200">Lihat detail</button></td>
@@ -6364,6 +6451,43 @@ accept="image/jpeg,image/png,image/webp"
                               <div className="rounded-xl bg-gray-50 p-3 dark:bg-gray-950"><p className="text-xs text-gray-500">Event tersimpan</p><p className="mt-1 text-2xl font-black text-red-600">{(selectedAdminUser.savedEventsCount ?? 0).toLocaleString("id-ID")}</p><button type="button" onClick={() => { setSelectedAdminUser(null); void openUserSavedEvents(selectedAdminUser); }} className="mt-2 text-xs font-bold text-red-600 hover:underline">Lihat daftar event →</button></div>
                               <div className="rounded-xl bg-gray-50 p-3 dark:bg-gray-950"><p className="text-xs text-gray-500">Total klik unik</p><p className="mt-1 text-2xl font-black">{(selectedAdminUser.totalClicks ?? 0).toLocaleString("id-ID")}</p></div>
                             </div>
+                            <section className="rounded-xl border border-blue-100 bg-blue-50/40 p-4 dark:border-blue-950/60 dark:bg-blue-950/15">
+                              <div className="flex items-start justify-between gap-3">
+                                <div>
+                                  <h4 className="text-sm font-black text-gray-900 dark:text-white">Riwayat Pilihan Absensi Event</h4>
+                                  <p className="mt-1 text-xs text-gray-500">Event yang pernah dipilih pengguna untuk Hadir atau Tidak Hadir.</p>
+                                </div>
+                                <span className="rounded-full bg-white px-2.5 py-1 text-xs font-black text-blue-700 dark:bg-gray-900 dark:text-blue-300">{userAttendanceHistory.length}</span>
+                              </div>
+                              {userAttendanceLoading ? (
+                                <p className="py-5 text-center text-xs text-gray-500">Memuat riwayat absensi...</p>
+                              ) : userAttendanceError ? (
+                                <p className="mt-3 rounded-lg bg-red-50 p-3 text-xs text-red-700 dark:bg-red-950/40 dark:text-red-300">{userAttendanceError}</p>
+                              ) : userAttendanceHistory.length === 0 ? (
+                                <p className="mt-3 rounded-lg border border-dashed border-blue-200 px-3 py-5 text-center text-xs text-gray-500 dark:border-blue-900">Pengguna ini belum pernah memilih absensi event.</p>
+                              ) : (
+                                <div className="mt-3 space-y-2">
+                                  {userAttendanceHistory.map((item) => (
+                                    <article key={item.attendanceId} className="rounded-lg border border-gray-200 bg-white p-3 dark:border-gray-800 dark:bg-gray-900">
+                                      <div className="flex flex-wrap items-start justify-between gap-2">
+                                        <p className="min-w-0 flex-1 break-words text-sm font-bold text-gray-900 dark:text-white">{item.event.title}</p>
+                                        <span className={`rounded-full px-2 py-1 text-[10px] font-bold ${item.attendanceStatus === "attending" ? "bg-green-50 text-green-700 dark:bg-green-950/40 dark:text-green-300" : "bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300"}`}>{item.attendanceStatus === "attending" ? "Hadir" : "Tidak Hadir"}</span>
+                                      </div>
+                                      <p className="mt-1 text-xs text-gray-500">{[item.event.city, item.event.province].filter(Boolean).join(", ") || "Lokasi tidak tersedia"}</p>
+                                      <p className="mt-2 text-[11px] font-semibold text-gray-600 dark:text-gray-300">Tanggal event dipilih:</p>
+                                      {item.selectedDates.length ? (
+                                        <div className="mt-1 flex flex-wrap gap-1.5">
+                                          {item.selectedDates.map((date) => <span key={date} className="rounded-md bg-blue-50 px-2 py-1 text-[11px] font-semibold text-blue-800 dark:bg-blue-950/50 dark:text-blue-200">{new Date(`${date}T00:00:00`).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}</span>)}
+                                        </div>
+                                      ) : (
+                                        <p className="mt-1 text-xs text-gray-400">Tidak ada tanggal dipilih.</p>
+                                      )}
+                                      <p className="mt-2 text-[10px] text-gray-400">Diperbarui: {item.updatedAt ? new Date(item.updatedAt).toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" }) : "—"}</p>
+                                    </article>
+                                  ))}
+                                </div>
+                              )}
+                            </section>
                             <div className="rounded-xl border border-red-200 bg-red-50/60 p-4 dark:border-red-950 dark:bg-red-950/20">
                               <div className="flex items-center justify-between gap-3"><div><p className="text-sm font-black">Keanggotaan MAKICOS</p><p className="mt-1 text-xs text-gray-500">Akses eksklusif frame Member Makicos.</p></div><span className={`rounded-full px-2.5 py-1 text-[10px] font-black ${selectedAdminUser.is_makicos_member ? "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300" : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300"}`}>{selectedAdminUser.is_makicos_member ? "MEMBER" : "NON-MEMBER"}</span></div>
                               <button type="button" disabled={membershipSaving} onClick={() => void handleToggleMakicosMember(selectedAdminUser)} className={`mt-3 w-full rounded-xl px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50 ${selectedAdminUser.is_makicos_member ? "bg-gray-700 hover:bg-gray-800" : "bg-red-600 hover:bg-red-700"}`}>{membershipSaving ? "Menyimpan…" : selectedAdminUser.is_makicos_member ? "Cabut Membership MAKICOS" : "Berikan Membership MAKICOS"}</button>
@@ -6685,10 +6809,20 @@ accept="image/jpeg,image/png,image/webp"
           </div>
         )}
         {selectedReviewerProfile && (
-          <div className="fixed inset-0 z-[181] flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelectedReviewerProfile(null); }}>
-            <section role="dialog" aria-modal="true" aria-labelledby="reviewer-profile-title" className="relative max-h-[88dvh] w-full max-w-sm overflow-y-auto rounded-t-3xl bg-white px-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-7 text-center shadow-2xl sm:rounded-3xl sm:pb-6 dark:bg-gray-900">
-              <button type="button" onClick={() => setSelectedReviewerProfile(null)} aria-label="Tutup kartu profil" className="absolute right-3 top-3 rounded-full px-3 py-1 text-2xl text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800">×</button>
-              <ProfileAvatar src={selectedReviewerProfile.avatar_url} frameKey={selectedReviewerProfile.selected_frame_key} fallback={(selectedReviewerProfile.display_name || "P")[0].toUpperCase()} size={96} className="mx-auto" />
+          <div className="fixed inset-0 z-[181] flex items-center justify-center bg-black/60 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelectedReviewerProfile(null); }}>
+            <section role="dialog" aria-modal="true" aria-labelledby="reviewer-profile-title" className={`member-profile-card relative min-h-[460px] max-h-[88dvh] w-full max-w-[340px] overflow-hidden rounded-3xl bg-white px-5 pb-6 pt-9 text-center shadow-2xl dark:bg-gray-900 sm:min-h-[500px] sm:max-w-[420px] sm:px-7 sm:pb-7 sm:pt-10 ${selectedReviewerProfile.is_makicos_member ? "member-profile-card--makicos" : ""}`}>
+              {selectedReviewerProfile.is_makicos_member && (
+                <img
+                  src="/profile-card-frames/member/member-profile-frame-mobile.webp"
+                  alt=""
+                  aria-hidden="true"
+                  draggable={false}
+                  className="member-profile-card__artwork pointer-events-none absolute inset-0 z-0 h-full w-full select-none"
+                />
+              )}
+              <div className="relative z-10 max-h-[calc(88dvh-2rem)] overflow-y-auto px-1 pb-2">
+              <button type="button" onClick={() => setSelectedReviewerProfile(null)} aria-label="Tutup kartu profil" className="absolute right-0 top-0 z-30 rounded-full px-3 py-1 text-2xl text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800">×</button>
+              <ProfileAvatar src={selectedReviewerProfile.avatar_url} frameKey={selectedReviewerProfile.selected_frame_key} fallback={(selectedReviewerProfile.display_name || "P")[0].toUpperCase()} size={112} className="mx-auto" />
               <div className="mt-4 flex flex-wrap items-center justify-center gap-2"><h2 id="reviewer-profile-title" className="text-xl font-black">{selectedReviewerProfile.display_name || "Pengguna"}</h2>{selectedReviewerProfile.is_makicos_member && <span className="inline-flex items-center rounded-full border border-amber-300 bg-amber-50 px-2.5 py-1 text-[10px] font-extrabold text-amber-800 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-300">✦ Member MAKICOS</span>}</div>
               <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-gray-600 dark:text-gray-300">{selectedReviewerProfile.bio || "Belum ada bio."}</p>
               <div className="mt-5 space-y-2">
@@ -6722,6 +6856,7 @@ accept="image/jpeg,image/png,image/webp"
                 ) : (
                   <p className="rounded-xl border border-dashed border-gray-200 px-4 py-3 text-xs text-gray-500 dark:border-gray-700">TikTok · Belum ditambahkan</p>
                 )}
+              </div>
               </div>
             </section>
           </div>
@@ -6769,7 +6904,7 @@ accept="image/jpeg,image/png,image/webp"
                         </p>
 
                         <label className="mt-2 inline-flex cursor-pointer rounded-lg border border-gray-300 px-3 py-2 text-xs font-bold dark:border-gray-700">
-                          Pilih Foto Profil
+                          Ganti Foto Profile
                           <input
                             type="file"
                             accept="image/*"
