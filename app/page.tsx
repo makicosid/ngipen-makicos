@@ -1458,7 +1458,7 @@ const handleRentalImage = (file: File | null) => {
 
   // Statistik pengguna khusus Admin — data dihitung oleh API server.
   useEffect(() => {
-    if (currentRole !== "admin" || !showAdmin || adminTab !== "users") {
+    if (currentRole !== "admin") {
       return;
     }
 
@@ -1503,7 +1503,7 @@ const handleRentalImage = (file: File | null) => {
     return () => {
       active = false;
     };
-  }, [currentRole, showAdmin, adminTab]);
+  }, [currentRole]);
 
   // Pintasan admin: Ctrl + Shift + A
   useEffect(() => {
@@ -4453,6 +4453,30 @@ const shareEvent = async (event: Event) => {
                         {sponsoredCount}
                       </p>
                     </div>
+                  </div>
+                  <div className="mt-3 overflow-hidden rounded-xl border border-red-100 bg-white dark:border-red-900/50 dark:bg-gray-900">
+                    <div className="border-b border-gray-100 px-4 py-3 dark:border-gray-800">
+                      <h3 className="text-sm font-black text-gray-900 dark:text-white">Informasi Pengguna & Member</h3>
+                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Ringkasan dari sumber data pengguna yang sama.</p>
+                    </div>
+                    {adminUsersLoading ? (
+                      <p className="px-4 py-4 text-sm text-gray-500">Memuat data pengguna...</p>
+                    ) : adminUsersLoadError ? (
+                      <p className="px-4 py-4 text-sm text-red-600 dark:text-red-300">Data pengguna belum dapat dimuat: {adminUsersLoadError}</p>
+                    ) : (
+                      <table className="w-full text-sm">
+                        <tbody>
+                          <tr className="border-b border-gray-100 dark:border-gray-800">
+                            <th scope="row" className="px-4 py-3 text-left font-semibold text-gray-600 dark:text-gray-300">Total pengguna</th>
+                            <td className="px-4 py-3 text-right font-black tabular-nums">{registeredUsers.length.toLocaleString("id-ID")}</td>
+                          </tr>
+                          <tr>
+                            <th scope="row" className="px-4 py-3 text-left font-semibold text-gray-600 dark:text-gray-300">Member MAKICOS aktif</th>
+                            <td className="px-4 py-3 text-right font-black tabular-nums text-amber-700 dark:text-amber-300">{registeredUsers.filter((user) => user.is_makicos_member).length.toLocaleString("id-ID")}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    )}
                   </div>
                 </div>
               </section>
