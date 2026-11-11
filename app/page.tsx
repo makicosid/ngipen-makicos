@@ -6677,7 +6677,7 @@ accept="image/jpeg,image/png,image/webp"
             <section role="dialog" aria-modal="true" aria-labelledby="reviewer-profile-title" className="relative max-h-[88dvh] w-full max-w-sm overflow-y-auto rounded-t-3xl bg-white px-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-7 text-center shadow-2xl sm:rounded-3xl sm:pb-6 dark:bg-gray-900">
               <button type="button" onClick={() => setSelectedReviewerProfile(null)} aria-label="Tutup kartu profil" className="absolute right-3 top-3 rounded-full px-3 py-1 text-2xl text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800">×</button>
               <ProfileAvatar src={selectedReviewerProfile.avatar_url} frameKey={selectedReviewerProfile.selected_frame_key} fallback={(selectedReviewerProfile.display_name || "P")[0].toUpperCase()} size={96} className="mx-auto" />
-              <h2 id="reviewer-profile-title" className="mt-4 text-xl font-black">{selectedReviewerProfile.display_name || "Pengguna"}</h2>
+              <div className="mt-4 flex flex-wrap items-center justify-center gap-2"><h2 id="reviewer-profile-title" className="text-xl font-black">{selectedReviewerProfile.display_name || "Pengguna"}</h2>{selectedReviewerProfile.is_makicos_member && <span className="inline-flex items-center rounded-full border border-amber-300 bg-amber-50 px-2.5 py-1 text-[10px] font-extrabold text-amber-800 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-300">✦ Member MAKICOS</span>}</div>
               <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-gray-600 dark:text-gray-300">{selectedReviewerProfile.bio || "Belum ada bio."}</p>
               <div className="mt-5 space-y-2">
                 {selectedReviewerProfile.instagram_url ? (
@@ -6749,7 +6749,7 @@ accept="image/jpeg,image/png,image/webp"
                       <ProfileAvatar src={userAvatarFile ? URL.createObjectURL(userAvatarFile) : registeredUsers.find((user) => user.id === currentUserId)?.avatar_url} frameKey={registeredUsers.find((user) => user.id === currentUserId)?.selected_frame_key} fallback={(currentUser || "U")[0].toUpperCase()} size={80} />
 
                       <div className="min-w-0 flex-1">
-                        <p className="font-bold">{currentUser}</p>
+                        <div className="flex flex-wrap items-center gap-2"><p className="font-bold">{currentUser}</p>{registeredUsers.find((user) => user.id === currentUserId)?.is_makicos_member && <span className="inline-flex items-center rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-extrabold text-amber-800 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-300">✦ Member MAKICOS</span>}</div>
                         <p className="text-xs text-gray-500">
                           @{registeredUsers.find(
                             (user) => user.id === currentUserId
