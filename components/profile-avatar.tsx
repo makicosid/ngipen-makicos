@@ -24,7 +24,10 @@ export default function ProfileAvatar({
   className = "",
   alt = "",
 }: ProfileAvatarProps) {
-  const frameSrc = frameKey ? FRAME_ASSETS[frameKey] : undefined;\n  const isMemberFrame = frameKey === "kitsune_member";\n  const avatarScale = isMemberFrame ? 0.54 : 0.92;\n  const frameScale = isMemberFrame ? 1.55 : 1.3;
+  const frameSrc = frameKey ? FRAME_ASSETS[frameKey] : undefined;
+  const isMemberFrame = frameKey === "kitsune_member";
+  const avatarScale = isMemberFrame ? 0.54 : 0.92;
+  const frameScale = isMemberFrame ? 1.55 : 1.3;
 
   return (
     <span className={`relative inline-flex shrink-0 items-center justify-center overflow-visible align-middle ${className}`} style={{ width: size * frameScale, height: size * frameScale }}>
