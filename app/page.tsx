@@ -107,6 +107,7 @@ interface PublicProfile {
   display_name: string;
   avatar_url: string;
   selected_frame_key?: string;
+  is_makicos_member?: boolean;
   bio: string;
   instagram_url: string;
   tiktok_url: string;
@@ -5419,9 +5420,12 @@ const shareEvent = async (event: Event) => {
 
                           <div className="min-w-0 flex-1">
                             <div className="flex flex-wrap items-center justify-between gap-2">
-                              <button type="button" onClick={() => void openReviewerProfile(review.user_id)} className="text-left font-bold hover:text-red-600 hover:underline" aria-label={`Lihat profil ${review.display_name || "Pengguna"}`}>
-                                {review.display_name || "Pengguna"}
-                              </button>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <button type="button" onClick={() => void openReviewerProfile(review.user_id)} className="text-left font-bold hover:text-red-600 hover:underline" aria-label={`Lihat profil ${review.display_name || "Pengguna"}`}>
+                                  {review.display_name || "Pengguna"}
+                                </button>
+                                {registeredUsers.find((user) => String(user.id) === String(review.user_id))?.is_makicos_member && <span className="inline-flex items-center rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-extrabold text-amber-800 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-300">✦ Member MAKICOS</span>}
+                              </div>
 
                               <span className="text-xs text-gray-500">
                                 {review.created_at
@@ -6342,7 +6346,7 @@ accept="image/jpeg,image/png,image/webp"
                           <div className="space-y-5 p-5">
                             <div className="flex items-center gap-4">
                               <ProfileAvatar src={selectedAdminUser.avatar_url} frameKey={selectedAdminUser.selected_frame_key} fallback={(selectedAdminUser.display_name || selectedAdminUser.username || "?")[0].toUpperCase()} size={64} />
-                              <div className="min-w-0"><h4 className="truncate text-lg font-black">{selectedAdminUser.display_name || selectedAdminUser.username}</h4><p className="truncate text-sm text-gray-500">@{selectedAdminUser.username}</p><span className="mt-1 inline-flex rounded-full bg-green-50 px-2.5 py-1 text-[10px] font-bold text-green-700 dark:bg-green-950/50 dark:text-green-300">Akun terdaftar</span></div>
+                              <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><h4 className="truncate text-lg font-black">{selectedAdminUser.display_name || selectedAdminUser.username}</h4>{selectedAdminUser.is_makicos_member && <span className="inline-flex rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-extrabold text-amber-800 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-300">✦ Member MAKICOS</span>}</div><p className="truncate text-sm text-gray-500">@{selectedAdminUser.username}</p><span className="mt-1 inline-flex rounded-full bg-green-50 px-2.5 py-1 text-[10px] font-bold text-green-700 dark:bg-green-950/50 dark:text-green-300">Akun terdaftar</span></div>
                             </div>
                             <div className="grid grid-cols-2 gap-3">
                               <div className="rounded-xl bg-gray-50 p-3 dark:bg-gray-950"><p className="text-xs text-gray-500">Event tersimpan</p><p className="mt-1 text-2xl font-black text-red-600">{(selectedAdminUser.savedEventsCount ?? 0).toLocaleString("id-ID")}</p><button type="button" onClick={() => { setSelectedAdminUser(null); void openUserSavedEvents(selectedAdminUser); }} className="mt-2 text-xs font-bold text-red-600 hover:underline">Lihat daftar event →</button></div>
