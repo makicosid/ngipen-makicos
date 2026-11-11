@@ -6258,6 +6258,7 @@ accept="image/jpeg,image/png,image/webp"
                           </select>
                         </div>
                       </div>
+                      </div>
 
                       {adminUsersLoadError && (
                         <p className="rounded-xl bg-red-50 p-3 text-xs text-red-700 dark:bg-red-950 dark:text-red-300">Statistik pengguna tidak dapat dimuat: {adminUsersLoadError}</p>
