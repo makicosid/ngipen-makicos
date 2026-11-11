@@ -6812,18 +6812,13 @@ accept="image/jpeg,image/png,image/webp"
           <div className="fixed inset-0 z-[181] flex items-center justify-center bg-black/60 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelectedReviewerProfile(null); }}>
             <section role="dialog" aria-modal="true" aria-labelledby="reviewer-profile-title" className={`member-profile-card relative min-h-[460px] max-h-[88dvh] w-full max-w-[340px] overflow-hidden rounded-3xl bg-white px-5 pb-6 pt-9 text-center shadow-2xl dark:bg-gray-900 sm:min-h-[500px] sm:max-w-[420px] sm:px-7 sm:pb-7 sm:pt-10 ${selectedReviewerProfile.is_makicos_member ? "member-profile-card--makicos" : ""}`}>
               {selectedReviewerProfile.is_makicos_member && (
-                <picture className="pointer-events-none absolute inset-0 z-0 block h-full w-full select-none" aria-hidden="true">
-                  <source
-                    media="(max-width: 639px)"
-                    srcSet="/profile-card-frames/member/member-profile-frame-mobile.webp"
-                  />
-                  <img
-                    src="/profile-card-frames/member/member-profile-frame-desktop.webp"
-                    alt=""
-                    draggable={false}
-                    className="member-profile-card__artwork h-full w-full object-fill"
-                  />
-                </picture>
+                <img
+                  src="/profile-card-frames/member/member-profile-frame-mobile.webp"
+                  alt=""
+                  aria-hidden="true"
+                  draggable={false}
+                  className="member-profile-card__artwork pointer-events-none absolute inset-0 z-0 h-full w-full select-none"
+                />
               )}
               <div className="relative z-10 max-h-[calc(88dvh-2rem)] overflow-y-auto px-1 pb-2">
               <button type="button" onClick={() => setSelectedReviewerProfile(null)} aria-label="Tutup kartu profil" className="absolute right-0 top-0 z-30 rounded-full px-3 py-1 text-2xl text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800">×</button>
