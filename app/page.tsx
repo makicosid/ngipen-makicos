@@ -6812,7 +6812,7 @@ accept="image/jpeg,image/png,image/webp"
           <div className="fixed inset-0 z-[181] flex items-center justify-center bg-black/60 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelectedReviewerProfile(null); }}>
             <section role="dialog" aria-modal="true" aria-labelledby="reviewer-profile-title" className={`member-profile-card relative min-h-[460px] max-h-[88dvh] w-full max-w-[340px] overflow-hidden rounded-3xl bg-white px-5 pb-6 pt-9 text-center shadow-2xl dark:bg-gray-900 sm:min-h-[500px] sm:max-w-[420px] sm:px-7 sm:pb-7 sm:pt-10 ${selectedReviewerProfile.is_makicos_member ? "member-profile-card--makicos" : ""}`}>
               {selectedReviewerProfile.is_makicos_member && (
-                <picture className="pointer-events-none absolute inset-0 z-20 block h-full w-full select-none" aria-hidden="true">
+                <picture className="pointer-events-none absolute inset-0 z-0 block h-full w-full select-none" aria-hidden="true">
                   <source
                     media="(max-width: 639px)"
                     srcSet="/profile-card-frames/member/member-profile-frame-mobile.webp"
