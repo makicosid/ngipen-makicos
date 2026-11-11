@@ -4,7 +4,7 @@
   "assets": [
     {
       "id": "kitsune_member",
-      "name": "MAKICOS Kitsune Member",
+      "name": "Member Makicos",
       "category": "member",
       "access": "makicos_member",
       "file": "assets/member/kitsune-member-square.png",

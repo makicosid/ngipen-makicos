@@ -6353,7 +6353,7 @@ accept="image/jpeg,image/png,image/webp"
                               <div className="rounded-xl bg-gray-50 p-3 dark:bg-gray-950"><p className="text-xs text-gray-500">Total klik unik</p><p className="mt-1 text-2xl font-black">{(selectedAdminUser.totalClicks ?? 0).toLocaleString("id-ID")}</p></div>
                             </div>
                             <div className="rounded-xl border border-red-200 bg-red-50/60 p-4 dark:border-red-950 dark:bg-red-950/20">
-                              <div className="flex items-center justify-between gap-3"><div><p className="text-sm font-black">Keanggotaan MAKICOS</p><p className="mt-1 text-xs text-gray-500">Akses eksklusif Kitsune Member Frame.</p></div><span className={`rounded-full px-2.5 py-1 text-[10px] font-black ${selectedAdminUser.is_makicos_member ? "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300" : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300"}`}>{selectedAdminUser.is_makicos_member ? "MEMBER" : "NON-MEMBER"}</span></div>
+                              <div className="flex items-center justify-between gap-3"><div><p className="text-sm font-black">Keanggotaan MAKICOS</p><p className="mt-1 text-xs text-gray-500">Akses eksklusif frame Member Makicos.</p></div><span className={`rounded-full px-2.5 py-1 text-[10px] font-black ${selectedAdminUser.is_makicos_member ? "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300" : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300"}`}>{selectedAdminUser.is_makicos_member ? "MEMBER" : "NON-MEMBER"}</span></div>
                               <button type="button" disabled={membershipSaving} onClick={() => void handleToggleMakicosMember(selectedAdminUser)} className={`mt-3 w-full rounded-xl px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50 ${selectedAdminUser.is_makicos_member ? "bg-gray-700 hover:bg-gray-800" : "bg-red-600 hover:bg-red-700"}`}>{membershipSaving ? "Menyimpan…" : selectedAdminUser.is_makicos_member ? "Cabut Membership MAKICOS" : "Berikan Membership MAKICOS"}</button>
                             </div>
                             <div className="space-y-3 rounded-xl border border-gray-200 p-4 dark:border-gray-800">
@@ -6794,7 +6794,7 @@ accept="image/jpeg,image/png,image/webp"
                           { key: "free_red", name: "Red", tone: "border-red-300" },
                           { key: "free_yellow", name: "Yellow", tone: "border-yellow-300" },
                           { key: "free_blue", name: "Blue", tone: "border-blue-300" },
-                          { key: "kitsune_member", name: "Kitsune Member", tone: "border-amber-300", member: true },
+                          { key: "kitsune_member", name: "Member Makicos", tone: "border-amber-300", member: true },
                         ].map((frame) => {
                           const profile = registeredUsers.find((user) => user.id === currentUserId);
                           const locked = Boolean(frame.member && !profile?.is_makicos_member);
@@ -6806,7 +6806,7 @@ accept="image/jpeg,image/png,image/webp"
                           </button>;
                         })}
                       </div>
-                      {!registeredUsers.find((user) => user.id === currentUserId)?.is_makicos_member && <p className="mt-3 text-xs text-gray-500">Kitsune Member khusus anggota grup MAKICOS. Hubungi Admin untuk verifikasi keanggotaan.</p>}
+                      {!registeredUsers.find((user) => user.id === currentUserId)?.is_makicos_member && <p className="mt-3 text-xs text-gray-500">Frame Member Makicos khusus anggota grup MAKICOS. Hubungi Admin untuk verifikasi keanggotaan.</p>}
                     </section>
 
                     <div>

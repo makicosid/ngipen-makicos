@@ -24,14 +24,14 @@ export default function ProfileAvatar({
   className = "",
   alt = "",
 }: ProfileAvatarProps) {
-  const frameSrc = frameKey ? FRAME_ASSETS[frameKey] : undefined;
+  const frameSrc = frameKey ? FRAME_ASSETS[frameKey] : undefined;\n  const isMemberFrame = frameKey === "kitsune_member";\n  const avatarScale = isMemberFrame ? 0.50 : 0.92;
 
   return (
     <span className={`relative inline-flex shrink-0 items-center justify-center overflow-visible align-middle ${className}`} style={{ width: size * 1.3, height: size * 1.3 }}>
       {src ? (
-        <img src={src} alt={alt} className="absolute left-1/2 top-1/2 rounded-full object-cover" style={{ width: size * 0.92, height: size * 0.92, transform: "translate(-50%, -50%)" }} />
+        <img src={src} alt={alt} className="absolute left-1/2 top-1/2 rounded-full object-cover" style={{ width: size * avatarScale, height: size * avatarScale, transform: "translate(-50%, -50%)" }} />
       ) : (
-        <span className="absolute left-1/2 top-1/2 flex items-center justify-center rounded-full bg-red-100 font-black text-red-700 dark:bg-red-950 dark:text-red-300" style={{ width: size * 0.92, height: size * 0.92, fontSize: Math.max(12, size * 0.25), transform: "translate(-50%, -50%)" }}>{fallback}</span>
+        <span className="absolute left-1/2 top-1/2 flex items-center justify-center rounded-full bg-red-100 font-black text-red-700 dark:bg-red-950 dark:text-red-300" style={{ width: size * avatarScale, height: size * avatarScale, fontSize: Math.max(12, size * 0.25), transform: "translate(-50%, -50%)" }}>{fallback}</span>
       )}
       {frameSrc && <img src={frameSrc} alt="" aria-hidden="true" draggable={false} className="pointer-events-none absolute left-1/2 top-1/2 z-10 max-w-none select-none object-contain" style={{ width: size * 1.3, height: size * 1.3, transform: "translate(-50%, -50%)" }} />}
     </span>
