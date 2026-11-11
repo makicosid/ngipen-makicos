@@ -935,6 +935,7 @@ const sponsorCarouselPausedRef = useRef(false);
   const [savedEventsList, setSavedEventsList] = useState<{ savedAt: string; event: Event }[]>([]);
   const [savedEventsLoading, setSavedEventsLoading] = useState(false);
   const [savedEventsError, setSavedEventsError] = useState("");
+  const [adminUserListTab, setAdminUserListTab] = useState<"all" | "members">("all");
   const [adminUserSearch, setAdminUserSearch] = useState("");
   const [adminUserSort, setAdminUserSort] = useState<"Terbaru" | "Terlama" | "Klik terbanyak" | "Event tersimpan terbanyak">("Terbaru");
   const [adminUserPage, setAdminUserPage] = useState(1);
@@ -6231,16 +6232,23 @@ accept="image/jpeg,image/png,image/webp"
                   ) : adminTab === "users" ? (
                     <>
                     <div className="mt-4 space-y-3">
-                      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                        <div>
-                          <p className="text-sm font-bold">Daftar pengguna</p>
-                          <p className="mt-0.5 text-xs text-gray-500">{registeredUsers.length.toLocaleString("id-ID")} akun terdaftar</p>
+                      <div className="flex flex-col gap-3">
+                        <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                          <div>
+                            <p className="text-sm font-bold">Konfigurasi Pengguna</p>
+                            <p className="mt-0.5 text-xs text-gray-500">{registeredUsers.length.toLocaleString("id-ID")} akun terdaftar · {registeredUsers.filter((user) => user.is_makicos_member).length.toLocaleString("id-ID")} Member MAKICOS aktif</p>
+                          </div>
                         </div>
+                        <div className="flex flex-wrap gap-2 rounded-xl bg-gray-100 p-1 dark:bg-gray-950">
+                          <button type="button" onClick={() => { setAdminUserListTab("all"); setAdminUserPage(1); }} className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-bold transition ${adminUserListTab === "all" ? "bg-white text-red-600 shadow-sm dark:bg-gray-800 dark:text-red-400" : "text-gray-500 hover:text-gray-900 dark:hover:text-white"}`}>Semua Pengguna <span className="ml-1 text-xs opacity-70">({registeredUsers.length.toLocaleString("id-ID")})</span></button>
+                          <button type="button" onClick={() => { setAdminUserListTab("members"); setAdminUserPage(1); }} className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-bold transition ${adminUserListTab === "members" ? "bg-white text-amber-700 shadow-sm dark:bg-gray-800 dark:text-amber-400" : "text-gray-500 hover:text-gray-900 dark:hover:text-white"}`}>Member MAKICOS <span className="ml-1 text-xs opacity-70">({registeredUsers.filter((user) => user.is_makicos_member).length.toLocaleString("id-ID")})</span></button>
+                        </div>
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
                         <div className="flex flex-col gap-2 sm:flex-row">
                           <label className="relative min-w-0 flex-1 sm:min-w-[240px]">
                             <span className="sr-only">Cari pengguna</span>
                             <svg viewBox="0 0 24 24" aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7"/><path strokeLinecap="round" d="m16 16 4 4"/></svg>
-                            <input value={adminUserSearch} onChange={(event) => { setAdminUserSearch(event.target.value); setAdminUserPage(1); }} placeholder="Cari nama atau username..." className="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-9 pr-3 text-sm outline-none transition focus:border-red-400 focus:ring-2 focus:ring-red-100 dark:border-gray-700 dark:bg-gray-900 dark:focus:ring-red-950" />
+                            <input value={adminUserSearch} onChange={(event) => { setAdminUserSearch(event.target.value); setAdminUserPage(1); }} placeholder={adminUserListTab === "members" ? "Cari member berdasarkan nama atau username..." : "Cari nama atau username..."} className="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-9 pr-3 text-sm outline-none transition focus:border-red-400 focus:ring-2 focus:ring-red-100 dark:border-gray-700 dark:bg-gray-900 dark:focus:ring-red-950" />
                           </label>
                           <select value={adminUserSort} onChange={(event) => { setAdminUserSort(event.target.value as typeof adminUserSort); setAdminUserPage(1); }} aria-label="Urutkan pengguna" className="rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900">
                             <option value="Terbaru">Terbaru</option>
@@ -6262,7 +6270,8 @@ accept="image/jpeg,image/png,image/webp"
                         <p className="py-10 text-center text-sm text-gray-500">Memuat statistik pengguna...</p>
                       ) : (() => {
                         const query = adminUserSearch.trim().toLocaleLowerCase("id-ID");
-                        const filteredUsers = registeredUsers.filter((user) =>
+                        const sourceUsers = adminUserListTab === "members" ? registeredUsers.filter((user) => user.is_makicos_member) : registeredUsers;
+                        const filteredUsers = sourceUsers.filter((user) =>
                           !query || (user.display_name || "").toLocaleLowerCase("id-ID").includes(query) || (user.username || "").toLocaleLowerCase("id-ID").includes(query)
                         );
                         const sortedUsers = [...filteredUsers].sort((a, b) => {
@@ -6276,14 +6285,14 @@ accept="image/jpeg,image/png,image/webp"
                         const visibleUsers = sortedUsers.slice((currentPage - 1) * adminUsersPerPage, currentPage * adminUsersPerPage);
                         return sortedUsers.length === 0 ? (
                           <div className="rounded-xl border border-dashed border-gray-300 px-4 py-12 text-center dark:border-gray-700">
-                            <p className="text-sm font-semibold">{query ? "Pengguna tidak ditemukan." : "Belum ada data pengguna."}</p>
-                            <p className="mt-1 text-xs text-gray-500">{query ? "Coba kata kunci lain." : "Data pengguna akan tampil di sini."}</p>
+                            <p className="text-sm font-semibold">{query ? (adminUserListTab === "members" ? "Member tidak ditemukan." : "Pengguna tidak ditemukan.") : (adminUserListTab === "members" ? "Belum ada Member MAKICOS aktif." : "Belum ada data pengguna.")}</p>
+                            <p className="mt-1 text-xs text-gray-500">{query ? "Coba kata kunci lain." : (adminUserListTab === "members" ? "Pengguna yang diaktifkan sebagai Member MAKICOS akan tampil di sini." : "Data pengguna akan tampil di sini.")}</p>
                           </div>
                         ) : (
                           <>
                             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                               <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
-                                <span>Menampilkan {(currentPage - 1) * adminUsersPerPage + 1}–{Math.min(currentPage * adminUsersPerPage, sortedUsers.length)} dari {sortedUsers.length} pengguna</span>
+                                <span>Menampilkan {(currentPage - 1) * adminUsersPerPage + 1}–{Math.min(currentPage * adminUsersPerPage, sortedUsers.length)} dari {sortedUsers.length} {adminUserListTab === "members" ? "member" : "pengguna"}</span>
                                 <select value={adminUsersPerPage} onChange={(event) => { setAdminUsersPerPage(Number(event.target.value)); setAdminUserPage(1); }} aria-label="Jumlah pengguna per halaman" className="rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs dark:border-gray-700 dark:bg-gray-900">
                                   <option value={10}>10 / halaman</option><option value={25}>25 / halaman</option><option value={50}>50 / halaman</option>
                                 </select>
@@ -6300,6 +6309,7 @@ accept="image/jpeg,image/png,image/webp"
                                 <thead className="bg-gray-50 text-xs font-bold uppercase tracking-wide text-gray-500 dark:bg-gray-950 dark:text-gray-400">
                                   <tr>
                                     <th className="px-4 py-3">Pengguna</th>
+                                    {adminUserListTab === "members" && <th className="px-4 py-3">Keanggotaan</th>}
                                     <th className="px-4 py-3">Bergabung</th>
                                     <th className="px-4 py-3 text-center">Event tersimpan</th>
                                     <th className="px-4 py-3 text-center">Klik unik</th>
@@ -6318,6 +6328,7 @@ accept="image/jpeg,image/png,image/webp"
                                           </div>
                                         </div>
                                       </td>
+                                      {adminUserListTab === "members" && <td className="px-4 py-3"><span className="inline-flex whitespace-nowrap rounded-full bg-green-50 px-2.5 py-1 text-[10px] font-black text-green-700 dark:bg-green-950/40 dark:text-green-300">✦ MEMBER AKTIF</span></td>}
                                       <td className="whitespace-nowrap px-4 py-3 text-xs text-gray-500">{user.created_at ? new Date(user.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }) : "—"}</td>
                                       <td className="px-4 py-3 text-center">
                                         <button type="button" onClick={(event) => { event.stopPropagation(); void openUserSavedEvents(user); }} className="rounded-lg px-3 py-1.5 font-bold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40" aria-label={`Lihat ${user.savedEventsCount ?? 0} event tersimpan milik ${user.username}`}>{user.savedEventsCount ?? 0}</button>
