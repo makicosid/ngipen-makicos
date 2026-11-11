@@ -935,6 +935,17 @@ const sponsorCarouselPausedRef = useRef(false);
   const [savedEventsList, setSavedEventsList] = useState<{ savedAt: string; event: Event }[]>([]);
   const [savedEventsLoading, setSavedEventsLoading] = useState(false);
   const [savedEventsError, setSavedEventsError] = useState("");
+  const [userAttendanceHistory, setUserAttendanceHistory] = useState<Array<{
+    attendanceId: string;
+    eventId: string;
+    attendanceStatus: "attending" | "not_attending";
+    selectedDates: string[];
+    submittedAt: string;
+    updatedAt: string;
+    event: { id: string; title: string; startDate: string; endDate: string; city: string; province: string };
+  }>>([]);
+  const [userAttendanceLoading, setUserAttendanceLoading] = useState(false);
+  const [userAttendanceError, setUserAttendanceError] = useState("");
   const [adminUserListTab, setAdminUserListTab] = useState<"all" | "members">("all");
   const [adminUserSearch, setAdminUserSearch] = useState("");
   const [adminUserSort, setAdminUserSort] = useState<"Terbaru" | "Terlama" | "Klik terbanyak" | "Event tersimpan terbanyak">("Terbaru");
@@ -1455,6 +1466,45 @@ const handleRentalImage = (file: File | null) => {
       setSavedEventsLoading(false);
     }
   };
+
+  // Riwayat absensi dimuat hanya saat Admin membuka detail satu pengguna.
+  useEffect(() => {
+    const userId = selectedAdminUser?.id;
+    if (currentRole !== "admin" || !userId) {
+      setUserAttendanceHistory([]);
+      setUserAttendanceError("");
+      setUserAttendanceLoading(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    setUserAttendanceLoading(true);
+    setUserAttendanceError("");
+
+    fetch(`/api/admin-users/attendance?userId=${encodeURIComponent(userId)}`, {
+      method: "GET",
+      credentials: "include",
+      cache: "no-store",
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        const result = await response.json();
+        if (!response.ok || !Array.isArray(result.attendance)) {
+          throw new Error(result.error || "Gagal memuat riwayat absensi.");
+        }
+        setUserAttendanceHistory(result.attendance);
+      })
+      .catch((error) => {
+        if (error instanceof Error && error.name === "AbortError") return;
+        setUserAttendanceHistory([]);
+        setUserAttendanceError(error instanceof Error ? error.message : "Gagal memuat riwayat absensi.");
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setUserAttendanceLoading(false);
+      });
+
+    return () => controller.abort();
+  }, [currentRole, selectedAdminUser?.id]);
 
   // Statistik pengguna khusus Admin — data dihitung oleh API server.
   useEffect(() => {
@@ -6396,6 +6446,43 @@ accept="image/jpeg,image/png,image/webp"
                               <div className="rounded-xl bg-gray-50 p-3 dark:bg-gray-950"><p className="text-xs text-gray-500">Event tersimpan</p><p className="mt-1 text-2xl font-black text-red-600">{(selectedAdminUser.savedEventsCount ?? 0).toLocaleString("id-ID")}</p><button type="button" onClick={() => { setSelectedAdminUser(null); void openUserSavedEvents(selectedAdminUser); }} className="mt-2 text-xs font-bold text-red-600 hover:underline">Lihat daftar event →</button></div>
                               <div className="rounded-xl bg-gray-50 p-3 dark:bg-gray-950"><p className="text-xs text-gray-500">Total klik unik</p><p className="mt-1 text-2xl font-black">{(selectedAdminUser.totalClicks ?? 0).toLocaleString("id-ID")}</p></div>
                             </div>
+                            <section className="rounded-xl border border-blue-100 bg-blue-50/40 p-4 dark:border-blue-950/60 dark:bg-blue-950/15">
+                              <div className="flex items-start justify-between gap-3">
+                                <div>
+                                  <h4 className="text-sm font-black text-gray-900 dark:text-white">Riwayat Pilihan Absensi Event</h4>
+                                  <p className="mt-1 text-xs text-gray-500">Event yang pernah dipilih pengguna untuk Hadir atau Tidak Hadir.</p>
+                                </div>
+                                <span className="rounded-full bg-white px-2.5 py-1 text-xs font-black text-blue-700 dark:bg-gray-900 dark:text-blue-300">{userAttendanceHistory.length}</span>
+                              </div>
+                              {userAttendanceLoading ? (
+                                <p className="py-5 text-center text-xs text-gray-500">Memuat riwayat absensi...</p>
+                              ) : userAttendanceError ? (
+                                <p className="mt-3 rounded-lg bg-red-50 p-3 text-xs text-red-700 dark:bg-red-950/40 dark:text-red-300">{userAttendanceError}</p>
+                              ) : userAttendanceHistory.length === 0 ? (
+                                <p className="mt-3 rounded-lg border border-dashed border-blue-200 px-3 py-5 text-center text-xs text-gray-500 dark:border-blue-900">Pengguna ini belum pernah memilih absensi event.</p>
+                              ) : (
+                                <div className="mt-3 space-y-2">
+                                  {userAttendanceHistory.map((item) => (
+                                    <article key={item.attendanceId} className="rounded-lg border border-gray-200 bg-white p-3 dark:border-gray-800 dark:bg-gray-900">
+                                      <div className="flex flex-wrap items-start justify-between gap-2">
+                                        <p className="min-w-0 flex-1 break-words text-sm font-bold text-gray-900 dark:text-white">{item.event.title}</p>
+                                        <span className={`rounded-full px-2 py-1 text-[10px] font-bold ${item.attendanceStatus === "attending" ? "bg-green-50 text-green-700 dark:bg-green-950/40 dark:text-green-300" : "bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300"}`}>{item.attendanceStatus === "attending" ? "Hadir" : "Tidak Hadir"}</span>
+                                      </div>
+                                      <p className="mt-1 text-xs text-gray-500">{[item.event.city, item.event.province].filter(Boolean).join(", ") || "Lokasi tidak tersedia"}</p>
+                                      <p className="mt-2 text-[11px] font-semibold text-gray-600 dark:text-gray-300">Tanggal event dipilih:</p>
+                                      {item.selectedDates.length ? (
+                                        <div className="mt-1 flex flex-wrap gap-1.5">
+                                          {item.selectedDates.map((date) => <span key={date} className="rounded-md bg-blue-50 px-2 py-1 text-[11px] font-semibold text-blue-800 dark:bg-blue-950/50 dark:text-blue-200">{new Date(`${date}T00:00:00`).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}</span>)}
+                                        </div>
+                                      ) : (
+                                        <p className="mt-1 text-xs text-gray-400">Tidak ada tanggal dipilih.</p>
+                                      )}
+                                      <p className="mt-2 text-[10px] text-gray-400">Diperbarui: {item.updatedAt ? new Date(item.updatedAt).toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" }) : "—"}</p>
+                                    </article>
+                                  ))}
+                                </div>
+                              )}
+                            </section>
                             <div className="rounded-xl border border-red-200 bg-red-50/60 p-4 dark:border-red-950 dark:bg-red-950/20">
                               <div className="flex items-center justify-between gap-3"><div><p className="text-sm font-black">Keanggotaan MAKICOS</p><p className="mt-1 text-xs text-gray-500">Akses eksklusif frame Member Makicos.</p></div><span className={`rounded-full px-2.5 py-1 text-[10px] font-black ${selectedAdminUser.is_makicos_member ? "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300" : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300"}`}>{selectedAdminUser.is_makicos_member ? "MEMBER" : "NON-MEMBER"}</span></div>
                               <button type="button" disabled={membershipSaving} onClick={() => void handleToggleMakicosMember(selectedAdminUser)} className={`mt-3 w-full rounded-xl px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50 ${selectedAdminUser.is_makicos_member ? "bg-gray-700 hover:bg-gray-800" : "bg-red-600 hover:bg-red-700"}`}>{membershipSaving ? "Menyimpan…" : selectedAdminUser.is_makicos_member ? "Cabut Membership MAKICOS" : "Berikan Membership MAKICOS"}</button>
