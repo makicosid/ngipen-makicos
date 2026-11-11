@@ -176,6 +176,16 @@ export async function GET(request: NextRequest) {
       return json({ error: "Gagal mengambil daftar kehadiran." }, 500);
     }
 
+    const attendancePayload = data && typeof data === "object" ? data as Record<string, any> : {};
+    const participants = Array.isArray(attendancePayload.participants) ? attendancePayload.participants : [];
+    const participantIds = Array.from(new Set(participants.map((item: any) => String(item.user_id || "")).filter(Boolean)));
+    if (participantIds.length) {
+      const { data: profiles, error: profileError } = await supabase.from("users").select("id, selected_frame_key").in("id", participantIds);
+      if (profileError) return json({ error: "Gagal mengambil frame profil peserta." }, 500);
+      const frameByUser = new Map((profiles || []).map((profile: any) => [String(profile.id), String(profile.selected_frame_key || "free_red")]));
+      attendancePayload.participants = participants.map((participant: any) => ({ ...participant, selected_frame_key: frameByUser.get(String(participant.user_id)) || "free_red" }));
+    }
+
     let ownAttendance = null;
     if (session?.user_id) {
       ownAttendance = await getExistingAttendance(eventId, session.user_id, supabase);
@@ -183,7 +193,7 @@ export async function GET(request: NextRequest) {
 
     return json({
       success: true,
-      attendance: data,
+      attendance: attendancePayload,
       ownAttendance,
       pollOpen: isPollOpen(String(event.start_date || ""), String(event.start_time || ""), timezone),
       timezone,

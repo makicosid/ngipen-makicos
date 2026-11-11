@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import ProfileAvatar from "../components/profile-avatar";
 import { listenForForegroundMessages, requestAndRegisterPushToken } from "../lib/firebase/messaging";
 
 type AttendanceRole = "user" | "admin";
@@ -19,6 +20,7 @@ interface Participant {
   user_id: string;
   display_name: string;
   avatar_url: string | null;
+  selected_frame_key?: string;
   attendance_status: AttendanceStatus;
   event_dates: string[];
 }
@@ -355,17 +357,7 @@ export default function EventAttendance({ event, role, onOpenProfile }: EventAtt
                       className="shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
                       aria-label={`Lihat profil ${participant.display_name || "Pengguna"}`}
                     >
-                      {participant.avatar_url ? (
-                        <img
-                          src={participant.avatar_url}
-                          alt=""
-                          className="h-10 w-10 rounded-full object-cover"
-                        />
-                      ) : (
-                        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 text-sm font-black text-red-700 dark:bg-red-950 dark:text-red-300">
-                          {(participant.display_name || "P")[0].toUpperCase()}
-                        </span>
-                      )}
+                      <ProfileAvatar src={participant.avatar_url || undefined} frameKey={participant.selected_frame_key} fallback={(participant.display_name || "P")[0].toUpperCase()} size={40} />
                     </button>
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">

@@ -6,6 +6,7 @@ import { supabase } from "../lib/supabase";
 import AdminCleanupPanel from "./admin-cleanup-panel";
 import EventAttendance from "./event-attendance";
 import AdminPushPanel from "./admin-push-panel";
+import ProfileAvatar from "../components/profile-avatar";
 
 type TicketType = "Gratis" | "Berbayar";
 type Category =
@@ -98,12 +99,14 @@ interface Review {
   username?: string;
   display_name?: string;
   avatar_url?: string;
+  selected_frame_key?: string;
 }
 
 interface PublicProfile {
   id: string;
   display_name: string;
   avatar_url: string;
+  selected_frame_key?: string;
   bio: string;
   instagram_url: string;
   tiktok_url: string;
@@ -116,6 +119,8 @@ interface RegUser {
   display_name: string;
   bio?: string;
   avatar_url?: string;
+  selected_frame_key?: string;
+  is_makicos_member?: boolean;
   instagram_url?: string;
   tiktok_url?: string;
   created_at: string;
@@ -934,6 +939,8 @@ const sponsorCarouselPausedRef = useRef(false);
   const [adminUserPage, setAdminUserPage] = useState(1);
   const [adminUsersPerPage, setAdminUsersPerPage] = useState(10);
   const [selectedAdminUser, setSelectedAdminUser] = useState<RegUser | null>(null);
+  const [membershipSaving, setMembershipSaving] = useState(false);
+  const [frameSaving, setFrameSaving] = useState(false);
 
   const [savedIds, setSavedIds] = useState<string[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -2578,6 +2585,35 @@ if (!allowedImageTypes.includes(docFile.type)) {
     }
 
     setTimeout(() => setToast(""), 2500);
+  };
+
+  const handleSelectProfileFrame = async (frameKey: string) => {
+    if (currentRole !== "user" || !currentUserId || frameSaving) return;
+    setFrameSaving(true);
+    try {
+      const response = await fetch("/api/auth", { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "select_profile_frame", frameKey }) });
+      const result = await response.json();
+      if (!response.ok || !result.success || !result.user) throw new Error(result.error || "Gagal memilih frame.");
+      const updated = result.user as RegUser;
+      setRegisteredUsers((prev) => prev.map((user) => String(user.id) === String(updated.id) ? { ...user, ...updated } : user));
+      setToast("Profile frame berhasil diperbarui.");
+    } catch (error) { setToast(error instanceof Error ? error.message : "Gagal memilih frame."); }
+    finally { setFrameSaving(false); }
+  };
+
+  const handleToggleMakicosMember = async (target: RegUser) => {
+    if (membershipSaving) return;
+    setMembershipSaving(true);
+    try {
+      const response = await fetch("/api/admin-users/member", { method: "PATCH", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userId: target.id, isMember: !target.is_makicos_member }) });
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.error || "Gagal memperbarui membership.");
+      const updated = { ...target, is_makicos_member: result.is_makicos_member, selected_frame_key: result.selected_frame_key };
+      setRegisteredUsers((prev) => prev.map((user) => String(user.id) === String(target.id) ? { ...user, ...updated } : user));
+      setSelectedAdminUser((prev) => prev && String(prev.id) === String(target.id) ? { ...prev, ...updated } : prev);
+      setToast(result.is_makicos_member ? "Membership MAKICOS berhasil diberikan." : "Membership dicabut. Frame dikembalikan ke Red.");
+    } catch (error) { setToast(error instanceof Error ? error.message : "Gagal memperbarui membership."); }
+    finally { setMembershipSaving(false); }
   };
 
   // Simpan perubahan profil user; gunakan username sebagai kunci stabil untuk menghindari konflik tipe id text/uuid.
@@ -5378,17 +5414,7 @@ const shareEvent = async (event: Event) => {
                             aria-label={`Lihat profil ${review.display_name || "Pengguna"}`}
                             title="Lihat profil"
                           >
-                            {review.avatar_url ? (
-                              <img
-                                src={review.avatar_url}
-                                alt=""
-                                className="h-10 w-10 rounded-full object-cover transition hover:ring-2 hover:ring-red-400"
-                              />
-                            ) : (
-                              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 font-bold text-red-700 transition hover:ring-2 hover:ring-red-400 dark:bg-red-950 dark:text-red-300">
-                                {(review.display_name || "U")[0].toUpperCase()}
-                              </div>
-                            )}
+                            <ProfileAvatar src={review.avatar_url} frameKey={review.selected_frame_key} fallback={(review.display_name || "U")[0].toUpperCase()} size={40} />
                           </button>
 
                           <div className="min-w-0 flex-1">
@@ -6315,12 +6341,16 @@ accept="image/jpeg,image/png,image/webp"
                           </div>
                           <div className="space-y-5 p-5">
                             <div className="flex items-center gap-4">
-                              {selectedAdminUser.avatar_url ? <img src={selectedAdminUser.avatar_url} alt="" className="h-16 w-16 rounded-full object-cover ring-4 ring-red-50 dark:ring-red-950/50" /> : <div className="flex h-16 w-16 items-center justify-center rounded-full bg-red-100 text-xl font-black text-red-700 dark:bg-red-950 dark:text-red-300">{(selectedAdminUser.display_name || selectedAdminUser.username || "?")[0].toUpperCase()}</div>}
+                              <ProfileAvatar src={selectedAdminUser.avatar_url} frameKey={selectedAdminUser.selected_frame_key} fallback={(selectedAdminUser.display_name || selectedAdminUser.username || "?")[0].toUpperCase()} size={64} />
                               <div className="min-w-0"><h4 className="truncate text-lg font-black">{selectedAdminUser.display_name || selectedAdminUser.username}</h4><p className="truncate text-sm text-gray-500">@{selectedAdminUser.username}</p><span className="mt-1 inline-flex rounded-full bg-green-50 px-2.5 py-1 text-[10px] font-bold text-green-700 dark:bg-green-950/50 dark:text-green-300">Akun terdaftar</span></div>
                             </div>
                             <div className="grid grid-cols-2 gap-3">
                               <div className="rounded-xl bg-gray-50 p-3 dark:bg-gray-950"><p className="text-xs text-gray-500">Event tersimpan</p><p className="mt-1 text-2xl font-black text-red-600">{(selectedAdminUser.savedEventsCount ?? 0).toLocaleString("id-ID")}</p><button type="button" onClick={() => { setSelectedAdminUser(null); void openUserSavedEvents(selectedAdminUser); }} className="mt-2 text-xs font-bold text-red-600 hover:underline">Lihat daftar event →</button></div>
                               <div className="rounded-xl bg-gray-50 p-3 dark:bg-gray-950"><p className="text-xs text-gray-500">Total klik unik</p><p className="mt-1 text-2xl font-black">{(selectedAdminUser.totalClicks ?? 0).toLocaleString("id-ID")}</p></div>
+                            </div>
+                            <div className="rounded-xl border border-red-200 bg-red-50/60 p-4 dark:border-red-950 dark:bg-red-950/20">
+                              <div className="flex items-center justify-between gap-3"><div><p className="text-sm font-black">Keanggotaan MAKICOS</p><p className="mt-1 text-xs text-gray-500">Akses eksklusif Kitsune Member Frame.</p></div><span className={`rounded-full px-2.5 py-1 text-[10px] font-black ${selectedAdminUser.is_makicos_member ? "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300" : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300"}`}>{selectedAdminUser.is_makicos_member ? "MEMBER" : "NON-MEMBER"}</span></div>
+                              <button type="button" disabled={membershipSaving} onClick={() => void handleToggleMakicosMember(selectedAdminUser)} className={`mt-3 w-full rounded-xl px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50 ${selectedAdminUser.is_makicos_member ? "bg-gray-700 hover:bg-gray-800" : "bg-red-600 hover:bg-red-700"}`}>{membershipSaving ? "Menyimpan…" : selectedAdminUser.is_makicos_member ? "Cabut Membership MAKICOS" : "Berikan Membership MAKICOS"}</button>
                             </div>
                             <div className="space-y-3 rounded-xl border border-gray-200 p-4 dark:border-gray-800">
                               <div><p className="text-[10px] font-bold uppercase tracking-wide text-gray-400">Nama tampilan</p><p className="mt-1 text-sm font-semibold">{selectedAdminUser.display_name || "Belum diatur"}</p></div>
@@ -6642,7 +6672,7 @@ accept="image/jpeg,image/png,image/webp"
           <div className="fixed inset-0 z-[181] flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelectedReviewerProfile(null); }}>
             <section role="dialog" aria-modal="true" aria-labelledby="reviewer-profile-title" className="relative max-h-[88dvh] w-full max-w-sm overflow-y-auto rounded-t-3xl bg-white px-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-7 text-center shadow-2xl sm:rounded-3xl sm:pb-6 dark:bg-gray-900">
               <button type="button" onClick={() => setSelectedReviewerProfile(null)} aria-label="Tutup kartu profil" className="absolute right-3 top-3 rounded-full px-3 py-1 text-2xl text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800">×</button>
-              {selectedReviewerProfile.avatar_url ? <img src={selectedReviewerProfile.avatar_url} alt="" className="mx-auto h-24 w-24 rounded-full object-cover ring-4 ring-red-100 dark:ring-red-950" /> : <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-red-100 text-3xl font-black text-red-700 dark:bg-red-950 dark:text-red-300">{(selectedReviewerProfile.display_name || "P")[0].toUpperCase()}</div>}
+              <ProfileAvatar src={selectedReviewerProfile.avatar_url} frameKey={selectedReviewerProfile.selected_frame_key} fallback={(selectedReviewerProfile.display_name || "P")[0].toUpperCase()} size={96} className="mx-auto" />
               <h2 id="reviewer-profile-title" className="mt-4 text-xl font-black">{selectedReviewerProfile.display_name || "Pengguna"}</h2>
               <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-gray-600 dark:text-gray-300">{selectedReviewerProfile.bio || "Belum ada bio."}</p>
               <div className="mt-5 space-y-2">
@@ -6712,29 +6742,7 @@ accept="image/jpeg,image/png,image/webp"
                     className="space-y-4"
                   >
                     <div className="flex items-center gap-4">
-                      {userAvatarFile ? (
-                        <img
-                          src={URL.createObjectURL(userAvatarFile)}
-                          alt="Pratinjau avatar"
-                          className="h-20 w-20 rounded-full object-cover"
-                        />
-                      ) : registeredUsers.find(
-                          (user) => user.id === currentUserId
-                        )?.avatar_url ? (
-                        <img
-                          src={
-                            registeredUsers.find(
-                              (user) => user.id === currentUserId
-                            )!.avatar_url
-                          }
-                          alt="Avatar"
-                          className="h-20 w-20 rounded-full object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-red-100 text-2xl font-black text-red-700">
-                          {(currentUser || "U")[0].toUpperCase()}
-                        </div>
-                      )}
+                      <ProfileAvatar src={userAvatarFile ? URL.createObjectURL(userAvatarFile) : registeredUsers.find((user) => user.id === currentUserId)?.avatar_url} frameKey={registeredUsers.find((user) => user.id === currentUserId)?.selected_frame_key} fallback={(currentUser || "U")[0].toUpperCase()} size={80} />
 
                       <div className="min-w-0 flex-1">
                         <p className="font-bold">{currentUser}</p>
@@ -6774,6 +6782,28 @@ accept="image/jpeg,image/png,image/webp"
                         </label>
                       </div>
                     </div>
+
+                    <section className="rounded-2xl border border-red-100 bg-red-50/50 p-4 dark:border-red-950 dark:bg-red-950/20">
+                      <div className="mb-3 flex items-center justify-between gap-2"><div><h3 className="font-black">Frame Foto Profil</h3><p className="text-xs text-gray-500">Pilih bingkai untuk profil dan detail event.</p></div><span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-bold text-red-700 dark:bg-gray-900 dark:text-red-300">{registeredUsers.find((user) => user.id === currentUserId)?.is_makicos_member ? "MAKICOS MEMBER" : "FREE USER"}</span></div>
+                      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                        {[
+                          { key: "free_red", name: "Red", tone: "border-red-300" },
+                          { key: "free_yellow", name: "Yellow", tone: "border-yellow-300" },
+                          { key: "free_blue", name: "Blue", tone: "border-blue-300" },
+                          { key: "kitsune_member", name: "Kitsune Member", tone: "border-amber-300", member: true },
+                        ].map((frame) => {
+                          const profile = registeredUsers.find((user) => user.id === currentUserId);
+                          const locked = Boolean(frame.member && !profile?.is_makicos_member);
+                          const active = (profile?.selected_frame_key || "free_red") === frame.key;
+                          return <button key={frame.key} type="button" disabled={locked || frameSaving} onClick={() => void handleSelectProfileFrame(frame.key)} className={`relative flex flex-col items-center gap-2 rounded-xl border-2 p-3 text-center transition ${active ? "border-red-600 bg-white shadow-sm dark:bg-gray-900" : `${frame.tone} bg-white/70 dark:bg-gray-900/60`} ${locked ? "cursor-not-allowed opacity-60" : "hover:-translate-y-0.5 hover:shadow-md"}`}>
+                            <ProfileAvatar src={profile?.avatar_url} frameKey={frame.key} fallback={(profile?.display_name || currentUser || "U")[0].toUpperCase()} size={68} />
+                            <span className="text-xs font-bold">{frame.name}</span>
+                            {locked ? <span className="absolute right-2 top-2 rounded-full bg-gray-900/80 px-2 py-1 text-[9px] font-bold text-white">🔒 MEMBER</span> : active ? <span className="text-[10px] font-bold text-green-600">✓ Digunakan</span> : <span className="text-[10px] text-gray-500">{frameSaving ? "Menyimpan…" : "Pilih frame"}</span>}
+                          </button>;
+                        })}
+                      </div>
+                      {!registeredUsers.find((user) => user.id === currentUserId)?.is_makicos_member && <p className="mt-3 text-xs text-gray-500">Kitsune Member khusus anggota grup MAKICOS. Hubungi Admin untuk verifikasi keanggotaan.</p>}
+                    </section>
 
                     <div>
                       <label
