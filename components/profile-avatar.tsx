@@ -27,11 +27,11 @@ export default function ProfileAvatar({
   const frameSrc = frameKey ? FRAME_ASSETS[frameKey] : undefined;
 
   return (
-    <span className={`relative inline-flex shrink-0 items-center justify-center overflow-visible align-middle ${className}`} style={{ width: size, height: size }}>
+    <span className={`relative inline-flex shrink-0 items-center justify-center overflow-visible align-middle ${className}`} style={{ width: size * 1.3, height: size * 1.3 }}>
       {src ? (
         <img src={src} alt={alt} className="absolute left-1/2 top-1/2 rounded-full object-cover" style={{ width: size * 0.92, height: size * 0.92, transform: "translate(-50%, -50%)" }} />
       ) : (
-        <span className="absolute left-1/2 top-1/2 flex items-center justify-center rounded-full bg-red-100 font-black text-red-700 dark:bg-red-950 dark:text-red-300" style={{ width: size * 0.74, height: size * 0.74, fontSize: Math.max(12, size * 0.25), transform: "translate(-50%, -50%)" }}>{fallback}</span>
+        <span className="absolute left-1/2 top-1/2 flex items-center justify-center rounded-full bg-red-100 font-black text-red-700 dark:bg-red-950 dark:text-red-300" style={{ width: size * 0.92, height: size * 0.92, fontSize: Math.max(12, size * 0.25), transform: "translate(-50%, -50%)" }}>{fallback}</span>
       )}
       {frameSrc && <img src={frameSrc} alt="" aria-hidden="true" draggable={false} className="pointer-events-none absolute left-1/2 top-1/2 z-10 max-w-none select-none object-contain" style={{ width: size * 1.3, height: size * 1.3, transform: "translate(-50%, -50%)" }} />}
     </span>
