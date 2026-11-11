@@ -182,7 +182,7 @@ export async function GET(request: NextRequest) {
     if (participantIds.length) {
       const { data: profiles, error: profileError } = await supabase.from("users").select("id, selected_frame_key").in("id", participantIds);
       if (profileError) return json({ error: "Gagal mengambil frame profil peserta." }, 500);
-      const frameByUser = new Map((profiles || []).map((profile: any) => [String(profile.id), String(profile.selected_frame_key || "free_red")]));
+      const frameByUser = new Map<string, string>((profiles || []).map((profile: any) => [String(profile.id), String(profile.selected_frame_key || "free_red")] as [string, string]));
       attendancePayload.participants = participants.map((participant: any) => ({ ...participant, selected_frame_key: frameByUser.get(String(participant.user_id)) || "free_red" }));
     }
 
