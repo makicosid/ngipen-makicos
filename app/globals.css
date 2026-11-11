@@ -143,3 +143,15 @@ body {
   border: 2px solid #c99a35;
   box-shadow: 0 18px 48px rgba(93, 24, 19, 0.18), 0 0 0 4px rgba(201, 154, 53, 0.12);
 }
+
+/* Enlarge the artwork so its inset white panel reaches the card edges instead of looking like a second card. */
+.member-profile-card__artwork {
+  transform: scale(1.22);
+  transform-origin: center;
+}
+
+@media (max-width: 639px) {
+  .member-profile-card__artwork {
+    transform: scale(1.12);
+  }
+}
