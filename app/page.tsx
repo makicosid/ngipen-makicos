@@ -6811,8 +6811,22 @@ accept="image/jpeg,image/png,image/webp"
         {selectedReviewerProfile && (
           <div className="fixed inset-0 z-[181] flex items-center justify-center bg-black/60 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelectedReviewerProfile(null); }}>
             <section role="dialog" aria-modal="true" aria-labelledby="reviewer-profile-title" className={`member-profile-card relative min-h-[460px] max-h-[88dvh] w-full max-w-[340px] overflow-hidden rounded-3xl bg-white px-5 pb-6 pt-9 text-center shadow-2xl dark:bg-gray-900 sm:min-h-[500px] sm:max-w-[420px] sm:px-7 sm:pb-7 sm:pt-10 ${selectedReviewerProfile.is_makicos_member ? "member-profile-card--makicos" : ""}`}>
+              {selectedReviewerProfile.is_makicos_member && (
+                <picture className="pointer-events-none absolute inset-0 z-20 block h-full w-full select-none" aria-hidden="true">
+                  <source
+                    media="(max-width: 639px)"
+                    srcSet="/profile-card-frames/member/member-profile-frame-mobile.webp"
+                  />
+                  <img
+                    src="/profile-card-frames/member/member-profile-frame-desktop.webp"
+                    alt=""
+                    draggable={false}
+                    className="h-full w-full object-fill"
+                  />
+                </picture>
+              )}
               <div className="relative z-10 max-h-[calc(88dvh-2rem)] overflow-y-auto px-1 pb-2">
-              <button type="button" onClick={() => setSelectedReviewerProfile(null)} aria-label="Tutup kartu profil" className="absolute right-0 top-0 z-20 rounded-full px-3 py-1 text-2xl text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800">×</button>
+              <button type="button" onClick={() => setSelectedReviewerProfile(null)} aria-label="Tutup kartu profil" className="absolute right-0 top-0 z-30 rounded-full px-3 py-1 text-2xl text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800">×</button>
               <ProfileAvatar src={selectedReviewerProfile.avatar_url} frameKey={selectedReviewerProfile.selected_frame_key} fallback={(selectedReviewerProfile.display_name || "P")[0].toUpperCase()} size={112} className="mx-auto" />
               <div className="mt-4 flex flex-wrap items-center justify-center gap-2"><h2 id="reviewer-profile-title" className="text-xl font-black">{selectedReviewerProfile.display_name || "Pengguna"}</h2>{selectedReviewerProfile.is_makicos_member && <span className="inline-flex items-center rounded-full border border-amber-300 bg-amber-50 px-2.5 py-1 text-[10px] font-extrabold text-amber-800 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-300">✦ Member MAKICOS</span>}</div>
               <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-gray-600 dark:text-gray-300">{selectedReviewerProfile.bio || "Belum ada bio."}</p>
