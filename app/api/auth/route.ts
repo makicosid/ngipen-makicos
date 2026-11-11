@@ -855,7 +855,7 @@ export async function POST(request: NextRequest) {
         await getSupabaseAdmin()
           .from("users")
           .select(
-            "id, username, display_name, password_hash"
+            "id, username, display_name, password_hash, bio, avatar_url, instagram_url, tiktok_url, is_makicos_member, selected_frame_key, created_at"
           )
           .eq("normalized_username", username)
           .maybeSingle();
