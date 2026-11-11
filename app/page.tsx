@@ -6821,7 +6821,7 @@ accept="image/jpeg,image/png,image/webp"
                     src="/profile-card-frames/member/member-profile-frame-desktop.webp"
                     alt=""
                     draggable={false}
-                    className="h-full w-full object-fill"
+                    className="member-profile-card__artwork h-full w-full object-fill"
                   />
                 </picture>
               )}
