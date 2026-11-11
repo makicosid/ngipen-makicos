@@ -134,7 +134,7 @@ body {
 }
 
 
-/* Compact, centered public profile popup. Member frame assets are loaded only for active members. */
+/* Compact public profile popup. The member artwork is rendered as a responsive overlay in the modal. */
 .member-profile-card {
   isolation: isolate;
   scrollbar-width: thin;
@@ -143,4 +143,3 @@ body {
   border: 2px solid #c99a35;
   box-shadow: 0 18px 48px rgba(93, 24, 19, 0.18), 0 0 0 4px rgba(201, 154, 53, 0.12);
 }
-/* Add the Kitsune artwork overlay after the WebP assets are committed to /public/frames. */
