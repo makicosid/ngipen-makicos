@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
 
     const { data, error } = await getSupabaseAdmin()
       .from("users")
-      .select("id, display_name, avatar_url, bio, instagram_url, tiktok_url")
+      .select("id, display_name, avatar_url, selected_frame_key, is_makicos_member, bio, instagram_url, tiktok_url")
       .eq("id", userId)
       .maybeSingle();
 
@@ -110,6 +110,8 @@ export async function GET(request: NextRequest) {
         id: data.id,
         display_name: data.display_name || "Pengguna",
         avatar_url: data.avatar_url || "",
+        selected_frame_key: data.selected_frame_key || "free_red",
+        is_makicos_member: Boolean(data.is_makicos_member),
         bio: data.bio || "",
         instagram_url: safeSocialUrl(data.instagram_url, "instagram"),
         tiktok_url: safeSocialUrl(data.tiktok_url, "tiktok"),

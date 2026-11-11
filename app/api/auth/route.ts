@@ -289,7 +289,7 @@ export async function GET(request: NextRequest) {
 
     const { data: user, error } = await getSupabaseAdmin()
       .from("users")
-      .select("id, username, display_name, bio, avatar_url, instagram_url, tiktok_url, created_at")
+      .select("id, username, display_name, bio, avatar_url, instagram_url, tiktok_url, created_at, is_makicos_member, selected_frame_key")
       .eq("id", session.user_id)
       .maybeSingle();
 
@@ -370,6 +370,28 @@ export async function POST(request: NextRequest) {
 
       return response;
     }
+    /* -----------------------------------------------------
+       SELECT PROFILE FRAME
+    ----------------------------------------------------- */
+
+    if (action === "select_profile_frame") {
+      const session = await getSession(request);
+      if (!session) return json({ error: "Sesi login tidak valid." }, 401);
+      const frameKey = typeof body.frameKey === "string" ? body.frameKey.trim() : "";
+      if (!/^[a-z0-9_]{3,64}$/.test(frameKey)) return json({ error: "Frame tidak valid." }, 400);
+      const supabase = getSupabaseAdmin();
+      const [{ data: frame, error: frameError }, { data: user, error: userError }] = await Promise.all([
+        supabase.from("profile_frames").select("frame_key, access_level, is_active").eq("frame_key", frameKey).maybeSingle(),
+        supabase.from("users").select("id, is_makicos_member").eq("id", session.user_id).maybeSingle(),
+      ]);
+      if (frameError || userError) return json({ error: "Gagal memeriksa hak akses frame." }, 500);
+      if (!frame || !frame.is_active) return json({ error: "Frame tidak tersedia." }, 404);
+      if (frame.access_level === "member" && !user?.is_makicos_member) return json({ error: "Frame ini khusus anggota MAKICOS." }, 403);
+      const { data: updatedUser, error: updateError } = await supabase.from("users").update({ selected_frame_key: frameKey }).eq("id", session.user_id).select("id,username,display_name,avatar_url,is_makicos_member,selected_frame_key").maybeSingle();
+      if (updateError || !updatedUser) return json({ error: "Gagal menyimpan frame profil." }, 500);
+      return json({ success: true, user: updatedUser });
+    }
+
     /* -----------------------------------------------------
        UPDATE USER PROFILE
     ----------------------------------------------------- */
@@ -467,7 +489,7 @@ export async function POST(request: NextRequest) {
           })
           .eq("id", session.user_id)
           .select(
-            "id,username,display_name,bio,avatar_url,instagram_url,tiktok_url,created_at"
+            "id,username,display_name,bio,avatar_url,instagram_url,tiktok_url,created_at,is_makicos_member,selected_frame_key"
           )
           .maybeSingle();
 
@@ -833,7 +855,7 @@ export async function POST(request: NextRequest) {
         await getSupabaseAdmin()
           .from("users")
           .select(
-            "id, username, display_name, password_hash"
+            "id, username, display_name, password_hash, bio, avatar_url, instagram_url, tiktok_url, is_makicos_member, selected_frame_key, created_at"
           )
           .eq("normalized_username", username)
           .maybeSingle();
@@ -1022,6 +1044,13 @@ export async function POST(request: NextRequest) {
           id: user.id,
           username: user.username,
           display_name: user.display_name,
+          avatar_url: user.avatar_url || "",
+          bio: user.bio || "",
+          instagram_url: user.instagram_url || "",
+          tiktok_url: user.tiktok_url || "",
+          is_makicos_member: Boolean(user.is_makicos_member),
+          selected_frame_key: user.selected_frame_key || "free_red",
+          created_at: user.created_at,
         },
         ...(passwordMigrationPending ? { passwordMigrationPending: true } : {}),
         ...(loginSecurityWarning ? { loginSecurityWarning: true } : {}),

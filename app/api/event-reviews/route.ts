@@ -164,11 +164,11 @@ export async function GET(request: NextRequest) {
         .filter(Boolean)
     ));
 
-    const publicProfileMap = new Map<string, { display_name: string; avatar_url: string }>();
+    const publicProfileMap = new Map<string, { display_name: string; avatar_url: string; selected_frame_key: string }>();
     for (let offset = 0; offset < reviewerIds.length; offset += 200) {
       const { data: profiles, error: profilesError } = await getSupabaseAdmin()
         .from("users")
-        .select("id, display_name, avatar_url")
+        .select("id, display_name, avatar_url, selected_frame_key")
         .in("id", reviewerIds.slice(offset, offset + 200));
 
       if (profilesError) {
@@ -180,6 +180,7 @@ export async function GET(request: NextRequest) {
         publicProfileMap.set(String(profile.id), {
           display_name: String(profile.display_name || "Pengguna"),
           avatar_url: String(profile.avatar_url || ""),
+          selected_frame_key: String(profile.selected_frame_key || "free_red"),
         });
       });
     }
@@ -190,6 +191,7 @@ export async function GET(request: NextRequest) {
         ...review,
         display_name: profile?.display_name || "Pengguna",
         avatar_url: profile?.avatar_url || "",
+        selected_frame_key: profile?.selected_frame_key || "free_red",
       };
     });
 

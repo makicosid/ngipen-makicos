@@ -1,0 +1,49 @@
+{
+  "pack_name": "NGIPEN Profile Frames",
+  "version": "1.0.0",
+  "assets": [
+    {
+      "id": "kitsune_member",
+      "name": "Member Makicos",
+      "category": "member",
+      "access": "makicos_member",
+      "file": "assets/member/kitsune-member-square.png",
+      "original_file": "assets/member/kitsune-member-original.png",
+      "format": "PNG",
+      "transparent": true
+    },
+    {
+      "id": "free_red",
+      "name": "Free Red",
+      "category": "free",
+      "access": "all_users",
+      "file": "assets/free/free-red.png",
+      "format": "PNG",
+      "transparent": true
+    },
+    {
+      "id": "free_yellow",
+      "name": "Free Yellow",
+      "category": "free",
+      "access": "all_users",
+      "file": "assets/free/free-yellow.png",
+      "format": "PNG",
+      "transparent": true
+    },
+    {
+      "id": "free_blue",
+      "name": "Free Blue",
+      "category": "free",
+      "access": "all_users",
+      "file": "assets/free/free-blue.png",
+      "format": "PNG",
+      "transparent": true
+    }
+  ],
+  "notes": [
+    "All frame PNGs use transparent backgrounds.",
+    "The member original is included unchanged; the square version is a proportional canvas fit, not a stretch.",
+    "Free frames are original color variants with subtle Japanese-inspired ornaments.",
+    "This package contains assets and integration notes only; it does not modify application code or database schema."
+  ]
+}

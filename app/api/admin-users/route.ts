@@ -107,7 +107,7 @@ export async function GET(request: NextRequest) {
 
     const { data: users, error: usersError } = await supabase
       .from("users")
-      .select("id,username,display_name,bio,avatar_url,instagram_url,tiktok_url,created_at")
+      .select("id,username,display_name,bio,avatar_url,instagram_url,tiktok_url,created_at,is_makicos_member,selected_frame_key")
       .order("created_at", { ascending: false });
 
     if (usersError) {
