@@ -29,11 +29,11 @@ export default function ProfileAvatar({
   return (
     <span className={`relative inline-flex shrink-0 items-center justify-center overflow-visible align-middle ${className}`} style={{ width: size, height: size }}>
       {src ? (
-        <img src={src} alt={alt} className="h-full w-full rounded-full object-cover" style={{ width: size, height: size }} />
+        <img src={src} alt={alt} className="absolute left-1/2 top-1/2 rounded-full object-cover" style={{ width: size * 0.74, height: size * 0.74, transform: "translate(-50%, -50%)" }} />
       ) : (
-        <span className="flex h-full w-full items-center justify-center rounded-full bg-red-100 font-black text-red-700 dark:bg-red-950 dark:text-red-300" style={{ fontSize: Math.max(12, size * 0.34) }}>{fallback}</span>
+        <span className="absolute left-1/2 top-1/2 flex items-center justify-center rounded-full bg-red-100 font-black text-red-700 dark:bg-red-950 dark:text-red-300" style={{ width: size * 0.74, height: size * 0.74, fontSize: Math.max(12, size * 0.25), transform: "translate(-50%, -50%)" }}>{fallback}</span>
       )}
-      {frameSrc && <img src={frameSrc} alt="" aria-hidden="true" draggable={false} className="pointer-events-none absolute left-1/2 top-1/2 max-w-none select-none object-contain" style={{ width: size * 1.52, height: size * 1.52, transform: "translate(-50%, -50%)" }} />}
+      {frameSrc && <img src={frameSrc} alt="" aria-hidden="true" draggable={false} className="pointer-events-none absolute left-1/2 top-1/2 z-10 max-w-none select-none object-contain" style={{ width: size * 1.8, height: size * 1.8, transform: "translate(-50%, -50%)" }} />}
     </span>
   );
 }
