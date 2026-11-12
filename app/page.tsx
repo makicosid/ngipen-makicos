@@ -4690,7 +4690,6 @@ const shareEvent = async (event: Event) => {
                         handleEventCardClick(event);
                       }}
                       onPointerDown={(pointerEvent) => beginEventPreview(event, pointerEvent)}
-                      onPointerMove={moveEventPreviewPointer}
                       onPointerUp={endEventPreview}
                       onPointerCancel={endEventPreview}
                       data-week-event-slide
