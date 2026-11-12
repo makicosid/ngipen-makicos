@@ -146,6 +146,20 @@ export async function GET(request: NextRequest) {
       return json({ error: "Gagal mengambil daftar pengguna." }, 500);
     }
 
+    const userIds = (users || []).map((user: any) => String(user.id));
+    const titleRowsResult = userIds.length ? await supabase
+      .from("user_profile_titles")
+      .select("user_id,profile_titles(title_key,title_name,title_type,style_variant,display_order)")
+      .in("user_id", userIds) : { data: [], error: null };
+    if (titleRowsResult.error) return json({ error: "Gagal mengambil title pengguna." }, 500);
+    const titlesByUser = new Map<string, any[]>();
+    (titleRowsResult.data || []).forEach((row: any) => {
+      if (!row.profile_titles) return;
+      const list = titlesByUser.get(String(row.user_id)) || [];
+      list.push(row.profile_titles);
+      titlesByUser.set(String(row.user_id), list);
+    });
+
     const [savedRows, viewRows, attendanceRows] = await Promise.all([
       fetchAllRows("event_saves"),
       fetchAllRows("event_views"),
@@ -182,6 +196,7 @@ export async function GET(request: NextRequest) {
 
     const result = (users || []).map((user) => ({
       ...user,
+      profile_titles: (titlesByUser.get(String(user.id)) || []).sort((a: any, b: any) => Number(a.display_order) - Number(b.display_order)),
       instagram_url: safeSocialUrl(user.instagram_url, "instagram"),
       tiktok_url: safeSocialUrl(user.tiktok_url, "tiktok"),
       savedEventsCount: savedCounts.get(user.id) || 0,
