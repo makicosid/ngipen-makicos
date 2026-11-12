@@ -6067,7 +6067,6 @@ const shareEvent = async (event: Event) => {
                                   {review.display_name || "Pengguna"}
                                 </button>
                                 {review.username && <span className="text-[10px] text-gray-500">@{review.username}</span>}
-                                <ProfileTitleBadges titles={review.profile_titles} />
                                 {adminUsers.find((user) => String(user.id) === String(review.user_id))?.is_makicos_member && <span className="inline-flex items-center rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-extrabold text-amber-800 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-300">✦ Member MAKICOS</span>}
                               </div>
 
@@ -6079,6 +6078,8 @@ const shareEvent = async (event: Event) => {
                                   : ""}
                               </span>
                             </div>
+
+                            <ProfileTitleBadges titles={review.profile_titles} className="mt-1" />
 
                             <p className="mt-1 text-sm text-amber-500">
                               {"★".repeat(
