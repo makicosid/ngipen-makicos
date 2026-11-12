@@ -1032,6 +1032,9 @@ const resumeWeekCarouselSoon = () => {
   const [profileTitleCatalog, setProfileTitleCatalog] = useState<ProfileTitle[]>([]);
   const [selectedProfileTitles, setSelectedProfileTitles] = useState<ProfileTitle[]>([]);
   const [profileTitlesSaving, setProfileTitlesSaving] = useState(false);
+  const [profileTitleDropdownOpen, setProfileTitleDropdownOpen] = useState(false);
+  const [frameSlideIndex, setFrameSlideIndex] = useState(0);
+  const frameCarouselRef = useRef<HTMLDivElement>(null);
   const [topSupporterSaving, setTopSupporterSaving] = useState(false);
 
   const [savedIds, setSavedIds] = useState<string[]>([]);
@@ -2695,6 +2698,13 @@ if (!allowedImageTypes.includes(docFile.type)) {
     }
 
     };
+
+  const profileFrameOptions = [
+    { key: "free_red", name: "Red", tone: "border-red-300" },
+    { key: "free_yellow", name: "Yellow", tone: "border-yellow-300" },
+    { key: "free_blue", name: "Blue", tone: "border-blue-300" },
+    { key: "kitsune_member", name: "Member Makicos", tone: "border-amber-300", member: true },
+  ];
 
   const handleSelectProfileFrame = async (frameKey: string) => {
     if (currentRole !== "user" || !currentUserId || frameSaving) return;
@@ -7488,13 +7498,45 @@ accept="image/jpeg,image/png,image/webp"
 
                     <section className="rounded-2xl border border-red-100 bg-red-50/50 p-4 dark:border-red-950 dark:bg-red-950/20">
                       <div className="mb-3 flex items-center justify-between gap-2"><div><h3 className="font-black">Frame Foto Profil</h3><p className="text-xs text-gray-500">Pilih bingkai untuk profil dan detail event.</p></div><span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-bold text-red-700 dark:bg-gray-900 dark:text-red-300">{registeredUsers.find((user) => user.id === currentUserId)?.is_makicos_member ? "MAKICOS MEMBER" : "FREE USER"}</span></div>
-                      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                        {[
-                          { key: "free_red", name: "Red", tone: "border-red-300" },
-                          { key: "free_yellow", name: "Yellow", tone: "border-yellow-300" },
-                          { key: "free_blue", name: "Blue", tone: "border-blue-300" },
-                          { key: "kitsune_member", name: "Member Makicos", tone: "border-amber-300", member: true },
-                        ].map((frame) => {
+                      <div className="md:hidden">
+                        <div
+                          ref={frameCarouselRef}
+                          onScroll={(event) => {
+                            const element = event.currentTarget;
+                            const nextIndex = Math.round(element.scrollLeft / element.clientWidth);
+                            setFrameSlideIndex(nextIndex);
+                          }}
+                          className="flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                          aria-label="Pilihan frame foto profil"
+                        >
+                          {Array.from({ length: Math.ceil(profileFrameOptions.length / 2) }, (_, slideIndex) => (
+                            <div key={slideIndex} className="grid w-full flex-none snap-start grid-cols-2 gap-3 px-0.5">
+                              {profileFrameOptions.slice(slideIndex * 2, slideIndex * 2 + 2).map((frame) => {
+                                const profile = registeredUsers.find((user) => user.id === currentUserId);
+                                const locked = Boolean(frame.member && !profile?.is_makicos_member);
+                                const active = (profile?.selected_frame_key || "free_red") === frame.key;
+                                return <button key={frame.key} type="button" disabled={locked || frameSaving} onClick={() => void handleSelectProfileFrame(frame.key)} className={`relative flex min-h-[190px] flex-col items-center justify-center gap-2 rounded-2xl border-2 p-3 text-center transition ${active ? "border-red-600 bg-white shadow-sm dark:bg-gray-900" : `${frame.tone} bg-white/70 dark:bg-gray-900/60`} ${locked ? "cursor-not-allowed opacity-60" : "hover:shadow-md"}`}>
+                                  <ProfileAvatar src={profile?.avatar_url} frameKey={frame.key} fallback={(profile?.display_name || currentUser || "U")[0].toUpperCase()} size={76} />
+                                  <span className="text-xs font-bold">{frame.name}</span>
+                                  {locked ? <span className="absolute right-2 top-2 rounded-full bg-gray-900/80 px-2 py-1 text-[9px] font-bold text-white">🔒 MEMBER</span> : active ? <span className="text-[10px] font-bold text-green-600">✓ Digunakan</span> : <span className="text-[10px] text-gray-500">{frameSaving ? "Menyimpan…" : "Pilih frame"}</span>}
+                                </button>;
+                              })}
+                            </div>
+                          ))}
+                        </div>
+                        <div className="mt-3 flex items-center justify-center gap-2" aria-label="Navigasi slide frame">
+                          {profileFrameOptions.filter((_, index) => index % 2 === 0).map((_, dotIndex) => (
+                            <button key={dotIndex} type="button" onClick={() => {
+                              const container = frameCarouselRef.current;
+                              if (!container) return;
+                              container.scrollTo({ left: dotIndex * container.clientWidth, behavior: "smooth" });
+                              setFrameSlideIndex(dotIndex);
+                            }} aria-label={`Buka slide frame ${dotIndex + 1}`} aria-current={frameSlideIndex === dotIndex ? "true" : undefined} className={`h-2 rounded-full transition-all ${frameSlideIndex === dotIndex ? "w-5 bg-red-600" : "w-2 bg-gray-300 dark:bg-gray-600"}`} />
+                          ))}
+                        </div>
+                      </div>
+                      <div className="hidden grid-cols-2 gap-3 md:grid md:grid-cols-4">
+                        {profileFrameOptions.map((frame) => {
                           const profile = registeredUsers.find((user) => user.id === currentUserId);
                           const locked = Boolean(frame.member && !profile?.is_makicos_member);
                           const active = (profile?.selected_frame_key || "free_red") === frame.key;
@@ -7514,8 +7556,26 @@ accept="image/jpeg,image/png,image/webp"
                         <p className="mt-1 text-xs font-bold text-rose-600">{selectedProfileTitles.filter((item) => item.title_type === "regular").length}/2</p>
                       </div>
                       {selectedProfileTitles.length > 0 && <ProfileTitleBadges titles={selectedProfileTitles} className="mb-3" size="md" />}
-                      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                        {profileTitleCatalog.map((title) => {
+                      <div className="relative md:hidden">
+                        <button type="button" onClick={() => setProfileTitleDropdownOpen((open) => !open)} aria-expanded={profileTitleDropdownOpen} className="flex min-h-12 w-full items-center justify-between rounded-xl border border-gray-200 bg-white/90 px-3 py-3 text-left text-sm font-semibold text-gray-700 shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200">
+                          <span>{selectedProfileTitles.filter((item) => item.title_type === "regular").length > 0 ? selectedProfileTitles.filter((item) => item.title_type === "regular").map((item) => item.title_name).join(", ") : "Pilih Profile Title"}</span>
+                          <icon className="hidden" />
+                          <span className="ml-2 text-gray-400">{profileTitleDropdownOpen ? "⌃" : "⌄"}</span>
+                        </button>
+                        {profileTitleDropdownOpen && <div className="mt-2 rounded-xl border border-gray-200 bg-white p-2 shadow-lg dark:border-gray-700 dark:bg-gray-900">
+                          {profileTitleCatalog.filter((title) => title.title_type === "regular").map((title) => {
+                            const active = selectedProfileTitles.some((item) => item.title_key === title.title_key);
+                            const limitReached = selectedProfileTitles.filter((item) => item.title_type === "regular").length >= 2;
+                            return <label key={title.title_key} className={`flex min-h-11 items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm ${!active && limitReached ? "cursor-not-allowed opacity-45" : "cursor-pointer hover:bg-rose-50 dark:hover:bg-rose-950/30"}`}>
+                              <span>{title.title_name}</span>
+                              <input type="checkbox" checked={active} disabled={profileTitlesSaving || (!active && limitReached)} onChange={() => void handleProfileTitleChange(title, active ? "unequip" : "equip")} className="h-4 w-4 accent-rose-600" />
+                            </label>;
+                          })}
+                          {profileTitlesSaving && <p className="px-3 py-2 text-xs text-gray-500">Menyimpan…</p>}
+                        </div>}
+                      </div>
+                      <div className="hidden grid-cols-1 gap-2 sm:grid sm:grid-cols-2 md:grid">
+                        {profileTitleCatalog.filter((title) => title.title_type === "regular").map((title) => {
                           const active = selectedProfileTitles.some((item) => item.title_key === title.title_key);
                           return <button key={title.title_key} type="button" disabled={profileTitlesSaving || (!active && selectedProfileTitles.filter((item) => item.title_type === "regular").length >= 2)} onClick={() => void handleProfileTitleChange(title, active ? "unequip" : "equip")} className={`flex min-h-11 items-center justify-between gap-2 rounded-xl border px-3 py-2.5 text-left text-xs font-bold transition ${active ? "border-rose-400 bg-rose-100 text-rose-900 dark:border-rose-800 dark:bg-rose-950/50 dark:text-rose-100" : "border-gray-200 bg-white/80 text-gray-700 hover:border-rose-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200"}`}>
                             <span className="flex items-center gap-2"><span className="text-rose-500">◇</span>{title.title_name}</span>
