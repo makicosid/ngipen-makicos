@@ -4676,7 +4676,12 @@ const shareEvent = async (event: Event) => {
                     resumeWeekCarouselSoon();
                   }}
                   className="flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-                  style={{ touchAction: "pan-y", cursor: "grab" }}
+                  style={{
+                    touchAction: "pan-x pan-y",
+                    WebkitOverflowScrolling: "touch",
+                    overscrollBehaviorX: "contain",
+                    cursor: "grab",
+                  }}
                 >
                   {weekEvents.map((event) => (
                     <button
@@ -4771,8 +4776,12 @@ const shareEvent = async (event: Event) => {
                           }
                           resumeWeekCarouselSoon();
                         }}
-                        className={`h-2.5 rounded-full transition-all duration-300 ${activeWeekSlide === index ? "w-7 bg-red-600" : "w-2.5 bg-gray-300 hover:bg-red-300 dark:bg-gray-700 dark:hover:bg-red-500"}`}
-                      />
+                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full touch-manipulation"
+                      >
+                        <span
+                          className={`block h-2.5 rounded-full transition-all duration-300 ${activeWeekSlide === index ? "w-7 bg-red-600" : "w-2.5 bg-gray-300 hover:bg-red-300 dark:bg-gray-700 dark:hover:bg-red-500"}`}
+                        />
+                      </button>
                     ))}
                   </div>
                 )}
