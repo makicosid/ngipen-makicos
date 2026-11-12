@@ -1062,7 +1062,7 @@ const [rentalSaving, setRentalSaving] = useState(false);
 };
 useEffect(() => {
   refreshRentals();
-}, []);
+}, [currentRole]);
   const resetRentalForm = () => {
   setRentalName("");
   setRentalRegion("");
