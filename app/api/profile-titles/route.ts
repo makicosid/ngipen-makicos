@@ -92,18 +92,23 @@ export async function POST(request: NextRequest) {
       return json({ error: "Title eksklusif hanya dapat dikelola oleh Admin." }, 403);
     }
 
-    if (action === "equip") {
-      const { error } = await supabase.from("user_profile_titles").upsert(
-        { user_id: session.user_id, title_id: title.id, granted_by: null, granted_at: null },
-        { onConflict: "user_id,title_id", ignoreDuplicates: true }
-      );
-      if (error) return json({ error: "Gagal menambahkan title." }, 500);
-    } else {
-      const { error } = await supabase.from("user_profile_titles")
-        .delete()
-        .eq("user_id", session.user_id)
-        .eq("title_id", title.id);
-      if (error) return json({ error: "Gagal menghapus title." }, 500);
+    const { error: changeError } = await supabase.rpc("user_manage_profile_title", {
+      p_user_id: session.user_id,
+      p_title_key: titleKey,
+      p_action: action,
+    });
+    if (changeError) {
+      if (changeError.message?.includes("PROFILE_TITLE_LIMIT_REACHED")) {
+        return json({ error: "Kamu hanya bisa menggunakan maksimal 2 title reguler. Lepas salah satu title terlebih dahulu untuk memilih title lain." }, 409);
+      }
+      if (changeError.message?.includes("PROFILE_TITLE_NOT_AVAILABLE")) {
+        return json({ error: "Title tidak tersedia." }, 404);
+      }
+      if (changeError.message?.includes("PROFILE_TITLE_NOT_REGULAR")) {
+        return json({ error: "Title eksklusif hanya dapat dikelola oleh Admin." }, 403);
+      }
+      console.error("Profile title change RPC error:", changeError);
+      return json({ error: "Gagal memperbarui title." }, 500);
     }
 
     return json({ success: true, selectedTitles: await getSelectedTitles(session.user_id) });
