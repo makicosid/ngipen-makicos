@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, type TouchEvent } from "react";
 import { supabase } from "../lib/supabase";
 import AdminCleanupPanel from "./admin-cleanup-panel";
 import EventAttendance from "./event-attendance";
@@ -576,7 +576,7 @@ export default function Page() {
   const [isFooterVisible, setIsFooterVisible] = useState(false);
   const mobileFabTouchStartXRef = useRef<number | null>(null);
   const mobileFabDidSwipeRef = useRef(false);
-  const footerRef = useRef<HTMLElement | null>(null);
+  const footerRef = useRef<HTMLElementTagNameMap["footer"] | null>(null);
   const [showGuideBook, setShowGuideBook] = useState(false);
   const [guidePage, setGuidePage] = useState(0);
 
@@ -3791,12 +3791,12 @@ const shareEvent = async (event: Event) => {
     }
   };
 
-  const handleMobileFabTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
+  const handleMobileFabTouchStart = (event: TouchEvent<HTMLDivElement>) => {
     mobileFabTouchStartXRef.current = event.touches[0]?.clientX ?? null;
     mobileFabDidSwipeRef.current = false;
   };
 
-  const handleMobileFabTouchEnd = (event: React.TouchEvent<HTMLDivElement>) => {
+  const handleMobileFabTouchEnd = (event: TouchEvent<HTMLDivElement>) => {
     const startX = mobileFabTouchStartXRef.current;
     const endX = event.changedTouches[0]?.clientX;
     mobileFabTouchStartXRef.current = null;
@@ -3805,7 +3805,7 @@ const shareEvent = async (event: Event) => {
     if (Math.abs(delta) < 45) return;
     mobileFabDidSwipeRef.current = true;
     window.setTimeout(() => { mobileFabDidSwipeRef.current = false; }, 400);
-    const activeKey = activeNavKey === "costume" ? "costume" : activeNavKey === "explore" ? "explore" : "home";
+    const activeKey = showUserProfile || showAdmin || showLoginUser ? "profile" : activeNavKey === "costume" ? "costume" : activeNavKey === "explore" ? "explore" : "home";
     const currentIndex = Math.max(0, mobileFabItems.indexOf(activeKey as (typeof mobileFabItems)[number]));
     const nextIndex = Math.min(mobileFabItems.length - 1, Math.max(0, currentIndex + (delta < 0 ? 1 : -1)));
     if (nextIndex !== currentIndex) navigateMobileFab(mobileFabItems[nextIndex]);
@@ -4109,7 +4109,7 @@ const shareEvent = async (event: Event) => {
           >
             <nav aria-label="Navigasi utama" className="flex items-center justify-around gap-1 rounded-full border border-gray-200/90 bg-white/95 px-2 py-2 shadow-[0_8px_30px_rgba(15,23,42,0.18)] backdrop-blur-xl dark:border-gray-700 dark:bg-gray-900/95">
               {mobileFabItems.map((item) => {
-                const active = item === activeNavKey;
+                const active = item === activeNavKey || (item === "profile" && (showUserProfile || showAdmin || showLoginUser));
                 const label = item === "home" ? "Beranda" : item === "explore" ? "Jelajahi" : item === "costume" ? "Costume" : "Profil";
                 const activeClass = active ? "bg-red-50 text-red-700 dark:bg-red-950/50 dark:text-red-300" : "text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800";
                 return (
