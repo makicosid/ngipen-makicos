@@ -89,7 +89,8 @@ export async function GET(request: NextRequest) {
       return json({ error: "ID profil tidak valid." }, 400);
     }
 
-    const { data, error } = await getSupabaseAdmin()
+    const supabase = getSupabaseAdmin();
+    const { data, error } = await supabase
       .from("users")
       .select("id, display_name, avatar_url, selected_frame_key, is_makicos_member, bio, instagram_url, tiktok_url")
       .eq("id", userId)
@@ -104,10 +105,19 @@ export async function GET(request: NextRequest) {
       return json({ error: "Profil tidak ditemukan." }, 404);
     }
 
+    const { data: titleRows, error: titleError } = await supabase
+      .from("user_profile_titles")
+      .select("profile_titles(title_key,title_name,title_type,style_variant,display_order)")
+      .eq("user_id", userId);
+    if (titleError) return json({ error: "Gagal mengambil title profil." }, 500);
+    const profileTitles = (titleRows || []).map((row: any) => row.profile_titles).filter(Boolean)
+      .sort((a: any, b: any) => Number(a.display_order) - Number(b.display_order));
+
     return json({
       success: true,
       profile: {
         id: data.id,
+        profile_titles: profileTitles,
         display_name: data.display_name || "Pengguna",
         avatar_url: data.avatar_url || "",
         selected_frame_key: data.selected_frame_key || "free_red",
