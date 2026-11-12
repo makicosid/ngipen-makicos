@@ -2700,11 +2700,11 @@ if (!allowedImageTypes.includes(docFile.type)) {
     };
 
   const profileFrameOptions = [
-    { key: "free_red", name: "Red", tone: "border-red-300" },
-    { key: "free_yellow", name: "Yellow", tone: "border-yellow-300" },
-    { key: "free_blue", name: "Blue", tone: "border-blue-300" },
-    { key: "kitsune_member", name: "Member Makicos", tone: "border-amber-300", member: true },
-    { key: "top_supporter", name: "Top Supporter", tone: "border-amber-400", exclusive: true },
+    { key: "free_red", name: "Red", tone: "border-red-300", member: false, exclusive: false },
+    { key: "free_yellow", name: "Yellow", tone: "border-yellow-300", member: false, exclusive: false },
+    { key: "free_blue", name: "Blue", tone: "border-blue-300", member: false, exclusive: false },
+    { key: "kitsune_member", name: "Member Makicos", tone: "border-amber-300", member: true, exclusive: false },
+    { key: "top_supporter", name: "Top Supporter", tone: "border-amber-400", member: false, exclusive: true },
   ];
 
   const handleSelectProfileFrame = async (frameKey: string) => {
