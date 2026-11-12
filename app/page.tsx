@@ -5435,7 +5435,7 @@ const shareEvent = async (event: Event) => {
   >
     <div className="mb-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-2xl font-black sm:text-3xl">PARTNER SHIP MAKICOS</h2>
+        <h2 className="text-2xl font-black sm:text-3xl">Cari Rental Costume</h2>
         {currentRole === "user" && (
           <div className="flex w-full gap-2 sm:w-auto">
             <a href="https://wa.me/6281381067774?text=Halo%20MAKICOS%2C%20saya%20ingin%20berlangganan%20rental%20costume%20untuk%20ditampilkan%20di%20NGIPEN." target="_blank" rel="noopener noreferrer" className="flex-1 rounded-lg bg-amber-500 px-3 py-2.5 text-center text-xs font-black text-white sm:flex-none">Subscribe</a>
@@ -5444,7 +5444,7 @@ const shareEvent = async (event: Event) => {
         )}
       </div>
       <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-        Temukan partner rental costume untuk kebutuhan cosplay-mu.
+        Cari kebutuhan cosplay mu di sini
       </p>
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
