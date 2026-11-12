@@ -85,7 +85,7 @@ returns jsonb
 language plpgsql
 security definer
 set search_path = public, pg_temp
-as $
+as $$
 declare
   v_title_id uuid;
   v_affected integer := 0;
@@ -137,7 +137,7 @@ begin
 
   return jsonb_build_object('success', true, 'changed', v_affected > 0);
 end;
-$;
+$$;
 
 revoke all on function public.admin_manage_profile_title(uuid, text, text, text)
   from public, anon, authenticated;
