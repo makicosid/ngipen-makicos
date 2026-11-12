@@ -7582,7 +7582,8 @@ accept="image/jpeg,image/png,image/webp"
                           </button>;
                         })}
                       </div>
-                      <div className="mt-3 inline-flex items-center rounded-md border border-[#D6B45B] bg-[#8F1D2C] px-3 py-1.5 text-xs font-black tracking-wide text-[#FFE8A3] shadow-sm">
+                      <div className="mt-3 inline-flex items-center gap-1.5 rounded-md border border-[#D6B45B] bg-[#8F1D2C] px-3 py-1.5 text-xs font-black tracking-wide text-[#FFE8A3] shadow-sm">
+                        <span aria-hidden="true">🔒</span>
                         Top Supporter
                       </div>
                     </section>
