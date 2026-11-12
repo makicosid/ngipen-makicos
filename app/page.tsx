@@ -3056,6 +3056,16 @@ const calendarEvents = useMemo(() => {
       );
   }, [approvedEvents, realTimeTick]);
 
+  // Batasi indikator menjadi maksimal 7 titik agar tidak meluber pada layar mobile.
+  const visibleWeekDotStart = Math.max(
+    0,
+    Math.min(activeWeekSlide - 3, weekEvents.length - 7)
+  );
+  const visibleWeekEvents = weekEvents.slice(
+    visibleWeekDotStart,
+    visibleWeekDotStart + 7
+  );
+
   useEffect(() => {
     if (weekEvents.length <= 1) {
       setActiveWeekSlide(0);
@@ -4754,35 +4764,41 @@ const shareEvent = async (event: Event) => {
                 </div>
 
                 {weekEvents.length > 1 && (
-                  <div className="mt-3 flex items-center justify-center gap-2" aria-label="Navigasi Event Minggu Ini">
-                    {weekEvents.map((event, index) => (
-                      <button
-                        key={event.id}
-                        type="button"
-                        aria-label={`Tampilkan event ${index + 1}: ${event.title}`}
-                        aria-current={activeWeekSlide === index ? "true" : undefined}
-                        onClick={() => {
-                          pauseWeekCarousel();
-                          const carousel = weekCarouselRef.current;
-                          const slide = carousel?.children.item(index) as HTMLElement | null;
-                          if (slide && carousel) {
-                            const carouselRect = carousel.getBoundingClientRect();
-                            const slideRect = slide.getBoundingClientRect();
-                            carousel.scrollTo({
-                              left: carousel.scrollLeft + slideRect.left - carouselRect.left,
-                              behavior: "smooth",
-                            });
-                            setActiveWeekSlide(index);
-                          }
-                          resumeWeekCarouselSoon();
-                        }}
-                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full touch-manipulation"
-                      >
-                        <span
-                          className={`block h-1.5 rounded-full transition-all duration-300 ${activeWeekSlide === index ? "w-5 bg-red-600" : "w-1.5 bg-gray-300 hover:bg-red-300 dark:bg-gray-700 dark:hover:bg-red-500"}`}
-                        />
-                      </button>
-                    ))}
+                  <div
+                    className="mx-auto mt-3 flex w-full min-w-0 max-w-full items-center justify-center gap-1 overflow-hidden"
+                    aria-label="Navigasi Event Minggu Ini"
+                  >
+                    {visibleWeekEvents.map((event, visibleIndex) => {
+                      const index = visibleWeekDotStart + visibleIndex;
+                      return (
+                        <button
+                          key={event.id}
+                          type="button"
+                          aria-label={`Tampilkan event ${index + 1}: ${event.title}`}
+                          aria-current={activeWeekSlide === index ? "true" : undefined}
+                          onClick={() => {
+                            pauseWeekCarousel();
+                            const carousel = weekCarouselRef.current;
+                            const slide = carousel?.children.item(index) as HTMLElement | null;
+                            if (slide && carousel) {
+                              const carouselRect = carousel.getBoundingClientRect();
+                              const slideRect = slide.getBoundingClientRect();
+                              carousel.scrollTo({
+                                left: carousel.scrollLeft + slideRect.left - carouselRect.left,
+                                behavior: "smooth",
+                              });
+                              setActiveWeekSlide(index);
+                            }
+                            resumeWeekCarouselSoon();
+                          }}
+                          className="flex h-6 w-6 shrink-0 touch-manipulation items-center justify-center rounded-full"
+                        >
+                          <span
+                            className={`block rounded-full transition-all duration-300 ${activeWeekSlide === index ? "h-1.5 w-4 bg-red-600" : "h-1.5 w-1.5 bg-gray-300 hover:bg-red-300 dark:bg-gray-700 dark:hover:bg-red-500"}`}
+                          />
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
               </section>
