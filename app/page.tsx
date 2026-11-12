@@ -46,6 +46,7 @@ interface Event {
   registration_url?: string;
   social_link?: string;
   moderation_status: ModStatus;
+  is_hidden?: boolean;
   is_sponsored: boolean;
   sponsored_priority: number;
   sponsored_start?: string;
@@ -856,6 +857,35 @@ useEffect(() => {
 
 const sponsorCarouselRef = useRef<HTMLDivElement>(null);
 const sponsorCarouselPausedRef = useRef(false);
+const weekCarouselRef = useRef<HTMLDivElement>(null);
+const weekCarouselPausedRef = useRef(false);
+const weekCarouselResumeTimerRef = useRef<number | null>(null);
+const weekCarouselDragRef = useRef<{
+  pointerId: number;
+  startX: number;
+  startScrollLeft: number;
+  moved: boolean;
+} | null>(null);
+const weekCarouselSuppressClickRef = useRef(false);
+const [activeWeekSlide, setActiveWeekSlide] = useState(0);
+
+const pauseWeekCarousel = () => {
+  weekCarouselPausedRef.current = true;
+  if (weekCarouselResumeTimerRef.current !== null) {
+    window.clearTimeout(weekCarouselResumeTimerRef.current);
+    weekCarouselResumeTimerRef.current = null;
+  }
+};
+
+const resumeWeekCarouselSoon = () => {
+  if (weekCarouselResumeTimerRef.current !== null) {
+    window.clearTimeout(weekCarouselResumeTimerRef.current);
+  }
+  weekCarouselResumeTimerRef.current = window.setTimeout(() => {
+    weekCarouselPausedRef.current = false;
+    weekCarouselResumeTimerRef.current = null;
+  }, 900);
+};
   // Setiap kali detail event dibuka, mulai dari bagian paling atas halaman.
   useEffect(() => {
     if (!selectedEvent) return;
@@ -2974,6 +3004,90 @@ const calendarEvents = useMemo(() => {
         .slice(0, 10),
     [approvedEvents]
   );
+
+  // Event Minggu Ini memakai pekan kalender Senin–Minggu berdasarkan waktu Jakarta.
+  // Filter ini terpisah dari filter tab lama agar perilaku Jelajahi Event tidak berubah.
+  const weekEvents = useMemo(() => {
+    const jakartaParts = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Jakarta",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).formatToParts(new Date());
+
+    const dateParts = Object.fromEntries(
+      jakartaParts.map((part) => [part.type, part.value])
+    );
+
+    const today = new Date(Date.UTC(
+      Number(dateParts.year),
+      Number(dateParts.month) - 1,
+      Number(dateParts.day)
+    ));
+    const daysSinceMonday = (today.getUTCDay() + 6) % 7;
+    const monday = new Date(today);
+    monday.setUTCDate(today.getUTCDate() - daysSinceMonday);
+    const sunday = new Date(monday);
+    sunday.setUTCDate(monday.getUTCDate() + 6);
+
+    const toDateKey = (date: Date) =>
+      `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-${String(date.getUTCDate()).padStart(2, "0")}`;
+
+    const weekStart = toDateKey(monday);
+    const weekEnd = toDateKey(sunday);
+
+    return approvedEvents
+      .filter((event) => {
+        const eventStart = event.start_date;
+        const eventEnd = event.end_date || event.start_date;
+
+        return (
+          event.moderation_status === "Approved" &&
+          event.is_hidden !== true &&
+          /^\d{4}-\d{2}-\d{2}$/.test(eventStart) &&
+          /^\d{4}-\d{2}-\d{2}$/.test(eventEnd) &&
+          eventStart <= weekEnd &&
+          eventEnd >= weekStart
+        );
+      })
+      .sort((a, b) =>
+        a.start_date.localeCompare(b.start_date) ||
+        a.title.localeCompare(b.title, "id", { sensitivity: "base" })
+      );
+  }, [approvedEvents, realTimeTick]);
+
+  useEffect(() => {
+    if (weekEvents.length <= 1) {
+      setActiveWeekSlide(0);
+      return;
+    }
+
+    const interval = window.setInterval(() => {
+      const carousel = weekCarouselRef.current;
+      if (!carousel || weekCarouselPausedRef.current || document.hidden) return;
+
+      const nextIndex = (activeWeekSlide + 1) % weekEvents.length;
+      const nextSlide = carousel.children.item(nextIndex) as HTMLElement | null;
+      if (!nextSlide) return;
+
+      const carouselRect = carousel.getBoundingClientRect();
+      const nextSlideRect = nextSlide.getBoundingClientRect();
+      const nextScrollLeft =
+        carousel.scrollLeft + nextSlideRect.left - carouselRect.left;
+      carousel.scrollTo({ left: nextScrollLeft, behavior: "smooth" });
+      setActiveWeekSlide(nextIndex);
+    }, 2000);
+
+    return () => window.clearInterval(interval);
+  }, [weekEvents.length, activeWeekSlide]);
+
+  useEffect(() => {
+    return () => {
+      if (weekCarouselResumeTimerRef.current !== null) {
+        window.clearTimeout(weekCarouselResumeTimerRef.current);
+      }
+    };
+  }, []);
 useEffect(() => {
   if (sponsoredEvents.length <= 1) return;
 
@@ -4465,6 +4579,203 @@ const shareEvent = async (event: Event) => {
   ))}
 </div>
 
+              </section>
+            )}
+
+            {/* CAROUSEL EVENT MINGGU INI */}
+            {!showCostumeDirectory && weekEvents.length > 0 && (
+              <section className="mx-auto max-w-[1400px] px-4 pb-8">
+                <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wider text-red-600">
+                      Agenda Pekan Ini
+                    </p>
+                    <h2 className="mt-1 text-xl font-black sm:text-2xl">
+                      Event Minggu Ini
+                    </h2>
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                      Temukan keseruan event di minggu ini.
+                    </p>
+                  </div>
+                  <span className="rounded-full bg-red-50 px-3 py-1 text-xs font-bold text-red-700 dark:bg-red-950 dark:text-red-300">
+                    {weekEvents.length} event pekan ini
+                  </span>
+                </div>
+
+                <div
+                  ref={weekCarouselRef}
+                  data-carousel="event-minggu-ini"
+                  onScroll={(scrollEvent) => {
+                    const carousel = scrollEvent.currentTarget;
+                    const slides = Array.from(carousel.children) as HTMLElement[];
+                    if (!slides.length) return;
+                    let nearestIndex = 0;
+                    let nearestDistance = Number.POSITIVE_INFINITY;
+                    slides.forEach((slide, index) => {
+                      const carouselRect = carousel.getBoundingClientRect();
+                      const slideRect = slide.getBoundingClientRect();
+                      const distance = Math.abs(slideRect.left - carouselRect.left);
+                      if (distance < nearestDistance) {
+                        nearestDistance = distance;
+                        nearestIndex = index;
+                      }
+                    });
+                    setActiveWeekSlide(nearestIndex);
+                  }}
+                  onMouseEnter={pauseWeekCarousel}
+                  onMouseLeave={resumeWeekCarouselSoon}
+                  onTouchStart={pauseWeekCarousel}
+                  onTouchEnd={resumeWeekCarouselSoon}
+                  onTouchCancel={resumeWeekCarouselSoon}
+                  onFocusCapture={pauseWeekCarousel}
+                  onBlurCapture={resumeWeekCarouselSoon}
+                  onPointerDown={(pointerEvent) => {
+                    if (pointerEvent.pointerType !== "mouse") return;
+                    const carousel = pointerEvent.currentTarget;
+                    weekCarouselDragRef.current = {
+                      pointerId: pointerEvent.pointerId,
+                      startX: pointerEvent.clientX,
+                      startScrollLeft: carousel.scrollLeft,
+                      moved: false,
+                    };
+                    pauseWeekCarousel();
+                    const slide = (pointerEvent.target as HTMLElement | null)?.closest(
+                      "[data-week-event-slide]"
+                    ) as HTMLElement | null;
+                    slide?.setPointerCapture(pointerEvent.pointerId);
+                  }}
+                  onPointerMove={(pointerEvent) => {
+                    moveEventPreviewPointer(pointerEvent);
+                    const drag = weekCarouselDragRef.current;
+                    if (!drag || drag.pointerId !== pointerEvent.pointerId) return;
+                    const deltaX = pointerEvent.clientX - drag.startX;
+                    if (Math.abs(deltaX) > 6) {
+                      drag.moved = true;
+                      weekCarouselSuppressClickRef.current = true;
+                      pointerEvent.preventDefault();
+                    }
+                    if (drag.moved) {
+                      pointerEvent.currentTarget.scrollLeft = drag.startScrollLeft - deltaX;
+                    }
+                  }}
+                  onPointerUp={(pointerEvent) => {
+                    const drag = weekCarouselDragRef.current;
+                    if (drag?.pointerId === pointerEvent.pointerId) {
+                      weekCarouselDragRef.current = null;
+                      const slide = (pointerEvent.target as HTMLElement | null)?.closest(
+                        "[data-week-event-slide]"
+                      ) as HTMLElement | null;
+                      if (slide?.hasPointerCapture(pointerEvent.pointerId)) {
+                        slide.releasePointerCapture(pointerEvent.pointerId);
+                      }
+                      resumeWeekCarouselSoon();
+                    }
+                  }}
+                  onPointerCancel={() => {
+                    weekCarouselDragRef.current = null;
+                    resumeWeekCarouselSoon();
+                  }}
+                  className="flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                  style={{ touchAction: "pan-y", cursor: "grab" }}
+                >
+                  {weekEvents.map((event) => (
+                    <button
+                      key={event.id}
+                      type="button"
+                      onClick={() => {
+                        if (weekCarouselSuppressClickRef.current) {
+                          weekCarouselSuppressClickRef.current = false;
+                          return;
+                        }
+                        handleEventCardClick(event);
+                      }}
+                      onPointerDown={(pointerEvent) => beginEventPreview(event, pointerEvent)}
+                      onPointerUp={endEventPreview}
+                      onPointerCancel={endEventPreview}
+                      data-week-event-slide
+                      onContextMenu={(contextEvent) => contextEvent.preventDefault()}
+                      className="group w-full min-w-full shrink-0 snap-start overflow-hidden rounded-2xl border border-gray-200 bg-white text-left shadow-sm transition-transform duration-300 dark:border-gray-800 dark:bg-gray-900 md:grid md:min-h-[250px] md:grid-cols-[300px_minmax(0,1fr)] md:hover:scale-[1.01]"
+                    >
+                      <div className="relative w-full overflow-hidden bg-gray-100 dark:bg-gray-800 md:flex md:h-[250px] md:items-center md:justify-center">
+                        {event.poster_url ? (
+                          <>
+                            <img
+                              src={event.poster_url}
+                              alt=""
+                              aria-hidden="true"
+                              className="absolute inset-0 hidden h-full w-full scale-110 object-cover opacity-45 blur-md md:block"
+                            />
+                            <img
+                              src={event.poster_url}
+                              alt={`Poster ${event.title}`}
+                              loading="lazy"
+                              draggable={false}
+                              className="relative block h-auto max-h-[420px] w-full object-contain md:max-h-[230px] md:w-auto md:max-w-full"
+                            />
+                          </>
+                        ) : (
+                          <div className="flex h-48 items-center justify-center text-sm text-gray-500 md:h-full">
+                            Poster tidak tersedia
+                          </div>
+                        )}
+                        <span className="absolute left-3 top-3 rounded-full bg-red-600 px-3 py-1 text-xs font-black text-white">
+                          EVENT MINGGU INI
+                        </span>
+                      </div>
+                      <div className="flex min-w-0 flex-col justify-center p-4 sm:p-5 md:p-6">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-red-600">
+                          Agenda pekan ini
+                        </p>
+                        <h3 className="mt-1 line-clamp-2 text-base font-black sm:text-lg">
+                          {event.title}
+                        </h3>
+                        <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                          📍 {event.venue_address || event.city}, {event.province}
+                        </p>
+                        <p className="mt-1 text-sm font-bold text-red-600">
+                          📅 {formatEventDate(event.start_date, event.end_date)}
+                        </p>
+                        {event.description && (
+                          <p className="mt-3 line-clamp-3 text-xs leading-relaxed text-gray-600 dark:text-gray-300">
+                            {event.description}
+                          </p>
+                        )}
+                        <span className="mt-4 text-xs font-black text-red-600">
+                          Lihat detail event →
+                        </span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+
+                {weekEvents.length > 1 && (
+                  <div className="mt-3 flex items-center justify-center gap-2" aria-label="Navigasi Event Minggu Ini">
+                    {weekEvents.map((event, index) => (
+                      <button
+                        key={event.id}
+                        type="button"
+                        aria-label={`Tampilkan event ${index + 1}: ${event.title}`}
+                        aria-current={activeWeekSlide === index ? "true" : undefined}
+                        onClick={() => {
+                          pauseWeekCarousel();
+                          const carousel = weekCarouselRef.current;
+                          const slide = carousel?.children.item(index) as HTMLElement | null;
+                          if (slide && carousel) {
+                            const carouselRect = carousel.getBoundingClientRect();
+                            const slideRect = slide.getBoundingClientRect();
+                            carousel.scrollTo({
+                              left: carousel.scrollLeft + slideRect.left - carouselRect.left,
+                              behavior: "smooth",
+                            });
+                            setActiveWeekSlide(index);
+                          }
+                          resumeWeekCarouselSoon();
+                        }}
+                        className={`h-2.5 rounded-full transition-all duration-300 ${activeWeekSlide === index ? "w-7 bg-red-600" : "w-2.5 bg-gray-300 hover:bg-red-300 dark:bg-gray-700 dark:hover:bg-red-500"}`}
+                      />
+                    ))}
+                  </div>
+                )}
               </section>
             )}
 
