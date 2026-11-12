@@ -39,53 +39,51 @@ export async function PATCH(request: NextRequest) {
     if (!(await isAdminAuthenticated(request))) {
       return json({ error: "Sesi admin tidak valid." }, 401);
     }
+
     const body = await request.json();
     const userId = typeof body.userId === "string" ? body.userId.trim() : "";
     const action = body.action;
     const reason = typeof body.reason === "string" ? body.reason.trim().slice(0, 300) : null;
+
     if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(userId)) {
       return json({ error: "ID pengguna tidak valid." }, 400);
     }
-    if (!["grant", "revoke"].includes(action)) return json({ error: "Aksi title tidak valid." }, 400);
+    if (!["grant", "revoke"].includes(action)) {
+      return json({ error: "Aksi title tidak valid." }, 400);
+    }
 
     const supabase = getSupabaseAdmin();
-    const [{ data: user, error: userError }, { data: title, error: titleError }, { data: admin }] = await Promise.all([
-      supabase.from("users").select("id").eq("id", userId).maybeSingle(),
-      supabase.from("profile_titles").select("id,title_key,title_type,is_active").eq("title_key", "top_supporter").maybeSingle(),
-      supabase.from("admin_settings").select("username").limit(1).maybeSingle(),
-    ]);
-    if (userError || titleError) return json({ error: "Gagal memeriksa data title." }, 500);
-    if (!user) return json({ error: "Pengguna tidak ditemukan." }, 404);
-    if (!title || title.title_type !== "exclusive" || !title.is_active) {
-      return json({ error: "Konfigurasi Top Supporter tidak tersedia." }, 500);
-    }
+    const { data: admin, error: adminError } = await supabase
+      .from("admin_settings")
+      .select("username")
+      .limit(1)
+      .maybeSingle();
+    if (adminError) return json({ error: "Gagal memverifikasi identitas admin." }, 500);
 
-    if (action === "grant") {
-      const { error } = await supabase.from("user_profile_titles").upsert(
-        { user_id: userId, title_id: title.id, granted_by: admin?.username || "admin", granted_at: new Date().toISOString() },
-        { onConflict: "user_id,title_id", ignoreDuplicates: true }
-      );
-      if (error) return json({ error: "Gagal memberikan Top Supporter." }, 500);
-    } else {
-      const { error } = await supabase.from("user_profile_titles")
-        .delete()
-        .eq("user_id", userId)
-        .eq("title_id", title.id);
-      if (error) return json({ error: "Gagal mencabut Top Supporter." }, 500);
-    }
-
-    const { error: auditError } = await supabase.from("profile_title_audit_logs").insert({
-      actor_label: admin?.username || "admin",
-      target_user_id: userId,
-      title_id: title.id,
-      action: action === "grant" ? "granted" : "revoked",
-      reason,
+    const { data, error } = await supabase.rpc("admin_manage_profile_title", {
+      p_user_id: userId,
+      p_action: action,
+      p_actor: admin?.username || "admin",
+      p_reason: reason,
     });
-    if (auditError) {
-      console.error("Profile title audit insert failed:", auditError);
-      return json({ error: "Perubahan title tersimpan, tetapi audit log gagal dicatat." }, 500);
+
+    if (error) {
+      console.error("Admin profile title RPC error:", error);
+      if (error.message?.includes("PROFILE_TITLE_USER_NOT_FOUND")) {
+        return json({ error: "Pengguna tidak ditemukan." }, 404);
+      }
+      if (error.message?.includes("PROFILE_TITLE_NOT_CONFIGURED")) {
+        return json({ error: "Konfigurasi Top Supporter tidak tersedia." }, 500);
+      }
+      return json({ error: "Gagal memperbarui Top Supporter." }, 500);
     }
-    return json({ success: true, action, titleKey: "top_supporter" });
+
+    return json({
+      success: true,
+      action,
+      titleKey: "top_supporter",
+      changed: Boolean(data?.changed),
+    });
   } catch (error) {
     console.error("Admin profile title error:", error);
     return json({ error: "Terjadi kesalahan server." }, 500);
