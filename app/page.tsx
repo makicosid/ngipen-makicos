@@ -98,7 +98,6 @@ interface Review {
   rating: number;
   comment?: string;
   created_at: string;
-  username?: string;
   display_name?: string;
   avatar_url?: string;
   selected_frame_key?: string;
@@ -6066,7 +6065,6 @@ const shareEvent = async (event: Event) => {
                                 <button type="button" onClick={() => void openReviewerProfile(review.user_id)} className="text-left font-bold hover:text-red-600 hover:underline" aria-label={`Lihat profil ${review.display_name || "Pengguna"}`}>
                                   {review.display_name || "Pengguna"}
                                 </button>
-                                {review.username && <span className="text-[10px] text-gray-500">@{review.username}</span>}
                                 {adminUsers.find((user) => String(user.id) === String(review.user_id))?.is_makicos_member && <span className="inline-flex items-center rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-extrabold text-amber-800 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-300">✦ Member MAKICOS</span>}
                               </div>
 
@@ -7545,9 +7543,8 @@ accept="image/jpeg,image/png,image/webp"
                           </button>;
                         })}
                       </div>
-                      <div className="mt-3 rounded-lg border border-dashed border-amber-300 bg-amber-50/70 p-3 dark:border-amber-900 dark:bg-amber-950/20">
-                        <div className="flex items-center gap-2 text-xs font-black text-amber-800 dark:text-amber-300">🔒 TOP SUPPORTER · EXCLUSIVE</div>
-                        <p className="mt-1 text-[11px] text-amber-800/80 dark:text-amber-200/70">Title khusus yang hanya dapat diberikan langsung oleh Admin. Tidak dapat dipilih sendiri.</p>
+                      <div className="mt-3 inline-flex items-center rounded-md border border-[#D6B45B] bg-[#8F1D2C] px-3 py-1.5 text-xs font-black tracking-wide text-[#FFE8A3] shadow-sm">
+                        Top Supporter
                       </div>
                     </section>
 
