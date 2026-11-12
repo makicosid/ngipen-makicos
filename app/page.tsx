@@ -959,6 +959,7 @@ const resumeWeekCarouselSoon = () => {
   const [logoClicks, setLogoClicks] = useState(0);
 
   const [registeredUsers, setRegisteredUsers] = useState<RegUser[]>([]);
+  const [adminUsers, setAdminUsers] = useState<RegUser[]>([]);
   const [usersLoadError, setUsersLoadError] = useState("");
   const [adminUsersLoading, setAdminUsersLoading] = useState(false);
   const [adminUsersLoadError, setAdminUsersLoadError] = useState("");
@@ -1562,7 +1563,7 @@ const handleRentalImage = (file: File | null) => {
         }
 
         if (active) {
-          setRegisteredUsers(result.users as RegUser[]);
+          setAdminUsers(result.users as RegUser[]);
           setUsersLoadError("");
         }
       } catch (error) {
@@ -2692,6 +2693,7 @@ if (!allowedImageTypes.includes(docFile.type)) {
       const result = await response.json();
       if (!response.ok || !result.success) throw new Error(result.error || "Gagal memperbarui membership.");
       const updated = { ...target, is_makicos_member: result.is_makicos_member, selected_frame_key: result.selected_frame_key };
+      setAdminUsers((prev) => prev.map((user) => String(user.id) === String(target.id) ? { ...user, ...updated } : user));
       setRegisteredUsers((prev) => prev.map((user) => String(user.id) === String(target.id) ? { ...user, ...updated } : user));
       setSelectedAdminUser((prev) => prev && String(prev.id) === String(target.id) ? { ...prev, ...updated } : prev);
       setToast(result.is_makicos_member ? "Membership MAKICOS berhasil diberikan. Frame kartu profil member aktif." : "Membership dicabut. Frame kartu profil member dinonaktifkan; pilihan frame foto profil tetap.");
@@ -4855,11 +4857,11 @@ const shareEvent = async (event: Event) => {
                         <tbody>
                           <tr className="border-b border-gray-100 dark:border-gray-800">
                             <th scope="row" className="px-4 py-3 text-left font-semibold text-gray-600 dark:text-gray-300">Total pengguna</th>
-                            <td className="px-4 py-3 text-right font-black tabular-nums">{registeredUsers.length.toLocaleString("id-ID")}</td>
+                            <td className="px-4 py-3 text-right font-black tabular-nums">{adminUsers.length.toLocaleString("id-ID")}</td>
                           </tr>
                           <tr>
                             <th scope="row" className="px-4 py-3 text-left font-semibold text-gray-600 dark:text-gray-300">Member MAKICOS aktif</th>
-                            <td className="px-4 py-3 text-right font-black tabular-nums text-amber-700 dark:text-amber-300">{registeredUsers.filter((user) => user.is_makicos_member).length.toLocaleString("id-ID")}</td>
+                            <td className="px-4 py-3 text-right font-black tabular-nums text-amber-700 dark:text-amber-300">{adminUsers.filter((user) => user.is_makicos_member).length.toLocaleString("id-ID")}</td>
                           </tr>
                         </tbody>
                       </table>
@@ -5840,7 +5842,7 @@ const shareEvent = async (event: Event) => {
                                 <button type="button" onClick={() => void openReviewerProfile(review.user_id)} className="text-left font-bold hover:text-red-600 hover:underline" aria-label={`Lihat profil ${review.display_name || "Pengguna"}`}>
                                   {review.display_name || "Pengguna"}
                                 </button>
-                                {registeredUsers.find((user) => String(user.id) === String(review.user_id))?.is_makicos_member && <span className="inline-flex items-center rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-extrabold text-amber-800 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-300">✦ Member MAKICOS</span>}
+                                {adminUsers.find((user) => String(user.id) === String(review.user_id))?.is_makicos_member && <span className="inline-flex items-center rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-extrabold text-amber-800 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-300">✦ Member MAKICOS</span>}
                               </div>
 
                               <span className="text-xs text-gray-500">
@@ -6388,7 +6390,7 @@ accept="image/jpeg,image/png,image/webp"
                   <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
                     <div className="rounded-xl border border-gray-200 bg-gray-50 p-3 dark:border-gray-800 dark:bg-gray-950">
                       <p className="text-xs text-gray-500">Total pengguna</p>
-                      <p className="mt-1 text-2xl font-black">{registeredUsers.length}</p>
+                      <p className="mt-1 text-2xl font-black">{adminUsers.length}</p>
                     </div>
                     <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 dark:border-amber-900 dark:bg-amber-950/40">
                       <p className="text-xs text-amber-800 dark:text-amber-300">Menunggu persetujuan</p>
@@ -6654,12 +6656,12 @@ accept="image/jpeg,image/png,image/webp"
                         <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
                           <div>
                             <p className="text-sm font-bold">Konfigurasi Pengguna</p>
-                            <p className="mt-0.5 text-xs text-gray-500">{registeredUsers.length.toLocaleString("id-ID")} akun terdaftar · {registeredUsers.filter((user) => user.is_makicos_member).length.toLocaleString("id-ID")} Member MAKICOS aktif</p>
+                            <p className="mt-0.5 text-xs text-gray-500">{adminUsers.length.toLocaleString("id-ID")} akun terdaftar · {adminUsers.filter((user) => user.is_makicos_member).length.toLocaleString("id-ID")} Member MAKICOS aktif</p>
                           </div>
                         </div>
                         <div className="flex flex-wrap gap-2 rounded-xl bg-gray-100 p-1 dark:bg-gray-950">
-                          <button type="button" onClick={() => { setAdminUserListTab("all"); setAdminUserPage(1); }} className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-bold transition ${adminUserListTab === "all" ? "bg-white text-red-600 shadow-sm dark:bg-gray-800 dark:text-red-400" : "text-gray-500 hover:text-gray-900 dark:hover:text-white"}`}>Semua Pengguna <span className="ml-1 text-xs opacity-70">({registeredUsers.length.toLocaleString("id-ID")})</span></button>
-                          <button type="button" onClick={() => { setAdminUserListTab("members"); setAdminUserPage(1); }} className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-bold transition ${adminUserListTab === "members" ? "bg-white text-amber-700 shadow-sm dark:bg-gray-800 dark:text-amber-400" : "text-gray-500 hover:text-gray-900 dark:hover:text-white"}`}>Member MAKICOS <span className="ml-1 text-xs opacity-70">({registeredUsers.filter((user) => user.is_makicos_member).length.toLocaleString("id-ID")})</span></button>
+                          <button type="button" onClick={() => { setAdminUserListTab("all"); setAdminUserPage(1); }} className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-bold transition ${adminUserListTab === "all" ? "bg-white text-red-600 shadow-sm dark:bg-gray-800 dark:text-red-400" : "text-gray-500 hover:text-gray-900 dark:hover:text-white"}`}>Semua Pengguna <span className="ml-1 text-xs opacity-70">({adminUsers.length.toLocaleString("id-ID")})</span></button>
+                          <button type="button" onClick={() => { setAdminUserListTab("members"); setAdminUserPage(1); }} className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-bold transition ${adminUserListTab === "members" ? "bg-white text-amber-700 shadow-sm dark:bg-gray-800 dark:text-amber-400" : "text-gray-500 hover:text-gray-900 dark:hover:text-white"}`}>Member MAKICOS <span className="ml-1 text-xs opacity-70">({adminUsers.filter((user) => user.is_makicos_member).length.toLocaleString("id-ID")})</span></button>
                         </div>
                         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
                         <div className="flex flex-col gap-2 sm:flex-row">
@@ -6690,7 +6692,7 @@ accept="image/jpeg,image/png,image/webp"
                         <p className="py-10 text-center text-sm text-gray-500">Memuat statistik pengguna...</p>
                       ) : (() => {
                         const query = adminUserSearch.trim().toLocaleLowerCase("id-ID");
-                        const sourceUsers = adminUserListTab === "members" ? registeredUsers.filter((user) => user.is_makicos_member) : registeredUsers;
+                        const sourceUsers = adminUserListTab === "members" ? adminUsers.filter((user) => user.is_makicos_member) : adminUsers;
                         const filteredUsers = sourceUsers.filter((user) =>
                           !query || (user.display_name || "").toLocaleLowerCase("id-ID").includes(query) || (user.username || "").toLocaleLowerCase("id-ID").includes(query)
                         );
