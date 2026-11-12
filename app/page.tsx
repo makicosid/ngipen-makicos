@@ -4591,10 +4591,10 @@ const shareEvent = async (event: Event) => {
                       Agenda Pekan Ini
                     </p>
                     <h2 className="mt-1 text-xl font-black sm:text-2xl">
-                      Temukan Keseruan Event Di Minggu Ini
+                      Event Minggu Ini
                     </h2>
                     <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                      Temukan keseruan event dari Senin sampai Minggu.
+                      Temukan keseruan event di minggu ini.
                     </p>
                   </div>
                   <span className="rounded-full bg-red-50 px-3 py-1 text-xs font-bold text-red-700 dark:bg-red-950 dark:text-red-300">
