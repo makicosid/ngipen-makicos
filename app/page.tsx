@@ -7529,13 +7529,14 @@ accept="image/jpeg,image/png,image/webp"
                     <section className="rounded-2xl border border-rose-100 bg-gradient-to-br from-rose-50/80 to-white p-4 dark:border-rose-950/70 dark:from-rose-950/20 dark:to-gray-900">
                       <div className="mb-3">
                         <h3 className="font-black">Profile Title</h3>
-                        <p className="mt-1 text-xs text-gray-500">Pilih beberapa title yang menggambarkan dirimu. Nuansa Jepang yang subtle, tetap selaras dengan identitas NGIPEN.</p>
+                        <p className="mt-1 text-xs text-gray-500">Pilih maksimal 2 title reguler yang menggambarkan dirimu. Top Supporter tidak termasuk batas ini dan hanya diberikan oleh Admin.</p>
+                        <p className="mt-1 text-xs font-bold text-rose-600">{selectedProfileTitles.filter((item) => item.title_type === "regular").length}/2 title reguler digunakan</p>
                       </div>
                       {selectedProfileTitles.length > 0 && <ProfileTitleBadges titles={selectedProfileTitles} className="mb-3" size="md" />}
                       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                         {profileTitleCatalog.map((title) => {
                           const active = selectedProfileTitles.some((item) => item.title_key === title.title_key);
-                          return <button key={title.title_key} type="button" disabled={profileTitlesSaving} onClick={() => void handleProfileTitleChange(title, active ? "unequip" : "equip")} className={`flex min-h-11 items-center justify-between gap-2 rounded-xl border px-3 py-2.5 text-left text-xs font-bold transition ${active ? "border-rose-400 bg-rose-100 text-rose-900 dark:border-rose-800 dark:bg-rose-950/50 dark:text-rose-100" : "border-gray-200 bg-white/80 text-gray-700 hover:border-rose-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200"}`}>
+                          return <button key={title.title_key} type="button" disabled={profileTitlesSaving || (!active && selectedProfileTitles.filter((item) => item.title_type === "regular").length >= 2)} onClick={() => void handleProfileTitleChange(title, active ? "unequip" : "equip")} className={`flex min-h-11 items-center justify-between gap-2 rounded-xl border px-3 py-2.5 text-left text-xs font-bold transition ${active ? "border-rose-400 bg-rose-100 text-rose-900 dark:border-rose-800 dark:bg-rose-950/50 dark:text-rose-100" : "border-gray-200 bg-white/80 text-gray-700 hover:border-rose-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200"}`}>
                             <span className="flex items-center gap-2"><span className="text-rose-500">◇</span>{title.title_name}</span>
                             <span className={active ? "text-rose-700 dark:text-rose-300" : "text-gray-400"}>{active ? "✓ Dipakai" : "+"}</span>
                           </button>;
