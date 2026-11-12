@@ -8612,7 +8612,10 @@ accept="image/jpeg,image/png,image/webp"
 
                 {/* COPYRIGHT */}
                 <div className="col-span-2 border-t border-gray-200 pt-4 text-xs leading-relaxed sm:col-span-3 lg:col-span-1 lg:border-t-0 lg:pt-0 lg:text-right">
-                  <p className="text-gray-500 dark:text-gray-400">© 2026 NGIPEN</p>
+                  <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 lg:flex-col lg:items-end lg:gap-0">
+                    <span>© 2026 NGIPEN</span>
+                    <span className="text-[11px] font-medium text-gray-400 dark:text-gray-500">v1.2.1</span>
+                  </div>
                 </div>
               </div>
             </div>
