@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useMemo, useRef, type TouchEvent } from "react";
+import { useState, useEffect, useMemo, useRef, type TouchEvent as ReactTouchEvent } from "react";
 import { supabase } from "../lib/supabase";
 import AdminCleanupPanel from "./admin-cleanup-panel";
 import EventAttendance from "./event-attendance";
@@ -3791,12 +3791,12 @@ const shareEvent = async (event: Event) => {
     }
   };
 
-  const handleMobileFabTouchStart = (event: TouchEvent<HTMLDivElement>) => {
+  const handleMobileFabTouchStart = (event: ReactTouchEvent<HTMLDivElement>) => {
     mobileFabTouchStartXRef.current = event.touches[0]?.clientX ?? null;
     mobileFabDidSwipeRef.current = false;
   };
 
-  const handleMobileFabTouchEnd = (event: TouchEvent<HTMLDivElement>) => {
+  const handleMobileFabTouchEnd = (event: ReactTouchEvent<HTMLDivElement>) => {
     const startX = mobileFabTouchStartXRef.current;
     const endX = event.changedTouches[0]?.clientX;
     mobileFabTouchStartXRef.current = null;
