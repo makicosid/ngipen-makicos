@@ -7520,7 +7520,7 @@ accept="image/jpeg,image/png,image/webp"
                                 return <button key={frame.key} type="button" disabled={locked || frameSaving} onClick={() => void handleSelectProfileFrame(frame.key)} className={`relative flex min-h-[190px] flex-col items-center justify-center gap-2 rounded-2xl border-2 p-3 text-center transition ${active ? "border-red-600 bg-white shadow-sm dark:bg-gray-900" : `${frame.tone} bg-white/70 dark:bg-gray-900/60`} ${locked ? "cursor-not-allowed opacity-60" : "hover:shadow-md"}`}>
                                   <ProfileAvatar src={profile?.avatar_url} frameKey={frame.key} fallback={(profile?.display_name || currentUser || "U")[0].toUpperCase()} size={76} />
                                   <span className="text-xs font-bold">{frame.name}</span>
-                                  {locked ? <span className="absolute right-2 top-2 rounded-full bg-gray-900/80 px-2 py-1 text-[9px] font-bold text-white">{frame.exclusive ? "🔒 TOP SUPPORTER" : "🔒 MEMBER"}</span> : active ? <span className="text-[10px] font-bold text-green-600">✓ Digunakan</span> : <span className="text-[10px] text-gray-500">{frameSaving ? "Menyimpan…" : "Pilih frame"}</span>}
+                                  {locked ? <span className="absolute right-2 top-2 rounded-full bg-gray-900/80 px-2 py-1 text-[9px] font-bold text-white">{frame.exclusive ? "TOP SUPPORTER" : "🔒 MEMBER"}</span> : active ? <span className="text-[10px] font-bold text-green-600">✓ Digunakan</span> : <span className="text-[10px] text-gray-500">{frameSaving ? "Menyimpan…" : "Pilih frame"}</span>}
                                 </button>;
                               })}
                             </div>
@@ -7546,7 +7546,7 @@ accept="image/jpeg,image/png,image/webp"
                           return <button key={frame.key} type="button" disabled={locked || frameSaving} onClick={() => void handleSelectProfileFrame(frame.key)} className={`relative flex flex-col items-center gap-2 rounded-xl border-2 p-3 text-center transition ${active ? "border-red-600 bg-white shadow-sm dark:bg-gray-900" : `${frame.tone} bg-white/70 dark:bg-gray-900/60`} ${locked ? "cursor-not-allowed opacity-60" : "hover:-translate-y-0.5 hover:shadow-md"}`}>
                             <ProfileAvatar src={profile?.avatar_url} frameKey={frame.key} fallback={(profile?.display_name || currentUser || "U")[0].toUpperCase()} size={68} />
                             <span className="text-xs font-bold">{frame.name}</span>
-                            {locked ? <span className="absolute right-2 top-2 rounded-full bg-gray-900/80 px-2 py-1 text-[9px] font-bold text-white">{frame.exclusive ? "🔒 TOP SUPPORTER" : "🔒 MEMBER"}</span> : active ? <span className="text-[10px] font-bold text-green-600">✓ Digunakan</span> : <span className="text-[10px] text-gray-500">{frameSaving ? "Menyimpan…" : "Pilih frame"}</span>}
+                            {locked ? <span className="absolute right-2 top-2 rounded-full bg-gray-900/80 px-2 py-1 text-[9px] font-bold text-white">{frame.exclusive ? "TOP SUPPORTER" : "🔒 MEMBER"}</span> : active ? <span className="text-[10px] font-bold text-green-600">✓ Digunakan</span> : <span className="text-[10px] text-gray-500">{frameSaving ? "Menyimpan…" : "Pilih frame"}</span>}
                           </button>;
                         })}
                       </div>
