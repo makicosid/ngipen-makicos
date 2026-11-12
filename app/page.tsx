@@ -7498,7 +7498,7 @@ accept="image/jpeg,image/png,image/webp"
 
                     <section className="rounded-2xl border border-red-100 bg-red-50/50 p-4 dark:border-red-950 dark:bg-red-950/20">
                       <div className="mb-3 flex items-center justify-between gap-2"><div><h3 className="font-black">Frame Foto Profil</h3><p className="text-xs text-gray-500">Pilih bingkai untuk profil dan detail event.</p></div><span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-bold text-red-700 dark:bg-gray-900 dark:text-red-300">{registeredUsers.find((user) => user.id === currentUserId)?.is_makicos_member ? "MAKICOS MEMBER" : "FREE USER"}</span></div>
-                      <div className="md:hidden">
+                      <div className="sm:hidden">
                         <div
                           ref={frameCarouselRef}
                           onScroll={(event) => {
@@ -7535,7 +7535,7 @@ accept="image/jpeg,image/png,image/webp"
                           ))}
                         </div>
                       </div>
-                      <div className="hidden grid-cols-2 gap-3 md:grid md:grid-cols-4">
+                      <div className="hidden grid-cols-2 gap-3 sm:grid sm:grid-cols-4">
                         {profileFrameOptions.map((frame) => {
                           const profile = registeredUsers.find((user) => user.id === currentUserId);
                           const locked = Boolean(frame.member && !profile?.is_makicos_member);
@@ -7556,7 +7556,7 @@ accept="image/jpeg,image/png,image/webp"
                         <p className="mt-1 text-xs font-bold text-rose-600">{selectedProfileTitles.filter((item) => item.title_type === "regular").length}/2</p>
                       </div>
                       {selectedProfileTitles.length > 0 && <ProfileTitleBadges titles={selectedProfileTitles} className="mb-3" size="md" />}
-                      <div className="relative md:hidden">
+                      <div className="relative sm:hidden">
                         <button type="button" onClick={() => setProfileTitleDropdownOpen((open) => !open)} aria-expanded={profileTitleDropdownOpen} className="flex min-h-12 w-full items-center justify-between rounded-xl border border-gray-200 bg-white/90 px-3 py-3 text-left text-sm font-semibold text-gray-700 shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200">
                           <span>{selectedProfileTitles.filter((item) => item.title_type === "regular").length > 0 ? selectedProfileTitles.filter((item) => item.title_type === "regular").map((item) => item.title_name).join(", ") : "Pilih Profile Title"}</span>
                           <span className="ml-2 text-gray-400">{profileTitleDropdownOpen ? "⌃" : "⌄"}</span>
@@ -7573,7 +7573,7 @@ accept="image/jpeg,image/png,image/webp"
                           {profileTitlesSaving && <p className="px-3 py-2 text-xs text-gray-500">Menyimpan…</p>}
                         </div>}
                       </div>
-                      <div className="hidden grid-cols-1 gap-2 md:grid md:grid-cols-2">
+                      <div className="hidden grid-cols-1 gap-2 sm:grid sm:grid-cols-2">
                         {profileTitleCatalog.filter((title) => title.title_type === "regular").map((title) => {
                           const active = selectedProfileTitles.some((item) => item.title_key === title.title_key);
                           return <button key={title.title_key} type="button" disabled={profileTitlesSaving || (!active && selectedProfileTitles.filter((item) => item.title_type === "regular").length >= 2)} onClick={() => void handleProfileTitleChange(title, active ? "unequip" : "equip")} className={`flex min-h-11 items-center justify-between gap-2 rounded-xl border px-3 py-2.5 text-left text-xs font-bold transition ${active ? "border-rose-400 bg-rose-100 text-rose-900 dark:border-rose-800 dark:bg-rose-950/50 dark:text-rose-100" : "border-gray-200 bg-white/80 text-gray-700 hover:border-rose-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200"}`}>
