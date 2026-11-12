@@ -106,7 +106,6 @@ interface Review {
 
 interface PublicProfile {
   id: string;
-  username?: string;
   display_name: string;
   avatar_url: string;
   selected_frame_key?: string;
@@ -7393,7 +7392,6 @@ accept="image/jpeg,image/png,image/webp"
               <button type="button" onClick={() => setSelectedReviewerProfile(null)} aria-label="Tutup kartu profil" className="absolute right-0 top-0 z-30 rounded-full px-3 py-1 text-2xl text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800">×</button>
               <ProfileAvatar src={selectedReviewerProfile.avatar_url} frameKey={selectedReviewerProfile.selected_frame_key} fallback={(selectedReviewerProfile.display_name || "P")[0].toUpperCase()} size={112} className="mx-auto" />
               <div className="mt-4 flex flex-wrap items-center justify-center gap-2"><h2 id="reviewer-profile-title" className="text-xl font-black">{selectedReviewerProfile.display_name || "Pengguna"}</h2>{selectedReviewerProfile.is_makicos_member && <span className="inline-flex items-center rounded-full border border-amber-300 bg-amber-50 px-2.5 py-1 text-[10px] font-extrabold text-amber-800 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-300">✦ Member MAKICOS</span>}</div>
-              <p className="mt-1 text-xs font-medium text-gray-500">@{selectedReviewerProfile.username || "user"}</p>
               <ProfileTitleBadges titles={selectedReviewerProfile.profile_titles} align="center" className="mt-3" size="md" />
               <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-gray-600 dark:text-gray-300">{selectedReviewerProfile.bio || "Belum ada bio."}</p>
               <div className="mt-5 space-y-2">
