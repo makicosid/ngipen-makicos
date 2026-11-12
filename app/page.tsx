@@ -7511,8 +7511,7 @@ accept="image/jpeg,image/png,image/webp"
                     <section className="rounded-2xl border border-rose-100 bg-gradient-to-br from-rose-50/80 to-white p-4 dark:border-rose-950/70 dark:from-rose-950/20 dark:to-gray-900">
                       <div className="mb-3">
                         <h3 className="font-black">Profile Title</h3>
-                        <p className="mt-1 text-xs text-gray-500">Pilih maksimal 2 title reguler yang menggambarkan dirimu. Top Supporter tidak termasuk batas ini dan hanya diberikan oleh Admin.</p>
-                        <p className="mt-1 text-xs font-bold text-rose-600">{selectedProfileTitles.filter((item) => item.title_type === "regular").length}/2 title reguler digunakan</p>
+                        <p className="mt-1 text-xs font-bold text-rose-600">{selectedProfileTitles.filter((item) => item.title_type === "regular").length}/2</p>
                       </div>
                       {selectedProfileTitles.length > 0 && <ProfileTitleBadges titles={selectedProfileTitles} className="mb-3" size="md" />}
                       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
