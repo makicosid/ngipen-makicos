@@ -4675,7 +4675,7 @@ const shareEvent = async (event: Event) => {
                     weekCarouselDragRef.current = null;
                     resumeWeekCarouselSoon();
                   }}
-                  className="flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                  className="flex w-full min-w-0 snap-x snap-mandatory gap-4 overflow-x-auto overscroll-x-contain scroll-smooth pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                   style={{
                     touchAction: "pan-x pan-y",
                     WebkitOverflowScrolling: "touch",
@@ -4779,7 +4779,7 @@ const shareEvent = async (event: Event) => {
                         className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full touch-manipulation"
                       >
                         <span
-                          className={`block h-2.5 rounded-full transition-all duration-300 ${activeWeekSlide === index ? "w-7 bg-red-600" : "w-2.5 bg-gray-300 hover:bg-red-300 dark:bg-gray-700 dark:hover:bg-red-500"}`}
+                          className={`block h-1.5 rounded-full transition-all duration-300 ${activeWeekSlide === index ? "w-5 bg-red-600" : "w-1.5 bg-gray-300 hover:bg-red-300 dark:bg-gray-700 dark:hover:bg-red-500"}`}
                         />
                       </button>
                     ))}
