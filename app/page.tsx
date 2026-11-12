@@ -573,6 +573,10 @@ export default function Page() {
   };
   const [dark, setDark] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isFooterVisible, setIsFooterVisible] = useState(false);
+  const mobileFabTouchStartXRef = useRef<number | null>(null);
+  const mobileFabDidSwipeRef = useRef(false);
+  const footerRef = useRef<HTMLElement | null>(null);
   const [showGuideBook, setShowGuideBook] = useState(false);
   const [guidePage, setGuidePage] = useState(0);
 
@@ -591,6 +595,34 @@ export default function Page() {
     return () => window.removeEventListener("keydown", handleGuideKey);
   }, [showGuideBook]);
 
+  // Kunci scroll halaman saat menu hamburger terbuka; scroll hanya di panel menu.
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    const previousOverscroll = document.body.style.overscrollBehavior;
+    document.body.style.overflow = "hidden";
+    document.body.style.overscrollBehavior = "none";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.body.style.overscrollBehavior = previousOverscroll;
+    };
+  }, [mobileOpen]);
+
+  // Sembunyikan bottom navigation ketika footer memasuki viewport.
+  useEffect(() => {
+    if (selectedEvent) {
+      setIsFooterVisible(false);
+      return;
+    }
+    const footer = footerRef.current;
+    if (!footer || typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setIsFooterVisible(entry.isIntersecting),
+      { threshold: 0.01 }
+    );
+    observer.observe(footer);
+    return () => observer.disconnect();
+  }, [selectedEvent]);
 
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
@@ -3716,6 +3748,69 @@ const shareEvent = async (event: Event) => {
 };
 
 
+  const mobileFabItems = currentRole === "user"
+    ? (["home", "explore", "costume", "profile"] as const)
+    : (["home", "explore", "profile"] as const);
+
+  const navigateMobileFab = (target: (typeof mobileFabItems)[number]) => {
+    setMobileOpen(false);
+    if (target === "home") {
+      setSelectedEvent(null);
+      setShowCostumeDirectory(false);
+      setShowCalendar(false);
+      setUserTab("Semua");
+      setActiveNav("home");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+    if (target === "explore") {
+      setSelectedEvent(null);
+      setShowCostumeDirectory(false);
+      setShowCalendar(false);
+      setUserTab("Semua");
+      setActiveNav("explore");
+      window.setTimeout(() => {
+        document.getElementById("event-search-input")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 180);
+      return;
+    }
+    if (target === "costume") {
+      setSelectedEvent(null);
+      setShowCostumeDirectory(true);
+      setShowCalendar(false);
+      setActiveNav("costume");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+    if (currentRole === "guest") {
+      setShowLoginUser(true);
+    } else if (currentRole === "admin") {
+      setShowAdmin(true);
+    } else {
+      setShowUserProfile(true);
+    }
+  };
+
+  const handleMobileFabTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
+    mobileFabTouchStartXRef.current = event.touches[0]?.clientX ?? null;
+    mobileFabDidSwipeRef.current = false;
+  };
+
+  const handleMobileFabTouchEnd = (event: React.TouchEvent<HTMLDivElement>) => {
+    const startX = mobileFabTouchStartXRef.current;
+    const endX = event.changedTouches[0]?.clientX;
+    mobileFabTouchStartXRef.current = null;
+    if (startX === null || typeof endX !== "number") return;
+    const delta = endX - startX;
+    if (Math.abs(delta) < 45) return;
+    mobileFabDidSwipeRef.current = true;
+    window.setTimeout(() => { mobileFabDidSwipeRef.current = false; }, 400);
+    const activeKey = activeNavKey === "costume" ? "costume" : activeNavKey === "explore" ? "explore" : "home";
+    const currentIndex = Math.max(0, mobileFabItems.indexOf(activeKey as (typeof mobileFabItems)[number]));
+    const nextIndex = Math.min(mobileFabItems.length - 1, Math.max(0, currentIndex + (delta < 0 ? 1 : -1)));
+    if (nextIndex !== currentIndex) navigateMobileFab(mobileFabItems[nextIndex]);
+  };
+
   return (
     <div className={dark ? "dark" : ""}>
       <div className="min-h-screen bg-gray-50 text-gray-900 transition-colors dark:bg-gray-950 dark:text-white">
@@ -3956,7 +4051,7 @@ const shareEvent = async (event: Event) => {
 
           {/* MENU MOBILE */}
           {mobileOpen && (
-            <div className="border-t border-gray-200 bg-white px-4 py-4 dark:border-gray-800 dark:bg-gray-950 md:hidden">
+            <div className="max-h-[calc(100dvh-5rem)] overflow-y-auto overscroll-contain border-t border-gray-200 bg-white px-4 py-4 [touch-action:pan-y] dark:border-gray-800 dark:bg-gray-950 md:hidden">
               <div className="flex flex-col gap-3">
                 <div className="flex flex-col gap-1">
                   <p className="px-3 pb-1 text-[10px] font-bold uppercase tracking-[0.16em] text-gray-400">Navigasi</p>
@@ -4003,6 +4098,45 @@ const shareEvent = async (event: Event) => {
             </div>
           )}
         </header>
+
+        {/* FLOATING BOTTOM NAVIGATION - MOBILE */}
+        {!isFooterVisible && !mobileOpen && (
+          <div
+            className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-1/2 z-[65] w-[min(calc(100%-2rem),420px)] -translate-x-1/2 md:hidden"
+            onTouchStart={handleMobileFabTouchStart}
+            onTouchEnd={handleMobileFabTouchEnd}
+            onTouchCancel={() => { mobileFabTouchStartXRef.current = null; }}
+          >
+            <nav aria-label="Navigasi utama" className="flex items-center justify-around gap-1 rounded-full border border-gray-200/90 bg-white/95 px-2 py-2 shadow-[0_8px_30px_rgba(15,23,42,0.18)] backdrop-blur-xl dark:border-gray-700 dark:bg-gray-900/95">
+              {mobileFabItems.map((item) => {
+                const active = item === activeNavKey;
+                const label = item === "home" ? "Beranda" : item === "explore" ? "Jelajahi" : item === "costume" ? "Costume" : "Profil";
+                const activeClass = active ? "bg-red-50 text-red-700 dark:bg-red-950/50 dark:text-red-300" : "text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800";
+                return (
+                  <button
+                    key={item}
+                    type="button"
+                    onClick={() => {
+                      if (mobileFabDidSwipeRef.current) return;
+                      navigateMobileFab(item);
+                    }}
+                    aria-label={label}
+                    aria-current={active ? "page" : undefined}
+                    className={"flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-full px-1.5 py-1.5 text-[10px] font-semibold transition-all duration-200 " + activeClass}
+                  >
+                    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      {item === "home" && <><path d="m3 10 9-7 9 7" /><path d="M5 9v11h14V9M9 20v-6h6v6" /></>}
+                      {item === "explore" && <><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 4.5 4.5" /></>}
+                      {item === "costume" && <><path d="M8 4.5 12 7l4-2.5 4 3.5-3 3-2-1v9H9v-9l-2 1-3-3z" /><path d="M9 19h6" /></>}
+                      {item === "profile" && <><circle cx="12" cy="8" r="3.5" /><path d="M5 21c.6-4 3-6 7-6s6.4 2 7 6" /></>}
+                    </svg>
+                    <span className="truncate leading-none">{label}</span>
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
+        )}
 
         {/* FLOATING BUKU PANDUAN - DESKTOP */}
         <button
@@ -4887,7 +5021,7 @@ const shareEvent = async (event: Event) => {
 
               <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-6">
                 <div className="relative min-w-0">
-                  <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Cari nama event, kota..." aria-label="Cari nama event atau kota" className="w-full min-w-0 rounded-xl border border-gray-200 bg-white px-4 py-3 pr-10 text-sm outline-none focus:border-red-500 dark:border-gray-700 dark:bg-gray-900" />
+                  <input id="event-search-input" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Cari nama event, kota..." aria-label="Cari nama event atau kota" className="w-full min-w-0 rounded-xl border border-gray-200 bg-white px-4 py-3 pr-10 text-sm outline-none focus:border-red-500 dark:border-gray-700 dark:bg-gray-900" />
                   {search && <button type="button" onClick={() => setSearch("")} aria-label="Hapus pencarian event" className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full px-1.5 py-1 text-lg leading-none text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-800 dark:hover:text-gray-200">×</button>}
                 </div>
 
@@ -8324,7 +8458,7 @@ accept="image/jpeg,image/png,image/webp"
 
         {/* FOOTER */}
         {!selectedEvent && (
-          <footer className="border-t border-gray-200 bg-white py-6 text-gray-700 dark:border-gray-800 dark:bg-[#0e121a] dark:text-gray-200 sm:py-8">
+          <footer ref={footerRef} className="border-t border-gray-200 bg-white py-6 text-gray-700 dark:border-gray-800 dark:bg-[#0e121a] dark:text-gray-200 sm:py-8">
             <div className="mx-auto max-w-[1300px] px-4 sm:px-6">
               <div className="grid grid-cols-2 items-start gap-x-6 gap-y-5 sm:grid-cols-3 sm:gap-x-8 lg:grid-cols-[1.35fr_1fr_1fr_1fr_auto] lg:gap-x-10">
                 {/* BRAND */}
