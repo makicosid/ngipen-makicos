@@ -4639,9 +4639,13 @@ const shareEvent = async (event: Event) => {
                       moved: false,
                     };
                     pauseWeekCarousel();
-                    carousel.setPointerCapture(pointerEvent.pointerId);
+                    const slide = (pointerEvent.target as HTMLElement | null)?.closest(
+                      "[data-week-event-slide]"
+                    ) as HTMLElement | null;
+                    slide?.setPointerCapture(pointerEvent.pointerId);
                   }}
                   onPointerMove={(pointerEvent) => {
+                    moveEventPreviewPointer(pointerEvent);
                     const drag = weekCarouselDragRef.current;
                     if (!drag || drag.pointerId !== pointerEvent.pointerId) return;
                     const deltaX = pointerEvent.clientX - drag.startX;
@@ -4658,8 +4662,11 @@ const shareEvent = async (event: Event) => {
                     const drag = weekCarouselDragRef.current;
                     if (drag?.pointerId === pointerEvent.pointerId) {
                       weekCarouselDragRef.current = null;
-                      if (pointerEvent.currentTarget.hasPointerCapture(pointerEvent.pointerId)) {
-                        pointerEvent.currentTarget.releasePointerCapture(pointerEvent.pointerId);
+                      const slide = (pointerEvent.target as HTMLElement | null)?.closest(
+                        "[data-week-event-slide]"
+                      ) as HTMLElement | null;
+                      if (slide?.hasPointerCapture(pointerEvent.pointerId)) {
+                        slide.releasePointerCapture(pointerEvent.pointerId);
                       }
                       resumeWeekCarouselSoon();
                     }
@@ -4685,8 +4692,8 @@ const shareEvent = async (event: Event) => {
                       onPointerDown={(pointerEvent) => beginEventPreview(event, pointerEvent)}
                       onPointerMove={moveEventPreviewPointer}
                       onPointerUp={endEventPreview}
-                      onPointerLeave={endEventPreview}
                       onPointerCancel={endEventPreview}
+                      data-week-event-slide
                       onContextMenu={(contextEvent) => contextEvent.preventDefault()}
                       className="group w-full min-w-full shrink-0 snap-start overflow-hidden rounded-2xl border border-gray-200 bg-white text-left shadow-sm transition-transform duration-300 dark:border-gray-800 dark:bg-gray-900 md:grid md:min-h-[250px] md:grid-cols-[300px_minmax(0,1fr)] md:hover:scale-[1.01]"
                     >
