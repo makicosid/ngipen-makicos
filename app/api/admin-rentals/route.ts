@@ -6,6 +6,7 @@ import { createHash, randomUUID } from "crypto";
 export const runtime = "nodejs";
 
 const COOKIE_NAME = "ngipen_admin_session";
+const USER_COOKIE_NAME = "ngipen_session";
 const BUCKET = "costume-rentals";
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const RENTAL_COLUMNS = "id, name, region, province, city, instagram_url, image_url, image_path, display_order, created_at, is_verified, is_subscription, whatsapp_number, subscription_expires_at";
@@ -44,6 +45,21 @@ async function requireAdmin(request: NextRequest) {
   const { data, error } = await getSupabaseAdmin()
     .from("admin_sessions")
     .select("token_hash")
+    .eq("token_hash", hashToken(token))
+    .gt("expires_at", new Date().toISOString())
+    .maybeSingle();
+
+  return !error && !!data;
+}
+
+async function requireUser(request: NextRequest) {
+  const token = request.cookies.get(USER_COOKIE_NAME)?.value;
+
+  if (!token) return false;
+
+  const { data, error } = await getSupabaseAdmin()
+    .from("ngipen_sessions")
+    .select("user_id")
     .eq("token_hash", hashToken(token))
     .gt("expires_at", new Date().toISOString())
     .maybeSingle();
@@ -180,27 +196,58 @@ async function removeImage(path: string) {
   }
 }
 
-// GET: daftar rental untuk publik dan admin
+// GET: Guest hanya menerima maksimal 3 rental Subscription aktif.
+// User login dan admin menerima seluruh daftar rental.
 export async function GET(request: NextRequest) {
   try {
     const supabase = getSupabaseAdmin();
     const isAdmin = await requireAdmin(request);
+    const isUser = !isAdmin && await requireUser(request);
+    const isGuest = !isAdmin && !isUser;
+    const now = new Date();
 
-    const { data, error } = await supabase
+    let rentalQuery = supabase
       .from("costume_rentals")
       .select(RENTAL_COLUMNS)
       .order("display_order", { ascending: true })
       .order("created_at", { ascending: false });
+
+    if (isGuest) {
+      rentalQuery = rentalQuery
+        .eq("is_subscription", true)
+        .gt("subscription_expires_at", now.toISOString())
+        .limit(3);
+    }
+
+    const { data, error } = await rentalQuery;
 
     if (error) {
       console.error("Rental list error:", error);
       return json({ error: "Gagal mengambil daftar rental." }, 500);
     }
 
-    const now = Date.now();
-
     const rentals = await Promise.all(
       (data || []).map(async (rental) => {
+        const expiry = rental.subscription_expires_at
+          ? new Date(rental.subscription_expires_at).getTime()
+          : 0;
+
+        const isSubscriptionActive =
+          rental.is_subscription === true &&
+          expiry > now.getTime();
+
+        // Guest hanya memerlukan data untuk kartu promosi Subscription.
+        // Kontak, statistik, dan data pengelolaan tidak dikirim ke Guest.
+        if (isGuest) {
+          return {
+            id: rental.id,
+            name: rental.name,
+            region: rental.region,
+            image_url: rental.image_url,
+            is_subscription_active: isSubscriptionActive,
+          };
+        }
+
         const { count, error: countError } = await supabase
           .from("costume_rental_clicks")
           .select("id", { count: "exact", head: true })
@@ -210,15 +257,7 @@ export async function GET(request: NextRequest) {
           throw countError;
         }
 
-        const expiry = rental.subscription_expires_at
-          ? new Date(rental.subscription_expires_at).getTime()
-          : 0;
-
-        const isSubscriptionActive =
-          rental.is_subscription === true &&
-          expiry > now;
-
-        const publicRental = {
+        const fullRental = {
           id: rental.id,
           name: rental.name,
           region: rental.region,
@@ -236,12 +275,12 @@ export async function GET(request: NextRequest) {
 
         return isAdmin
           ? {
-              ...publicRental,
+              ...fullRental,
               image_path: rental.image_path,
               is_subscription: rental.is_subscription,
               subscription_expires_at: rental.subscription_expires_at,
             }
-          : publicRental;
+          : fullRental;
       })
     );
 
