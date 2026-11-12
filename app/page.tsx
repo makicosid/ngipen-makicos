@@ -3818,14 +3818,6 @@ const shareEvent = async (event: Event) => {
 >
   Kalender
 </button>
-              <button
-                type="button"
-                onClick={() => { setGuidePage(0); setShowGuideBook(true); }}
-                aria-current={activeNavKey === "guide" ? "page" : undefined}
-                className={`relative border-b-2 pb-2 text-sm font-semibold transition-colors duration-[250ms] ${activeNavKey === "guide" ? "border-amber-400 text-amber-700 dark:text-amber-300" : "border-transparent hover:border-amber-300 hover:text-amber-600"}`}
-              >
-                Buku Panduan
-              </button>
               {currentRole !== "admin" && (
                 <a
                   href="https://trakteer.id/makicos.id/tip"
@@ -3879,18 +3871,6 @@ const shareEvent = async (event: Event) => {
                 {dark ? "☀️" : "🌙"}
               </button>
 
-              <a
-                href="/tentang-kami"
-                aria-label="Tentang Kami"
-                title="Tentang Kami"
-                className="flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 text-red-600 transition hover:border-red-300 hover:bg-red-50 dark:border-gray-700 dark:hover:bg-red-950/30"
-              >
-                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v17H6.5A2.5 2.5 0 0 0 4 22z" />
-                  <path d="M4 5.5v14A2.5 2.5 0 0 1 6.5 17H20" />
-                  <path d="M8 7h8M8 10h8" />
-                </svg>
-              </a>
 
               {currentRole === "guest" ? (
                 <>
@@ -4023,6 +4003,25 @@ const shareEvent = async (event: Event) => {
             </div>
           )}
         </header>
+
+        {/* FLOATING BUKU PANDUAN - DESKTOP */}
+        <button
+          type="button"
+          onClick={() => {
+            setGuidePage(0);
+            setShowGuideBook(true);
+          }}
+          aria-label="Buka Buku Panduan"
+          title="Buku Panduan"
+          aria-haspopup="dialog"
+          className="fixed bottom-6 right-6 z-[70] hidden h-12 w-12 items-center justify-center rounded-full border border-gray-200 bg-white text-red-600 shadow-lg transition-all duration-200 hover:-translate-y-1 hover:border-red-300 hover:bg-red-50 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 md:flex dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-red-950/30 dark:focus:ring-offset-gray-950"
+        >
+          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v17H6.5A2.5 2.5 0 0 0 4 22z" />
+            <path d="M4 5.5v14A2.5 2.5 0 0 1 6.5 17H20" />
+            <path d="M8 7h8M8 10h8" />
+          </svg>
+        </button>
 
         {/* BERANDA */}
        {!selectedEvent && !showCostumeDirectory && (
