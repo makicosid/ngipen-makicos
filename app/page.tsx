@@ -3044,8 +3044,8 @@ const calendarEvents = useMemo(() => {
         return (
           event.moderation_status === "Approved" &&
           event.is_hidden !== true &&
-          /^\\d{4}-\\d{2}-\\d{2}$/.test(eventStart) &&
-          /^\\d{4}-\\d{2}-\\d{2}$/.test(eventEnd) &&
+          /^\d{4}-\d{2}-\d{2}$/.test(eventStart) &&
+          /^\d{4}-\d{2}-\d{2}$/.test(eventEnd) &&
           eventStart <= weekEnd &&
           eventEnd >= weekStart
         );
