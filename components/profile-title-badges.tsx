@@ -51,14 +51,9 @@ export default function ProfileTitleBadges({
               aria-hidden="true"
               className={exclusive ? "text-[#F4D27C]" : "text-rose-500"}
             >
-              {exclusive ? "✦" : "◇"}
+              {exclusive ? "🔒" : "◇"}
             </span>
             {title.title_name}
-            {exclusive && (
-              <span aria-hidden="true" className="text-[#F4D27C]">
-                ✦
-              </span>
-            )}
           </span>
         );
       })}
