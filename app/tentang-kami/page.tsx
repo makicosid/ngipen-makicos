@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-const SITE_URL = "https://ngipen-makicos-seven.vercel.app";
+const SITE_URL = "https://ngipen.my.id";
 
 export const metadata: Metadata = {
   title: "Tentang Kami | NGIPEN – MAKICOS",
