@@ -164,11 +164,11 @@ export async function GET(request: NextRequest) {
         .filter(Boolean)
     ));
 
-    const publicProfileMap = new Map<string, { display_name: string; avatar_url: string; selected_frame_key: string; profile_titles: any[] }>();
+    const publicProfileMap = new Map<string, { username: string; display_name: string; avatar_url: string; selected_frame_key: string; profile_titles: any[] }>();
     for (let offset = 0; offset < reviewerIds.length; offset += 200) {
       const { data: profiles, error: profilesError } = await getSupabaseAdmin()
         .from("users")
-        .select("id, display_name, avatar_url, selected_frame_key")
+        .select("id, username, display_name, avatar_url, selected_frame_key")
         .in("id", reviewerIds.slice(offset, offset + 200));
 
       if (profilesError) {
@@ -190,6 +190,7 @@ export async function GET(request: NextRequest) {
       });
       (profiles || []).forEach((profile: any) => {
         publicProfileMap.set(String(profile.id), {
+          username: String(profile.username || ""),
           display_name: String(profile.display_name || "Pengguna"),
           avatar_url: String(profile.avatar_url || ""),
           selected_frame_key: String(profile.selected_frame_key || "free_red"),
@@ -202,6 +203,7 @@ export async function GET(request: NextRequest) {
       const profile = publicProfileMap.get(String(review.user_id || ""));
       return {
         ...review,
+        username: profile?.username || "",
         display_name: profile?.display_name || "Pengguna",
         avatar_url: profile?.avatar_url || "",
         selected_frame_key: profile?.selected_frame_key || "free_red",
