@@ -7559,7 +7559,6 @@ accept="image/jpeg,image/png,image/webp"
                       <div className="relative md:hidden">
                         <button type="button" onClick={() => setProfileTitleDropdownOpen((open) => !open)} aria-expanded={profileTitleDropdownOpen} className="flex min-h-12 w-full items-center justify-between rounded-xl border border-gray-200 bg-white/90 px-3 py-3 text-left text-sm font-semibold text-gray-700 shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200">
                           <span>{selectedProfileTitles.filter((item) => item.title_type === "regular").length > 0 ? selectedProfileTitles.filter((item) => item.title_type === "regular").map((item) => item.title_name).join(", ") : "Pilih Profile Title"}</span>
-                          <icon className="hidden" />
                           <span className="ml-2 text-gray-400">{profileTitleDropdownOpen ? "⌃" : "⌄"}</span>
                         </button>
                         {profileTitleDropdownOpen && <div className="mt-2 rounded-xl border border-gray-200 bg-white p-2 shadow-lg dark:border-gray-700 dark:bg-gray-900">
@@ -7574,7 +7573,7 @@ accept="image/jpeg,image/png,image/webp"
                           {profileTitlesSaving && <p className="px-3 py-2 text-xs text-gray-500">Menyimpan…</p>}
                         </div>}
                       </div>
-                      <div className="hidden grid-cols-1 gap-2 sm:grid sm:grid-cols-2 md:grid">
+                      <div className="hidden grid-cols-1 gap-2 md:grid md:grid-cols-2">
                         {profileTitleCatalog.filter((title) => title.title_type === "regular").map((title) => {
                           const active = selectedProfileTitles.some((item) => item.title_key === title.title_key);
                           return <button key={title.title_key} type="button" disabled={profileTitlesSaving || (!active && selectedProfileTitles.filter((item) => item.title_type === "regular").length >= 2)} onClick={() => void handleProfileTitleChange(title, active ? "unequip" : "equip")} className={`flex min-h-11 items-center justify-between gap-2 rounded-xl border px-3 py-2.5 text-left text-xs font-bold transition ${active ? "border-rose-400 bg-rose-100 text-rose-900 dark:border-rose-800 dark:bg-rose-950/50 dark:text-rose-100" : "border-gray-200 bg-white/80 text-gray-700 hover:border-rose-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200"}`}>
