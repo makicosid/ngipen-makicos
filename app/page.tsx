@@ -608,22 +608,6 @@ export default function Page() {
     };
   }, [mobileOpen]);
 
-  // Sembunyikan bottom navigation ketika footer memasuki viewport.
-  useEffect(() => {
-    if (selectedEvent) {
-      setIsFooterVisible(false);
-      return;
-    }
-    const footer = footerRef.current;
-    if (!footer || typeof IntersectionObserver === "undefined") return;
-    const observer = new IntersectionObserver(
-      ([entry]) => setIsFooterVisible(entry.isIntersecting),
-      { threshold: 0.01 }
-    );
-    observer.observe(footer);
-    return () => observer.disconnect();
-  }, [selectedEvent]);
-
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentEventPage, setCurrentEventPage] = useState(1);
@@ -674,6 +658,22 @@ const [eventStatusTab, setEventStatusTab] = useState<
 >("Semua");
 
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+
+  // Sembunyikan bottom navigation ketika footer memasuki viewport.
+  useEffect(() => {
+    if (selectedEvent) {
+      setIsFooterVisible(false);
+      return;
+    }
+    const footer = footerRef.current;
+    if (!footer || typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setIsFooterVisible(entry.isIntersecting),
+      { threshold: 0.01 }
+    );
+    observer.observe(footer);
+    return () => observer.disconnect();
+  }, [selectedEvent]);
 const eventOpenSourceRef = useRef<"calendar" | "explore" | "other">("explore");
 const calendarScrollYRef = useRef(0);
 // Browser history entry khusus untuk detail event yang dibuka di dalam halaman utama.
