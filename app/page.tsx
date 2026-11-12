@@ -3748,13 +3748,22 @@ const shareEvent = async (event: Event) => {
 };
 
 
-  type MobileFabItem = "home" | "explore" | "costume" | "profile";
+  type MobileFabItem = "home" | "explore" | "costume" | "upload" | "profile";
   const mobileFabItems: MobileFabItem[] = currentRole === "user"
-    ? ["home", "explore", "costume", "profile"]
+    ? ["home", "explore", "costume", "upload", "profile"]
     : ["home", "explore", "profile"];
 
   const navigateMobileFab = (target: MobileFabItem) => {
     setMobileOpen(false);
+    setEventFormOpen(false);
+    if (target === "upload") {
+      if (currentRole !== "user") return;
+      setPosterFile(null);
+      setPosterPreview("");
+      setPosterError("");
+      setEventFormOpen(true);
+      return;
+    }
     if (target === "home") {
       setSelectedEvent(null);
       setShowCostumeDirectory(false);
@@ -3806,7 +3815,7 @@ const shareEvent = async (event: Event) => {
     if (Math.abs(delta) < 45) return;
     mobileFabDidSwipeRef.current = true;
     window.setTimeout(() => { mobileFabDidSwipeRef.current = false; }, 400);
-    const activeKey = showUserProfile || showAdmin || showLoginUser ? "profile" : activeNavKey === "costume" ? "costume" : activeNavKey === "explore" ? "explore" : "home";
+    const activeKey = eventFormOpen ? "upload" : showUserProfile || showAdmin || showLoginUser ? "profile" : activeNavKey === "costume" ? "costume" : activeNavKey === "explore" ? "explore" : "home";
     const currentIndex = Math.max(0, mobileFabItems.indexOf(activeKey as MobileFabItem));
     const nextIndex = Math.min(mobileFabItems.length - 1, Math.max(0, currentIndex + (delta < 0 ? 1 : -1)));
     if (nextIndex !== currentIndex) navigateMobileFab(mobileFabItems[nextIndex]);
@@ -4111,7 +4120,7 @@ const shareEvent = async (event: Event) => {
             <nav aria-label="Navigasi utama" className="flex items-center justify-around gap-1 rounded-full border border-gray-200/90 bg-white/95 px-2 py-2 shadow-[0_8px_30px_rgba(15,23,42,0.18)] backdrop-blur-xl dark:border-gray-700 dark:bg-gray-900/95">
               {mobileFabItems.map((item) => {
                 const active = item === activeNavKey || (item === "profile" && (showUserProfile || showAdmin || showLoginUser));
-                const label = item === "home" ? "Beranda" : item === "explore" ? "Jelajahi" : item === "costume" ? "Costume" : "Profil";
+                const label = item === "home" ? "Beranda" : item === "explore" ? "Jelajahi" : item === "costume" ? "Costume" : item === "upload" ? "Upload Event" : "Profil";
                 const activeClass = active ? "bg-red-50 text-red-700 dark:bg-red-950/50 dark:text-red-300" : "text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800";
                 return (
                   <button
@@ -4129,6 +4138,7 @@ const shareEvent = async (event: Event) => {
                       {item === "home" && <><path d="m3 10 9-7 9 7" /><path d="M5 9v11h14V9M9 20v-6h6v6" /></>}
                       {item === "explore" && <><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 4.5 4.5" /></>}
                       {item === "costume" && <><path d="M8 4.5 12 7l4-2.5 4 3.5-3 3-2-1v9H9v-9l-2 1-3-3z" /><path d="M9 19h6" /></>}
+                      {item === "upload" && <><path d="M12 16V4" /><path d="m7 9 5-5 5 5" /><path d="M5 15v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4" /></>}
                       {item === "profile" && <><circle cx="12" cy="8" r="3.5" /><path d="M5 21c.6-4 3-6 7-6s6.4 2 7 6" /></>}
                     </svg>
                     <span className="truncate leading-none">{label}</span>
