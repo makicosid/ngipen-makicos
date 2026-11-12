@@ -144,4 +144,77 @@ revoke all on function public.admin_manage_profile_title(uuid, text, text, text)
 grant execute on function public.admin_manage_profile_title(uuid, text, text, text)
   to service_role;
 
+
+-- Enforce a maximum of two regular titles per user at database level.
+-- Top Supporter (exclusive) is intentionally excluded from the count.
+create or replace function public.user_manage_profile_title(
+  p_user_id uuid,
+  p_title_key text,
+  p_action text
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $
+declare
+  v_title_id uuid;
+  v_title_type text;
+  v_is_active boolean;
+  v_regular_count integer;
+begin
+  if p_action not in ('equip', 'unequip') then
+    raise exception 'PROFILE_TITLE_INVALID_ACTION';
+  end if;
+
+  -- Serialize title changes for this user to prevent concurrent requests
+  -- from bypassing the two-title limit.
+  perform pg_advisory_xact_lock(hashtextextended(p_user_id::text, 0));
+
+  select id, title_type, is_active
+    into v_title_id, v_title_type, v_is_active
+    from public.profile_titles
+   where title_key = p_title_key;
+
+  if v_title_id is null or v_is_active is not true then
+    raise exception 'PROFILE_TITLE_NOT_AVAILABLE';
+  end if;
+
+  if v_title_type <> 'regular' then
+    raise exception 'PROFILE_TITLE_NOT_REGULAR';
+  end if;
+
+  if p_action = 'equip' then
+    select count(*)::integer
+      into v_regular_count
+      from public.user_profile_titles upt
+      join public.profile_titles pt on pt.id = upt.title_id
+     where upt.user_id = p_user_id
+       and pt.title_type = 'regular';
+
+    if not exists (
+      select 1 from public.user_profile_titles
+       where user_id = p_user_id and title_id = v_title_id
+    ) and v_regular_count >= 2 then
+      raise exception 'PROFILE_TITLE_LIMIT_REACHED';
+    end if;
+
+    insert into public.user_profile_titles
+      (user_id, title_id, granted_by, granted_at)
+    values (p_user_id, v_title_id, null, null)
+    on conflict (user_id, title_id) do nothing;
+  else
+    delete from public.user_profile_titles
+     where user_id = p_user_id and title_id = v_title_id;
+  end if;
+
+  return jsonb_build_object('success', true);
+end;
+$;
+
+revoke all on function public.user_manage_profile_title(uuid, text, text)
+  from public, anon, authenticated;
+grant execute on function public.user_manage_profile_title(uuid, text, text)
+  to service_role;
+
 commit;
