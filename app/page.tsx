@@ -7,6 +7,7 @@ import AdminCleanupPanel from "./admin-cleanup-panel";
 import EventAttendance from "./event-attendance";
 import AdminPushPanel from "./admin-push-panel";
 import ProfileAvatar from "../components/profile-avatar";
+import ProfileTitleBadges, { type ProfileTitle } from "../components/profile-title-badges";
 
 type TicketType = "Gratis" | "Berbayar";
 type Category =
@@ -101,6 +102,7 @@ interface Review {
   display_name?: string;
   avatar_url?: string;
   selected_frame_key?: string;
+  profile_titles?: ProfileTitle[];
 }
 
 interface PublicProfile {
@@ -112,6 +114,7 @@ interface PublicProfile {
   bio: string;
   instagram_url: string;
   tiktok_url: string;
+  profile_titles?: ProfileTitle[];
 }
 
 interface RegUser {
@@ -129,6 +132,7 @@ interface RegUser {
   savedEventsCount?: number;
   totalClicks?: number;
   attendedEventsCount?: number;
+  profile_titles?: ProfileTitle[];
 }
 
 const ALL_PROVINCES = [
@@ -1018,6 +1022,10 @@ const resumeWeekCarouselSoon = () => {
   const [selectedAdminUser, setSelectedAdminUser] = useState<RegUser | null>(null);
   const [membershipSaving, setMembershipSaving] = useState(false);
   const [frameSaving, setFrameSaving] = useState(false);
+  const [profileTitleCatalog, setProfileTitleCatalog] = useState<ProfileTitle[]>([]);
+  const [selectedProfileTitles, setSelectedProfileTitles] = useState<ProfileTitle[]>([]);
+  const [profileTitlesSaving, setProfileTitlesSaving] = useState(false);
+  const [topSupporterSaving, setTopSupporterSaving] = useState(false);
 
   const [savedIds, setSavedIds] = useState<string[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -2715,6 +2723,77 @@ if (!allowedImageTypes.includes(docFile.type)) {
       setToast("Profile frame berhasil diperbarui.");
     } catch (error) { setToast(error instanceof Error ? error.message : "Gagal memilih frame."); }
     finally { setFrameSaving(false); }
+  };
+
+  useEffect(() => {
+    if (currentRole !== "user" || !currentUserId) {
+      setProfileTitleCatalog([]);
+      setSelectedProfileTitles([]);
+      return;
+    }
+    let active = true;
+    fetch("/api/profile-titles", { credentials: "include", cache: "no-store" })
+      .then(async (response) => {
+        const result = await response.json();
+        if (!response.ok || !result.success) throw new Error(result.error || "Gagal memuat title.");
+        if (!active) return;
+        setProfileTitleCatalog(Array.isArray(result.availableTitles) ? result.availableTitles : []);
+        setSelectedProfileTitles(Array.isArray(result.selectedTitles) ? result.selectedTitles : []);
+      })
+      .catch((error) => { if (active) setToast(error instanceof Error ? error.message : "Gagal memuat title."); });
+    return () => { active = false; };
+  }, [currentRole, currentUserId]);
+
+  const handleProfileTitleChange = async (title: ProfileTitle, action: "equip" | "unequip") => {
+    if (profileTitlesSaving) return;
+    setProfileTitlesSaving(true);
+    try {
+      const response = await fetch("/api/profile-titles", {
+        method: "POST", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ titleKey: title.title_key, action }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.error || "Gagal memperbarui title.");
+      const nextTitles = Array.isArray(result.selectedTitles) ? result.selectedTitles : [];
+      setSelectedProfileTitles(nextTitles);
+      setRegisteredUsers((prev) => prev.map((user) => String(user.id) === String(currentUserId) ? { ...user, profile_titles: nextTitles } : user));
+      setToast(action === "equip" ? "Title berhasil ditambahkan." : "Title berhasil dilepas.");
+    } catch (error) {
+      setToast(error instanceof Error ? error.message : "Gagal memperbarui title.");
+    } finally {
+      setProfileTitlesSaving(false);
+    }
+  };
+
+  const handleTopSupporter = async (target: RegUser) => {
+    if (topSupporterSaving) return;
+    const hasTitle = (target.profile_titles || []).some((title) => title.title_key === "top_supporter");
+    const confirmed = window.confirm(hasTitle
+      ? `Cabut title Top Supporter dari @${target.username}?`
+      : `Berikan title Top Supporter kepada @${target.username}?`);
+    if (!confirmed) return;
+    setTopSupporterSaving(true);
+    try {
+      const response = await fetch("/api/admin/profile-titles", {
+        method: "PATCH", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: target.id, action: hasTitle ? "revoke" : "grant" }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.error || "Gagal memperbarui Top Supporter.");
+      const refreshed = await fetch("/api/admin-users", { credentials: "include", cache: "no-store" });
+      const refreshedResult = await refreshed.json();
+      if (!refreshed.ok || !Array.isArray(refreshedResult.users)) throw new Error("Title berubah, tetapi daftar pengguna gagal diperbarui. Muat ulang panel admin.");
+      setAdminUsers(refreshedResult.users);
+      const updated = refreshedResult.users.find((user: RegUser) => String(user.id) === String(target.id));
+      if (updated) setSelectedAdminUser(updated);
+      setToast(hasTitle ? "Top Supporter berhasil dicabut." : "Top Supporter berhasil diberikan.");
+    } catch (error) {
+      setToast(error instanceof Error ? error.message : "Gagal memperbarui Top Supporter.");
+    } finally {
+      setTopSupporterSaving(false);
+    }
   };
 
   const handleToggleMakicosMember = async (target: RegUser) => {
@@ -5986,6 +6065,7 @@ const shareEvent = async (event: Event) => {
                                 <button type="button" onClick={() => void openReviewerProfile(review.user_id)} className="text-left font-bold hover:text-red-600 hover:underline" aria-label={`Lihat profil ${review.display_name || "Pengguna"}`}>
                                   {review.display_name || "Pengguna"}
                                 </button>
+                                <ProfileTitleBadges titles={review.profile_titles} />
                                 {adminUsers.find((user) => String(user.id) === String(review.user_id))?.is_makicos_member && <span className="inline-flex items-center rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-extrabold text-amber-800 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-300">✦ Member MAKICOS</span>}
                               </div>
 
@@ -6927,7 +7007,7 @@ accept="image/jpeg,image/png,image/webp"
                           <div className="space-y-5 p-5">
                             <div className="flex items-center gap-4">
                               <ProfileAvatar src={selectedAdminUser.avatar_url} frameKey={selectedAdminUser.selected_frame_key} fallback={(selectedAdminUser.display_name || selectedAdminUser.username || "?")[0].toUpperCase()} size={64} />
-                              <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><h4 className="truncate text-lg font-black">{selectedAdminUser.display_name || selectedAdminUser.username}</h4>{selectedAdminUser.is_makicos_member && <span className="inline-flex rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-extrabold text-amber-800 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-300">✦ Member MAKICOS</span>}</div><p className="truncate text-sm text-gray-500">@{selectedAdminUser.username}</p><span className="mt-1 inline-flex rounded-full bg-green-50 px-2.5 py-1 text-[10px] font-bold text-green-700 dark:bg-green-950/50 dark:text-green-300">Akun terdaftar</span></div>
+                              <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><h4 className="truncate text-lg font-black">{selectedAdminUser.display_name || selectedAdminUser.username}</h4>{selectedAdminUser.is_makicos_member && <span className="inline-flex rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-extrabold text-amber-800 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-300">✦ Member MAKICOS</span>}</div><p className="truncate text-sm text-gray-500">@{selectedAdminUser.username}</p><ProfileTitleBadges titles={selectedAdminUser.profile_titles} className="mt-2" /><span className="mt-1 inline-flex rounded-full bg-green-50 px-2.5 py-1 text-[10px] font-bold text-green-700 dark:bg-green-950/50 dark:text-green-300">Akun terdaftar</span></div>
                             </div>
                             <div className="grid grid-cols-2 gap-3">
                               <div className="rounded-xl bg-gray-50 p-3 dark:bg-gray-950"><p className="text-xs text-gray-500">Event tersimpan</p><p className="mt-1 text-2xl font-black text-red-600">{(selectedAdminUser.savedEventsCount ?? 0).toLocaleString("id-ID")}</p><button type="button" onClick={() => { setSelectedAdminUser(null); void openUserSavedEvents(selectedAdminUser); }} className="mt-2 text-xs font-bold text-red-600 hover:underline">Lihat daftar event →</button></div>
@@ -6974,6 +7054,12 @@ accept="image/jpeg,image/png,image/webp"
                               <div className="flex items-center justify-between gap-3"><div><p className="text-sm font-black">Keanggotaan MAKICOS</p><p className="mt-1 text-xs text-gray-500">Akses eksklusif frame Member Makicos.</p></div><span className={`rounded-full px-2.5 py-1 text-[10px] font-black ${selectedAdminUser.is_makicos_member ? "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300" : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300"}`}>{selectedAdminUser.is_makicos_member ? "MEMBER" : "NON-MEMBER"}</span></div>
                               <button type="button" disabled={membershipSaving} onClick={() => void handleToggleMakicosMember(selectedAdminUser)} className={`mt-3 w-full rounded-xl px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50 ${selectedAdminUser.is_makicos_member ? "bg-gray-700 hover:bg-gray-800" : "bg-red-600 hover:bg-red-700"}`}>{membershipSaving ? "Menyimpan…" : selectedAdminUser.is_makicos_member ? "Cabut Membership MAKICOS" : "Berikan Membership MAKICOS"}</button>
                             </div>
+                            <section className="rounded-xl border border-[#D6B45B] bg-[#FFF9E9] p-4 dark:border-[#8B7135] dark:bg-[#332A19]">
+                              <div className="flex items-center gap-2 text-sm font-black text-[#8A6418] dark:text-[#F2D68E]">✦ TOP SUPPORTER</div>
+                              <p className="mt-1 text-xs text-[#8A6418] dark:text-[#E7D4A3]">Title eksklusif dengan badge merah dan frame emas. Hanya Admin yang dapat memberikan atau mencabutnya.</p>
+                              <ProfileTitleBadges titles={(selectedAdminUser.profile_titles || []).filter((title) => title.title_key === "top_supporter")} className="mt-3" />
+                              <button type="button" disabled={topSupporterSaving} onClick={() => void handleTopSupporter(selectedAdminUser)} className="mt-3 w-full rounded-lg bg-[#8F1D2C] px-4 py-2.5 text-xs font-black text-[#FFE8A3] ring-1 ring-inset ring-[#D6B45B] disabled:opacity-50">{topSupporterSaving ? "Memproses…" : (selectedAdminUser.profile_titles || []).some((title) => title.title_key === "top_supporter") ? "Cabut Top Supporter" : "Berikan Top Supporter"}</button>
+                            </section>
                             <div className="space-y-3 rounded-xl border border-gray-200 p-4 dark:border-gray-800">
                               <div><p className="text-[10px] font-bold uppercase tracking-wide text-gray-400">Nama tampilan</p><p className="mt-1 text-sm font-semibold">{selectedAdminUser.display_name || "Belum diatur"}</p></div>
                               <div><p className="text-[10px] font-bold uppercase tracking-wide text-gray-400">Username</p><p className="mt-1 text-sm font-semibold">@{selectedAdminUser.username}</p></div>
@@ -7306,6 +7392,7 @@ accept="image/jpeg,image/png,image/webp"
               <button type="button" onClick={() => setSelectedReviewerProfile(null)} aria-label="Tutup kartu profil" className="absolute right-0 top-0 z-30 rounded-full px-3 py-1 text-2xl text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800">×</button>
               <ProfileAvatar src={selectedReviewerProfile.avatar_url} frameKey={selectedReviewerProfile.selected_frame_key} fallback={(selectedReviewerProfile.display_name || "P")[0].toUpperCase()} size={112} className="mx-auto" />
               <div className="mt-4 flex flex-wrap items-center justify-center gap-2"><h2 id="reviewer-profile-title" className="text-xl font-black">{selectedReviewerProfile.display_name || "Pengguna"}</h2>{selectedReviewerProfile.is_makicos_member && <span className="inline-flex items-center rounded-full border border-amber-300 bg-amber-50 px-2.5 py-1 text-[10px] font-extrabold text-amber-800 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-300">✦ Member MAKICOS</span>}</div>
+              <ProfileTitleBadges titles={selectedReviewerProfile.profile_titles} align="center" className="mt-3" size="md" />
               <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-gray-600 dark:text-gray-300">{selectedReviewerProfile.bio || "Belum ada bio."}</p>
               <div className="mt-5 space-y-2">
                 {selectedReviewerProfile.instagram_url ? (
@@ -7379,6 +7466,7 @@ accept="image/jpeg,image/png,image/webp"
 
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2"><p className="font-bold">{currentUser}</p>{registeredUsers.find((user) => user.id === currentUserId)?.is_makicos_member && <span className="inline-flex items-center rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-extrabold text-amber-800 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-300">✦ Member MAKICOS</span>}</div>
+                        <ProfileTitleBadges titles={selectedProfileTitles} className="mt-2" />
                         <p className="text-xs text-gray-500">
                           @{registeredUsers.find(
                             (user) => user.id === currentUserId
@@ -7436,6 +7524,27 @@ accept="image/jpeg,image/png,image/webp"
                         })}
                       </div>
                       {!registeredUsers.find((user) => user.id === currentUserId)?.is_makicos_member && <p className="mt-3 text-xs text-gray-500">Frame Member Makicos khusus anggota grup MAKICOS. Hubungi Admin untuk verifikasi keanggotaan.</p>}
+                    </section>
+
+                    <section className="rounded-2xl border border-rose-100 bg-gradient-to-br from-rose-50/80 to-white p-4 dark:border-rose-950/70 dark:from-rose-950/20 dark:to-gray-900">
+                      <div className="mb-3">
+                        <h3 className="font-black">Profile Title</h3>
+                        <p className="mt-1 text-xs text-gray-500">Pilih beberapa title yang menggambarkan dirimu. Nuansa Jepang yang subtle, tetap selaras dengan identitas NGIPEN.</p>
+                      </div>
+                      {selectedProfileTitles.length > 0 && <ProfileTitleBadges titles={selectedProfileTitles} className="mb-3" size="md" />}
+                      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                        {profileTitleCatalog.map((title) => {
+                          const active = selectedProfileTitles.some((item) => item.title_key === title.title_key);
+                          return <button key={title.title_key} type="button" disabled={profileTitlesSaving} onClick={() => void handleProfileTitleChange(title, active ? "unequip" : "equip")} className={`flex min-h-11 items-center justify-between gap-2 rounded-xl border px-3 py-2.5 text-left text-xs font-bold transition ${active ? "border-rose-400 bg-rose-100 text-rose-900 dark:border-rose-800 dark:bg-rose-950/50 dark:text-rose-100" : "border-gray-200 bg-white/80 text-gray-700 hover:border-rose-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200"}`}>
+                            <span className="flex items-center gap-2"><span className="text-rose-500">◇</span>{title.title_name}</span>
+                            <span className={active ? "text-rose-700 dark:text-rose-300" : "text-gray-400"}>{active ? "✓ Dipakai" : "+"}</span>
+                          </button>;
+                        })}
+                      </div>
+                      <div className="mt-3 rounded-lg border border-dashed border-amber-300 bg-amber-50/70 p-3 dark:border-amber-900 dark:bg-amber-950/20">
+                        <div className="flex items-center gap-2 text-xs font-black text-amber-800 dark:text-amber-300">🔒 TOP SUPPORTER · EXCLUSIVE</div>
+                        <p className="mt-1 text-[11px] text-amber-800/80 dark:text-amber-200/70">Title khusus yang hanya dapat diberikan langsung oleh Admin. Tidak dapat dipilih sendiri.</p>
+                      </div>
                     </section>
 
                     <div>
