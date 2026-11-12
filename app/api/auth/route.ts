@@ -297,9 +297,17 @@ export async function GET(request: NextRequest) {
       return json({ authenticated: false }, 401);
     }
 
+    const { data: titleRows, error: titleError } = await getSupabaseAdmin()
+      .from("user_profile_titles")
+      .select("profile_titles(title_key,title_name,title_type,style_variant,display_order)")
+      .eq("user_id", session.user_id);
+    if (titleError) return json({ error: "Gagal mengambil title profil." }, 500);
+    const profileTitles = (titleRows || []).map((row: any) => row.profile_titles).filter(Boolean)
+      .sort((a: any, b: any) => Number(a.display_order) - Number(b.display_order));
+
     return json({
       authenticated: true,
-      user,
+      user: { ...user, profile_titles: profileTitles },
     });
   } catch (error) {
     console.error("Auth session error:", error);
