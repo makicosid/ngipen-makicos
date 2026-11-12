@@ -951,7 +951,8 @@ const resumeWeekCarouselSoon = () => {
   useEffect(() => {
     if (!toast) return;
 
-    const toastTimer = return () => window.clearTimeout(toastTimer);
+    const toastTimer = window.setTimeout(() => setToast(""), 2000);
+    return () => window.clearTimeout(toastTimer);
   }, [toast]);
   const [editingApprovedEvent, setEditingApprovedEvent] = useState<Event | null>(null);
   const [adminEditDraft, setAdminEditDraft] = useState<Partial<Event>>({});
