@@ -3748,11 +3748,12 @@ const shareEvent = async (event: Event) => {
 };
 
 
-  const mobileFabItems = currentRole === "user"
-    ? (["home", "explore", "costume", "profile"] as const)
-    : (["home", "explore", "profile"] as const);
+  type MobileFabItem = "home" | "explore" | "costume" | "profile";
+  const mobileFabItems: MobileFabItem[] = currentRole === "user"
+    ? ["home", "explore", "costume", "profile"]
+    : ["home", "explore", "profile"];
 
-  const navigateMobileFab = (target: (typeof mobileFabItems)[number]) => {
+  const navigateMobileFab = (target: MobileFabItem) => {
     setMobileOpen(false);
     if (target === "home") {
       setSelectedEvent(null);
@@ -3806,7 +3807,7 @@ const shareEvent = async (event: Event) => {
     mobileFabDidSwipeRef.current = true;
     window.setTimeout(() => { mobileFabDidSwipeRef.current = false; }, 400);
     const activeKey = showUserProfile || showAdmin || showLoginUser ? "profile" : activeNavKey === "costume" ? "costume" : activeNavKey === "explore" ? "explore" : "home";
-    const currentIndex = Math.max(0, mobileFabItems.indexOf(activeKey as (typeof mobileFabItems)[number]));
+    const currentIndex = Math.max(0, mobileFabItems.indexOf(activeKey as MobileFabItem));
     const nextIndex = Math.min(mobileFabItems.length - 1, Math.max(0, currentIndex + (delta < 0 ? 1 : -1)));
     if (nextIndex !== currentIndex) navigateMobileFab(mobileFabItems[nextIndex]);
   };
