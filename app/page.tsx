@@ -945,6 +945,14 @@ const resumeWeekCarouselSoon = () => {
   const [currentUserId, setCurrentUserId] = useState("");
 
   const [toast, setToast] = useState("");
+
+  // Semua notifikasi menggunakan durasi global 2 detik.
+  // Timer sebelumnya dibersihkan saat pesan baru muncul.
+  useEffect(() => {
+    if (!toast) return;
+
+    const toastTimer = return () => window.clearTimeout(toastTimer);
+  }, [toast]);
   const [editingApprovedEvent, setEditingApprovedEvent] = useState<Event | null>(null);
   const [adminEditDraft, setAdminEditDraft] = useState<Partial<Event>>({});
   const [adminEditCategories, setAdminEditCategories] = useState<Category[]>([]);
@@ -989,8 +997,7 @@ const resumeWeekCarouselSoon = () => {
     setActiveNav("calendar");
 
     setToast("✓ Kalender berhasil dibuka!");
-    window.setTimeout(() => setToast(""), 2500);
-  };
+    };
   const [logoClicks, setLogoClicks] = useState(0);
 
   const [registeredUsers, setRegisteredUsers] = useState<RegUser[]>([]);
@@ -1881,7 +1888,6 @@ const handlePosterUpload = (
 
       if (!response.ok || !result.user) {
         setToast(result.error || "Username atau password salah.");
-        setTimeout(() => setToast(""), 2000);
         return;
       }
 
@@ -1931,8 +1937,7 @@ const handlePosterUpload = (
           ? `Login berhasil. ${loginNotices.join(" ")}`
           : `Halo, ${user.display_name || user.username}!`
       );
-      setTimeout(() => setToast(""), loginNotices.length > 0 ? 6000 : 2000);
-    } catch (error) {
+      } catch (error) {
       console.error("Login error:", error);
       setToast("Gagal menghubungi server. Coba lagi.");
     }
@@ -1989,14 +1994,12 @@ const handlePosterUpload = (
 
       if (!response.ok) {
         setToast(result.error || "Pendaftaran gagal.");
-        setTimeout(() => setToast(""), 2500);
         return;
       }
 
       setShowRegUser(false);
       setToast("Pendaftaran berhasil. Silakan masuk.");
-      setTimeout(() => setToast(""), 2500);
-    } catch (error) {
+      } catch (error) {
       console.error("Registration error:", error);
       setToast("Gagal menghubungi server. Coba lagi.");
     }
@@ -2034,7 +2037,6 @@ const handlePosterUpload = (
 
     if (!response.ok || !result.authenticated) {
       setToast(result.error || "Username atau PIN admin salah.");
-      setTimeout(() => setToast(""), 2000);
       return;
     }
 
@@ -2046,12 +2048,10 @@ const handlePosterUpload = (
         ? "Login admin berhasil, tetapi catatan pembatasan login belum dapat dibersihkan."
         : "Login admin berhasil."
     );
-    setTimeout(() => setToast(""), result.loginSecurityWarning === true ? 5000 : 2000);
-  } catch (error) {
+    } catch (error) {
     console.error("Admin login error:", error);
     setToast("Gagal menghubungi server.");
-    setTimeout(() => setToast(""), 2000);
-  }
+    }
 };
 
  // Logout
@@ -2119,8 +2119,7 @@ const logout = async () => {
         ? `Kamu telah keluar dari perangkat ini, tetapi ${logoutErrors.join(" ")}`
         : "Kamu telah keluar."
     );
-    setTimeout(() => setToast(""), logoutErrors.length > 0 ? 5000 : 2000);
-  }
+    }
 };
   // Membuat event baru; pengguna tidak memiliki fitur edit event
   const handleCreateEvent = async () => {
@@ -2255,8 +2254,7 @@ const logout = async () => {
       setToast(`Gagal menyimpan event: ${error.message}`);
     }
 
-    setTimeout(() => setToast(""), 3000);
-  };
+    };
 
   const openApprovedEventEditor = (event: Event) => {
     setEditingApprovedEvent(event);
@@ -2304,15 +2302,13 @@ const logout = async () => {
       setToast(`Gagal mengedit event: ${error instanceof Error ? error.message : "Terjadi kesalahan."}`);
     } finally {
       setAdminEditSaving(false);
-      window.setTimeout(() => setToast(""), 4000);
-    }
+      }
   };
 
   const handleBulkApprove = async (ids: string[]) => {
     const uniqueIds = Array.from(new Set(ids));
     if (uniqueIds.length === 0) {
       setToast("Pilih minimal satu event Pending.");
-      setTimeout(() => setToast(""), 2500);
       return;
     }
     const confirmed = window.confirm(`Setujui ${uniqueIds.length} event Pending? Event akan disetujui tanpa mengaktifkan Sponsor.`);
@@ -2338,8 +2334,7 @@ const logout = async () => {
       setToast(`Bulk Approve gagal: ${error instanceof Error ? error.message : "Terjadi kesalahan."}`);
     } finally {
       setBulkApproveLoading(false);
-      setTimeout(() => setToast(""), 4500);
-    }
+      }
   };
 
   // Moderasi event dan penandaan sponsor melalui API server.
@@ -2374,14 +2369,12 @@ const logout = async () => {
       setToast(`Gagal memperbarui event: ${error.message}`);
     }
 
-    setTimeout(() => setToast(""), 2500);
-  };
+    };
 
   const handleBulkDelete = async (ids: string[]) => {
     const uniqueIds = Array.from(new Set(ids));
     if (uniqueIds.length === 0) {
       setToast("Pilih minimal satu event untuk dihapus.");
-      window.setTimeout(() => setToast(""), 2500);
       return;
     }
 
@@ -2416,8 +2409,7 @@ const logout = async () => {
       setToast(`Bulk Delete gagal: ${error instanceof Error ? error.message : "Terjadi kesalahan."}`);
     } finally {
       setBulkDeleteLoading(false);
-      window.setTimeout(() => setToast(""), 6000);
-    }
+      }
   };
 
   // Hapus event yang sudah selesai secara permanen setelah konfirmasi admin.
@@ -2555,8 +2547,7 @@ const logout = async () => {
       }
     } catch (error: any) {
       setToast(error.message || "Gagal menyimpan rating. Coba lagi.");
-      setTimeout(() => setToast(""), 3000);
-    }
+      }
   };
 
   // Tambah atau perbarui komentar event
@@ -2569,7 +2560,6 @@ const logout = async () => {
     const text = commentText.trim();
     if (!text && !myRatings[selectedEvent.id]) {
       setToast("Isi komentar atau pilih rating terlebih dahulu.");
-      setTimeout(() => setToast(""), 2000);
       return;
     }
     if (docFile && docFile.size > 10 * 1024 * 1024) {
@@ -2629,11 +2619,9 @@ const logout = async () => {
       }
       setCommentText("");
       setToast("Komentar dan rating berhasil disimpan.");
-      setTimeout(() => setToast(""), 2000);
-    } catch (error: any) {
+      } catch (error: any) {
       setToast(`Gagal menyimpan komentar: ${error.message || "Periksa kolom dan izin Supabase."}`);
-      setTimeout(() => setToast(""), 4000);
-    }
+      }
   };
 
   // Upload dokumentasi setelah event selesai
@@ -2647,7 +2635,6 @@ const logout = async () => {
 
     if (getTimeStatus(selectedEvent) !== "Completed") {
       setToast("Dokumentasi hanya bisa diunggah setelah event selesai.");
-      setTimeout(() => setToast(""), 2000);
       return;
     }
 
@@ -2665,7 +2652,6 @@ const allowedImageTypes = [
 
 if (!allowedImageTypes.includes(docFile.type)) {
   setToast("Format foto harus JPG, PNG, atau WebP.");
-  setTimeout(() => setToast(""), 2500);
   return;
 }
 
@@ -2707,8 +2693,7 @@ if (!allowedImageTypes.includes(docFile.type)) {
       );
     }
 
-    setTimeout(() => setToast(""), 2500);
-  };
+    };
 
   const handleSelectProfileFrame = async (frameKey: string) => {
     if (currentRole !== "user" || !currentUserId || frameSaving) return;
@@ -2913,8 +2898,7 @@ if (!allowedImageTypes.includes(docFile.type)) {
       setShowUserProfile(false);
       setToast("Profil berhasil diperbarui.");
 
-      setTimeout(() => setToast(""), 2000);
-    } catch (error: any) {
+      } catch (error: any) {
       console.error("Update profile error:", error);
       setToast("Terjadi kesalahan saat menyimpan profil.");
     }
@@ -2990,8 +2974,7 @@ if (!allowedImageTypes.includes(docFile.type)) {
       if (oldInput) oldInput.value = "";
       if (newInput) newInput.value = "";
 
-      setTimeout(() => setToast(""), hasPasswordWarning ? 5000 : 2000);
-    } catch (error) {
+      } catch (error) {
       console.error("Change password request error:", error);
       setToast("Tidak dapat terhubung ke server.");
     }
@@ -3067,8 +3050,7 @@ if (!allowedImageTypes.includes(docFile.type)) {
         setUserAvatarFile(file);
         setShowAvatarCrop(false);
         setToast("Avatar siap. Klik Simpan Profil.");
-        setTimeout(() => setToast(""), 2500);
-      },
+        },
       "image/jpeg",
       0.88
     );
@@ -3781,8 +3763,7 @@ const openEvent = async (event: Event) => {
 
   const showToast = (message: string) => {
     setToast(message);
-    setTimeout(() => setToast(""), 2500);
-  };
+    };
 
   // Bagikan tautan permanen berbasis ID event; halaman akan membuka detailnya saat link diakses.
  
