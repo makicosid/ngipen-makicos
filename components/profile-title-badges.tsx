@@ -40,20 +40,30 @@ export default function ProfileTitleBadges({
             key={title.title_key}
             className={
               exclusive
-                ? "inline-flex items-center gap-1 rounded-md border border-[#D6B45B] bg-[#8F1D2C] px-2.5 py-1 text-[10px] font-black tracking-[0.08em] text-[#FFE8A3] shadow-sm"
+                ? `inline-flex items-center gap-1.5 rounded-md border border-[#D6B45B] bg-[#8F1D2C] px-3 py-1.5 font-black tracking-[0.02em] text-[#FFE8A3] shadow-sm ${
+                    size === "md" ? "text-xs" : "text-[10px]"
+                  }`
                 : `inline-flex items-center gap-1 rounded-md border border-rose-200 bg-rose-50/90 px-2.5 py-1 font-bold tracking-[0.04em] text-rose-800 dark:border-rose-900/70 dark:bg-rose-950/35 dark:text-rose-200 ${
                     size === "md" ? "text-xs" : "text-[10px]"
                   }`
             }
             title={title.title_name}
           >
-            <span
-              aria-hidden="true"
-              className={exclusive ? "text-[#F4D27C]" : "text-rose-500"}
-            >
-              {exclusive ? "🔒" : "◇"}
-            </span>
+            {exclusive ? (
+              <span aria-hidden="true" className="text-[#F4D27C]">
+                ✦
+              </span>
+            ) : (
+              <span aria-hidden="true" className="text-rose-500">
+                ◇
+              </span>
+            )}
             {title.title_name}
+            {exclusive && (
+              <span aria-hidden="true" className="text-[#F4D27C]">
+                ✦
+              </span>
+            )}
           </span>
         );
       })}

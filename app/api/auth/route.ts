@@ -395,6 +395,25 @@ export async function POST(request: NextRequest) {
       if (frameError || userError) return json({ error: "Gagal memeriksa hak akses frame." }, 500);
       if (!frame || !frame.is_active) return json({ error: "Frame tidak tersedia." }, 404);
       if (frame.access_level === "member" && !user?.is_makicos_member) return json({ error: "Frame ini khusus anggota MAKICOS." }, 403);
+      if (frame.access_level === "exclusive") {
+        const { data: exclusiveTitle, error: titleError } = await supabase
+          .from("profile_titles")
+          .select("id")
+          .eq("title_key", "top_supporter")
+          .eq("title_type", "exclusive")
+          .eq("is_active", true)
+          .maybeSingle();
+        if (titleError) return json({ error: "Gagal memeriksa hak akses Top Supporter." }, 500);
+        if (!exclusiveTitle) return json({ error: "Title Top Supporter belum diaktifkan oleh Admin." }, 403);
+        const { data: assignment, error: assignmentError } = await supabase
+          .from("user_profile_titles")
+          .select("id")
+          .eq("user_id", session.user_id)
+          .eq("title_id", exclusiveTitle.id)
+          .maybeSingle();
+        if (assignmentError) return json({ error: "Gagal memeriksa kepemilikan Top Supporter." }, 500);
+        if (!assignment) return json({ error: "Frame ini hanya tersedia untuk pengguna yang telah diberikan Top Supporter oleh Admin." }, 403);
+      }
       const { data: updatedUser, error: updateError } = await supabase.from("users").update({ selected_frame_key: frameKey }).eq("id", session.user_id).select("id,username,display_name,avatar_url,is_makicos_member,selected_frame_key").maybeSingle();
       if (updateError || !updatedUser) return json({ error: "Gagal menyimpan frame profil." }, 500);
       return json({ success: true, user: updatedUser });

@@ -2700,10 +2700,11 @@ if (!allowedImageTypes.includes(docFile.type)) {
     };
 
   const profileFrameOptions = [
-    { key: "free_red", name: "Red", tone: "border-red-300" },
-    { key: "free_yellow", name: "Yellow", tone: "border-yellow-300" },
-    { key: "free_blue", name: "Blue", tone: "border-blue-300" },
-    { key: "kitsune_member", name: "Member Makicos", tone: "border-amber-300", member: true },
+    { key: "free_red", name: "Red", tone: "border-red-300", member: false, exclusive: false },
+    { key: "free_yellow", name: "Yellow", tone: "border-yellow-300", member: false, exclusive: false },
+    { key: "free_blue", name: "Blue", tone: "border-blue-300", member: false, exclusive: false },
+    { key: "kitsune_member", name: "Member Makicos", tone: "border-amber-300", member: true, exclusive: false },
+    { key: "top_supporter", name: "Top Supporter", tone: "border-amber-400", member: false, exclusive: true },
   ];
 
   const handleSelectProfileFrame = async (frameKey: string) => {
@@ -7513,12 +7514,13 @@ accept="image/jpeg,image/png,image/webp"
                             <div key={slideIndex} className="grid w-full flex-none snap-start grid-cols-2 gap-3 px-0.5">
                               {profileFrameOptions.slice(slideIndex * 2, slideIndex * 2 + 2).map((frame) => {
                                 const profile = registeredUsers.find((user) => user.id === currentUserId);
-                                const locked = Boolean(frame.member && !profile?.is_makicos_member);
+                                const hasTopSupporter = selectedProfileTitles.some((title) => title.title_key === "top_supporter" && title.title_type === "exclusive");
+                                const locked = Boolean((frame.member && !profile?.is_makicos_member) || (frame.exclusive && !hasTopSupporter));
                                 const active = (profile?.selected_frame_key || "free_red") === frame.key;
                                 return <button key={frame.key} type="button" disabled={locked || frameSaving} onClick={() => void handleSelectProfileFrame(frame.key)} className={`relative flex min-h-[190px] flex-col items-center justify-center gap-2 rounded-2xl border-2 p-3 text-center transition ${active ? "border-red-600 bg-white shadow-sm dark:bg-gray-900" : `${frame.tone} bg-white/70 dark:bg-gray-900/60`} ${locked ? "cursor-not-allowed opacity-60" : "hover:shadow-md"}`}>
                                   <ProfileAvatar src={profile?.avatar_url} frameKey={frame.key} fallback={(profile?.display_name || currentUser || "U")[0].toUpperCase()} size={76} />
                                   <span className="text-xs font-bold">{frame.name}</span>
-                                  {locked ? <span className="absolute right-2 top-2 rounded-full bg-gray-900/80 px-2 py-1 text-[9px] font-bold text-white">🔒 MEMBER</span> : active ? <span className="text-[10px] font-bold text-green-600">✓ Digunakan</span> : <span className="text-[10px] text-gray-500">{frameSaving ? "Menyimpan…" : "Pilih frame"}</span>}
+                                  {locked ? <span className="absolute right-2 top-2 rounded-full bg-gray-900/80 px-2 py-1 text-[9px] font-bold text-white">{frame.exclusive ? "TOP SUPPORTER" : "🔒 MEMBER"}</span> : active ? <span className="text-[10px] font-bold text-green-600">✓ Digunakan</span> : <span className="text-[10px] text-gray-500">{frameSaving ? "Menyimpan…" : "Pilih frame"}</span>}
                                 </button>;
                               })}
                             </div>
@@ -7538,12 +7540,13 @@ accept="image/jpeg,image/png,image/webp"
                       <div className="hidden grid-cols-2 gap-3 sm:grid sm:grid-cols-4">
                         {profileFrameOptions.map((frame) => {
                           const profile = registeredUsers.find((user) => user.id === currentUserId);
-                          const locked = Boolean(frame.member && !profile?.is_makicos_member);
+                          const hasTopSupporter = selectedProfileTitles.some((title) => title.title_key === "top_supporter" && title.title_type === "exclusive");
+                                const locked = Boolean((frame.member && !profile?.is_makicos_member) || (frame.exclusive && !hasTopSupporter));
                           const active = (profile?.selected_frame_key || "free_red") === frame.key;
                           return <button key={frame.key} type="button" disabled={locked || frameSaving} onClick={() => void handleSelectProfileFrame(frame.key)} className={`relative flex flex-col items-center gap-2 rounded-xl border-2 p-3 text-center transition ${active ? "border-red-600 bg-white shadow-sm dark:bg-gray-900" : `${frame.tone} bg-white/70 dark:bg-gray-900/60`} ${locked ? "cursor-not-allowed opacity-60" : "hover:-translate-y-0.5 hover:shadow-md"}`}>
                             <ProfileAvatar src={profile?.avatar_url} frameKey={frame.key} fallback={(profile?.display_name || currentUser || "U")[0].toUpperCase()} size={68} />
                             <span className="text-xs font-bold">{frame.name}</span>
-                            {locked ? <span className="absolute right-2 top-2 rounded-full bg-gray-900/80 px-2 py-1 text-[9px] font-bold text-white">🔒 MEMBER</span> : active ? <span className="text-[10px] font-bold text-green-600">✓ Digunakan</span> : <span className="text-[10px] text-gray-500">{frameSaving ? "Menyimpan…" : "Pilih frame"}</span>}
+                            {locked ? <span className="absolute right-2 top-2 rounded-full bg-gray-900/80 px-2 py-1 text-[9px] font-bold text-white">{frame.exclusive ? "TOP SUPPORTER" : "🔒 MEMBER"}</span> : active ? <span className="text-[10px] font-bold text-green-600">✓ Digunakan</span> : <span className="text-[10px] text-gray-500">{frameSaving ? "Menyimpan…" : "Pilih frame"}</span>}
                           </button>;
                         })}
                       </div>
@@ -8774,7 +8777,7 @@ accept="image/jpeg,image/png,image/webp"
                 <div className="col-span-2 border-t border-gray-200 pt-4 text-xs leading-relaxed sm:col-span-3 lg:col-span-1 lg:border-t-0 lg:pt-0 lg:text-right">
                   <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 lg:flex-col lg:items-end lg:gap-0">
                     <span>© 2026 NGIPEN</span>
-                    <span className="text-[11px] font-medium text-gray-400 dark:text-gray-500">v1.2.1</span>
+                    <span className="text-[11px] font-medium text-gray-400 dark:text-gray-500">v1.3.1</span>
                   </div>
                 </div>
               </div>

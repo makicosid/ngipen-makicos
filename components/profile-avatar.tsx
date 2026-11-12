@@ -14,6 +14,7 @@ const FRAME_ASSETS: Record<string, string> = {
   free_yellow: "/profile-frames/free/free-yellow.png",
   free_blue: "/profile-frames/free/free-blue.png",
   kitsune_member: "/profile-frames/member/kitsune-member-square.png",
+  top_supporter: "/profile-frames/exclusive/top-supporter-imperial.png",
 };
 
 export default function ProfileAvatar({
@@ -26,8 +27,9 @@ export default function ProfileAvatar({
 }: ProfileAvatarProps) {
   const frameSrc = frameKey ? FRAME_ASSETS[frameKey] : undefined;
   const isMemberFrame = frameKey === "kitsune_member";
+  const isTopSupporterFrame = frameKey === "top_supporter";
   const avatarScale = 0.92;
-  const frameScale = isMemberFrame ? 1.5 : 1.3;
+  const frameScale = isMemberFrame ? 1.5 : isTopSupporterFrame ? 1.42 : 1.3;
 
   return (
     <span className={`relative inline-flex shrink-0 items-center justify-center overflow-visible align-middle ${className}`} style={{ width: size * frameScale, height: size * frameScale }}>
