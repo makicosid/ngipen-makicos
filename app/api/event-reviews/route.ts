@@ -164,7 +164,7 @@ export async function GET(request: NextRequest) {
         .filter(Boolean)
     ));
 
-    const publicProfileMap = new Map<string, { display_name: string; avatar_url: string; selected_frame_key: string }>();
+    const publicProfileMap = new Map<string, { display_name: string; avatar_url: string; selected_frame_key: string; profile_titles: any[] }>();
     for (let offset = 0; offset < reviewerIds.length; offset += 200) {
       const { data: profiles, error: profilesError } = await getSupabaseAdmin()
         .from("users")
@@ -176,11 +176,24 @@ export async function GET(request: NextRequest) {
         return json({ error: "Gagal mengambil identitas publik reviewer." }, 500);
       }
 
+      const profileIds = (profiles || []).map((profile: any) => String(profile.id));
+      const { data: titleRows, error: titleError } = await getSupabaseAdmin()
+        .from("user_profile_titles")
+        .select("user_id,profile_titles(title_key,title_name,title_type,style_variant,display_order)")
+        .in("user_id", profileIds);
+      if (titleError) return json({ error: "Gagal mengambil title reviewer." }, 500);
+      const titlesByUser = new Map<string, any[]>();
+      (titleRows || []).forEach((row: any) => {
+        const list = titlesByUser.get(String(row.user_id)) || [];
+        if (row.profile_titles) list.push(row.profile_titles);
+        titlesByUser.set(String(row.user_id), list);
+      });
       (profiles || []).forEach((profile: any) => {
         publicProfileMap.set(String(profile.id), {
           display_name: String(profile.display_name || "Pengguna"),
           avatar_url: String(profile.avatar_url || ""),
           selected_frame_key: String(profile.selected_frame_key || "free_red"),
+          profile_titles: (titlesByUser.get(String(profile.id)) || []).sort((a: any, b: any) => Number(a.display_order) - Number(b.display_order)),
         });
       });
     }
@@ -192,6 +205,7 @@ export async function GET(request: NextRequest) {
         display_name: profile?.display_name || "Pengguna",
         avatar_url: profile?.avatar_url || "",
         selected_frame_key: profile?.selected_frame_key || "free_red",
+        profile_titles: profile?.profile_titles || [],
       };
     });
 
