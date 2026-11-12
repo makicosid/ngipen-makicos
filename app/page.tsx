@@ -3070,7 +3070,11 @@ const calendarEvents = useMemo(() => {
       const nextSlide = carousel.children.item(nextIndex) as HTMLElement | null;
       if (!nextSlide) return;
 
-      carousel.scrollTo({ left: nextSlide.offsetLeft, behavior: "smooth" });
+      const carouselRect = carousel.getBoundingClientRect();
+      const nextSlideRect = nextSlide.getBoundingClientRect();
+      const nextScrollLeft =
+        carousel.scrollLeft + nextSlideRect.left - carouselRect.left;
+      carousel.scrollTo({ left: nextScrollLeft, behavior: "smooth" });
       setActiveWeekSlide(nextIndex);
     }, 2000);
 
@@ -4608,7 +4612,9 @@ const shareEvent = async (event: Event) => {
                     let nearestIndex = 0;
                     let nearestDistance = Number.POSITIVE_INFINITY;
                     slides.forEach((slide, index) => {
-                      const distance = Math.abs(slide.offsetLeft - carousel.scrollLeft);
+                      const carouselRect = carousel.getBoundingClientRect();
+                      const slideRect = slide.getBoundingClientRect();
+                      const distance = Math.abs(slideRect.left - carouselRect.left);
                       if (distance < nearestDistance) {
                         nearestDistance = distance;
                         nearestIndex = index;
@@ -4749,7 +4755,12 @@ const shareEvent = async (event: Event) => {
                           const carousel = weekCarouselRef.current;
                           const slide = carousel?.children.item(index) as HTMLElement | null;
                           if (slide && carousel) {
-                            carousel.scrollTo({ left: slide.offsetLeft, behavior: "smooth" });
+                            const carouselRect = carousel.getBoundingClientRect();
+                            const slideRect = slide.getBoundingClientRect();
+                            carousel.scrollTo({
+                              left: carousel.scrollLeft + slideRect.left - carouselRect.left,
+                              behavior: "smooth",
+                            });
                             setActiveWeekSlide(index);
                           }
                           resumeWeekCarouselSoon();
