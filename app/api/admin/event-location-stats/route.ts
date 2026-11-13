@@ -25,7 +25,7 @@ function normalizeLocation(value: unknown) {
 function displayLocation(value: unknown) {
   const cleaned = String(value ?? "").trim().replace(/\s+/g, " ");
   if (!cleaned) return "";
-  return cleaned.toLocaleLowerCase("id-ID").replace(/(^|[\\s-])([a-z])/g, (_match, separator, letter) => separator + letter.toLocaleUpperCase("id-ID"));
+  return cleaned.toLocaleLowerCase("id-ID").replace(/(^|[ -])([a-z])/g, (_match, separator, letter) => separator + letter.toLocaleUpperCase("id-ID"));
 }
 
 export async function GET(request: NextRequest) {
