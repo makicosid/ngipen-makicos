@@ -993,6 +993,7 @@ const resumeWeekCarouselSoon = () => {
     }
 
     setSelectedEvent(null);
+    setShowSavedCalendar(false);
     setShowCostumeDirectory(false);
     setShowCalendar(true);
     setCalendarMonth(new Date());
@@ -5715,7 +5716,10 @@ const shareEvent = async (event: Event) => {
           <h2 className="mt-1 text-2xl font-black">Kalender Saya</h2>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Event yang kamu simpan dari akunmu sendiri.</p>
         </div>
-        <button type="button" onClick={() => { setShowSavedCalendar(false); setActiveNav("home"); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800">← Beranda</button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button type="button" onClick={() => { setShowSavedCalendar(false); setShowCalendar(false); setShowCostumeDirectory(false); setSelectedEvent(null); setActiveNav("home"); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800">← Beranda</button>
+          <button type="button" onClick={() => { setShowSavedCalendar(false); setShowCalendar(false); setShowCostumeDirectory(false); setSelectedEvent(null); setActiveNav("explore"); window.scrollTo({ top: 0, behavior: "smooth" }); window.setTimeout(() => document.getElementById("daftar-event")?.scrollIntoView({ behavior: "smooth", block: "start" }), 200); }} className="rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-red-700">Jelajahi Event →</button>
+        </div>
       </div>
       {(() => {
         const savedEvents = approvedEvents.filter((event) => savedIds.includes(event.id));
