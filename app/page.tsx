@@ -5485,7 +5485,7 @@ const shareEvent = async (event: Event) => {
   setEventStatusTab("Semua");
 }}
                     className={`rounded-full px-4 py-2 text-sm font-bold ${
-
+                      eventStatusTab === "Semua" && !showThisWeekOnly
                         ? "bg-red-600 text-white"
                         : "bg-gray-100 text-gray-600 dark:bg-gray-900 dark:text-gray-300"
                     }`}
