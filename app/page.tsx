@@ -1064,7 +1064,7 @@ const resumeWeekCarouselSoon = () => {
   const [eventLocationStats, setEventLocationStats] = useState<any>(null);
   const [eventLocationStatsLoading, setEventLocationStatsLoading] = useState(false);
   const [eventLocationStatsError, setEventLocationStatsError] = useState("");
-  const [expandedEventProvince, setExpandedEventProvince] = useState<string | null>(null);
+  const [selectedStatsProvince, setSelectedStatsProvince] = useState("");
   const [adminEventSponsorFilter, setAdminEventSponsorFilter] = useState<"Semua" | "Sponsor" | "Non-Sponsor">("Semua");
   const [selectedPendingEventIds, setSelectedPendingEventIds] = useState<string[]>([]);
   const [bulkApproveLoading, setBulkApproveLoading] = useState(false);
@@ -5214,16 +5214,133 @@ const shareEvent = async (event: Event) => {
                   })()}
                 </div>
 
+                
                 <section className="mt-4 rounded-xl border border-red-100 bg-white p-4 dark:border-red-900/50 dark:bg-gray-900 sm:p-5">
-                  <div className="mb-4 flex flex-wrap items-start justify-between gap-2"><div><h3 className="text-sm font-black text-gray-900 dark:text-white">Statistik Event Berdasarkan Lokasi</h3><p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Seluruh event sepanjang waktu, dikelompokkan berdasarkan provinsi dan kota.</p></div>{eventLocationStats && <div className="text-right text-xs text-gray-500">{eventLocationStats.provinceCount} provinsi · {Number(eventLocationStats.totalEvents).toLocaleString("id-ID")} event</div>}</div>
-                  {eventLocationStatsLoading ? <p className="py-6 text-center text-sm text-gray-500">Memuat statistik lokasi...</p> : eventLocationStatsError ? <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950/30 dark:text-red-300">{eventLocationStatsError}</p> : <div className="space-y-2">
-                    {(eventLocationStats?.provinces || []).map((province: any) => { const expanded = expandedEventProvince === province.name; return <div key={province.name} className="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-800">
-                      <button type="button" onClick={() => setExpandedEventProvince(expanded ? null : province.name)} className="flex w-full items-center gap-3 p-3 text-left hover:bg-gray-50 dark:hover:bg-gray-800/60"><span className="min-w-0 flex-1"><span className="block text-sm font-bold text-gray-900 dark:text-white">{province.name}</span><span className="text-xs text-gray-500">{province.cities.length} kota · A {province.approved} · P {province.pending} · R {province.rejected} · H {province.hidden}</span></span><strong className="text-lg tabular-nums text-[#B42335]">{province.total} <span className="text-[10px] font-medium">event</span></strong><span className="text-gray-400">{expanded ? "−" : "+"}</span></button>
-                      {expanded && <div className="border-t border-gray-100 bg-gray-50/70 p-2 dark:border-gray-800 dark:bg-gray-950/30">{province.cities.map((city: any) => <button key={city.name} type="button" onClick={() => { setAdminEventProvinceFilter(province.name); setAdminEventCityFilter(city.name); setAdminEventTab("Pending"); setAdminTab("moderation"); setAdminEventSearch(""); window.setTimeout(() => document.getElementById("admin-event-moderation")?.scrollIntoView({ behavior: "smooth", block: "start" }), 100); }} className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left hover:bg-white dark:hover:bg-gray-800"><span className="min-w-0 flex-1 text-xs font-medium text-gray-700 dark:text-gray-200">{city.name}</span><span className="text-[10px] text-gray-500">A {city.approved} · P {city.pending} · R {city.rejected} · H {city.hidden}</span><strong className="w-7 text-right text-sm tabular-nums">{city.total}</strong></button>)}</div>}
-                    </div>; })}
-                    {(eventLocationStats?.missingLocations || []).length > 0 && <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/20"><strong>Lokasi Belum Lengkap</strong>{eventLocationStats.missingLocations.map((item: any) => <p key={item.name}>{item.name}: {item.total} event</p>)}</div>}
-                    {eventLocationStats?.totalEvents === 0 && <p className="py-4 text-center text-sm text-gray-500">Belum ada data event.</p>}
-                  </div>}
+                  <div className="mb-4 flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                      <h3 className="text-sm font-black text-gray-900 dark:text-white">Statistik Event Berdasarkan Lokasi</h3>
+                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Persebaran seluruh event berdasarkan provinsi, kota, dan jadwal.</p>
+                    </div>
+                    {eventLocationStats && <div className="text-right text-xs text-gray-500">{eventLocationStats.provinceCount} provinsi · {Number(eventLocationStats.totalEvents).toLocaleString("id-ID")} event</div>}
+                  </div>
+                  {eventLocationStatsLoading ? (
+                    <p className="py-8 text-center text-sm text-gray-500">Memuat statistik lokasi...</p>
+                  ) : eventLocationStatsError ? (
+                    <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950/30 dark:text-red-300">{eventLocationStatsError}</div>
+                  ) : (
+                    <>
+                      <div className="rounded-xl border border-gray-100 p-3 dark:border-gray-800 sm:p-4">
+                        <div className="mb-3 flex items-center justify-between gap-2">
+                          <h4 className="text-sm font-bold text-gray-900 dark:text-white">Jumlah Event per Provinsi</h4>
+                          <span className="text-[11px] text-gray-500">Pilih batang untuk melihat detail</span>
+                        </div>
+                        <div className="space-y-2.5">
+                          {(eventLocationStats?.provinces || []).map((province: any) => {
+                            const maxTotal = Math.max(1, ...(eventLocationStats?.provinces || []).map((item: any) => item.total));
+                            const selected = selectedStatsProvince === province.name;
+                            return (
+                              <button key={province.name} type="button" onClick={() => setSelectedStatsProvince(province.name)} aria-pressed={selected} className={`block w-full rounded-lg p-2 text-left transition ${selected ? "bg-red-50 ring-1 ring-red-200 dark:bg-red-950/30 dark:ring-red-900" : "hover:bg-gray-50 dark:hover:bg-gray-800/60"}`}>
+                                <span className="mb-1.5 flex items-center justify-between gap-2">
+                                  <span className={`text-xs font-semibold ${selected ? "text-red-700 dark:text-red-300" : "text-gray-700 dark:text-gray-200"}`}>{province.name}</span>
+                                  <span className="text-xs font-bold tabular-nums text-gray-900 dark:text-white">{province.total}</span>
+                                </span>
+                                <span className="block h-2.5 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
+                                  <span className={`block h-full rounded-full transition-all ${selected ? "bg-red-700" : "bg-red-400"}`} style={{ width: `${(province.total / maxTotal) * 100}%` }} />
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      <div className="mt-4">
+                        <label htmlFor="admin-stats-province" className="mb-1.5 block text-sm font-bold text-gray-900 dark:text-white">Pilih Provinsi</label>
+                        <select id="admin-stats-province" value={selectedStatsProvince} onChange={(event) => setSelectedStatsProvince(event.target.value)} className="w-full rounded-xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-900 outline-none focus:border-red-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
+                          <option value="">Pilih provinsi untuk melihat rincian</option>
+                          {(eventLocationStats?.provinces || []).map((province: any) => <option key={province.name} value={province.name}>{province.name} ({province.total} event)</option>)}
+                        </select>
+                      </div>
+
+                      {selectedStatsProvince ? (() => {
+                        const provinceStats = (eventLocationStats?.provinces || []).find((item: any) => item.name === selectedStatsProvince);
+                        const provinceEvents = events.filter((event) =>
+                          String(event.province || "").trim().replace(/\\s+/g, " ").toLocaleLowerCase("id-ID") === selectedStatsProvince.trim().replace(/\\s+/g, " ").toLocaleLowerCase("id-ID")
+                        );
+                        const cityGroups = new Map<string, { name: string; events: Event[] }>();
+                        provinceEvents.forEach((event) => {
+                          const rawCity = String(event.city || "").trim().replace(/\\s+/g, " ");
+                          const cityKey = rawCity ? rawCity.toLocaleLowerCase("id-ID") : "__missing_city__";
+                          const cityName = rawCity || "Kota belum diisi";
+                          if (!cityGroups.has(cityKey)) cityGroups.set(cityKey, { name: cityName, events: [] });
+                          cityGroups.get(cityKey)!.events.push(event);
+                        });
+                        const compareEvents = (a: Event, b: Event) => {
+                          const aCompleted = getTimeStatus(a) === "Completed";
+                          const bCompleted = getTimeStatus(b) === "Completed";
+                          if (aCompleted !== bCompleted) return aCompleted ? 1 : -1;
+                          if (aCompleted && bCompleted) return String(b.end_date || b.start_date).localeCompare(String(a.end_date || a.start_date));
+                          return String(a.start_date).localeCompare(String(b.start_date)) || String(a.start_time || "").localeCompare(String(b.start_time || ""));
+                        };
+                        const sortedCities = Array.from(cityGroups.values()).sort((a, b) => a.name.localeCompare(b.name, "id"));
+                        const statusCounts = {
+                          approved: provinceEvents.filter((event) => !event.is_hidden && event.moderation_status === "Approved").length,
+                          pending: provinceEvents.filter((event) => !event.is_hidden && event.moderation_status === "Pending").length,
+                          rejected: provinceEvents.filter((event) => !event.is_hidden && event.moderation_status === "Rejected").length,
+                          hidden: provinceEvents.filter((event) => event.is_hidden || event.moderation_status === "Hidden").length,
+                        };
+                        return (
+                          <div className="mt-4 rounded-xl border border-red-100 bg-gray-50/70 p-3 dark:border-red-900/40 dark:bg-gray-950/30 sm:p-4">
+                            <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
+                              <div><h4 className="text-base font-black text-gray-900 dark:text-white">{selectedStatsProvince}</h4><p className="text-xs text-gray-500">{provinceStats?.cities?.length || 0} kota terdata</p></div>
+                              <div className="text-right"><strong className="text-2xl tabular-nums text-[#B42335]">{provinceStats?.total ?? provinceEvents.length}</strong><p className="text-[10px] text-gray-500">Total event</p></div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                              {[
+                                { label: "Approved", value: statusCounts.approved, style: "text-green-700 dark:text-green-300" },
+                                { label: "Pending", value: statusCounts.pending, style: "text-amber-700 dark:text-amber-300" },
+                                { label: "Rejected", value: statusCounts.rejected, style: "text-red-700 dark:text-red-300" },
+                                { label: "Hidden", value: statusCounts.hidden, style: "text-gray-700 dark:text-gray-300" },
+                              ].map((item) => <div key={item.label} className="rounded-lg border border-gray-200 bg-white p-2 dark:border-gray-800 dark:bg-gray-900"><strong className={`block text-lg tabular-nums ${item.style}`}>{item.value}</strong><span className="text-[10px] text-gray-500">{item.label}</span></div>)}
+                            </div>
+                            <div className="mt-4 space-y-4">
+                              {sortedCities.map((city) => (
+                                <section key={city.name}>
+                                  <div className="mb-2 flex items-center justify-between gap-2">
+                                    <h5 className="text-sm font-bold text-gray-900 dark:text-white">{city.name}</h5>
+                                    <span className="text-xs font-semibold text-gray-500">{city.events.length} event</span>
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+                                    {city.events.sort(compareEvents).map((event) => {
+                                      const hidden = Boolean(event.is_hidden) || event.moderation_status === "Hidden";
+                                      const statusLabel = hidden ? "Hidden" : event.moderation_status;
+                                      const statusClass = statusLabel === "Approved" ? "bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-300" : statusLabel === "Pending" ? "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300" : statusLabel === "Rejected" ? "bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-300" : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300";
+                                      return (
+                                        <button key={event.id} type="button" onClick={() => void openEvent(event)} className="group min-w-0 overflow-hidden rounded-lg border border-gray-200 bg-white text-left transition hover:-translate-y-0.5 hover:border-red-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-red-500 dark:border-gray-800 dark:bg-gray-900">
+                                          <div className="aspect-[3/4] overflow-hidden bg-gray-100 dark:bg-gray-800">
+                                            {event.poster_url ? <img src={event.poster_url} alt={`Poster ${event.title}`} loading="lazy" className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-[1.03]" /> : <div className="flex h-full items-center justify-center text-xs text-gray-400"><span>Poster tidak tersedia</span></div>}
+                                          </div>
+                                          <div className="space-y-1.5 p-2">
+                                            <p className="line-clamp-2 min-h-8 text-xs font-bold text-gray-900 dark:text-white">{event.title}</p>
+                                            <p className="text-[10px] text-gray-500">📅 {formatEventDate(event.start_date, event.end_date)}</p>
+                                            <p className="text-[10px] text-gray-500">🕒 {event.start_time || "Waktu belum diisi"}{event.end_time ? `–${event.end_time}` : ""} WIB</p>
+                                            <span className={`inline-flex rounded-full px-2 py-0.5 text-[9px] font-bold ${statusClass}`}>{statusLabel}</span>
+                                          </div>
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </section>
+                              ))}
+                              {sortedCities.length === 0 && <p className="py-6 text-center text-sm text-gray-500">Belum ada event dengan kota yang terdata di provinsi ini.</p>}
+                            </div>
+                          </div>
+                        );
+                      })() : (
+                        <p className="mt-4 rounded-lg bg-gray-50 p-4 text-center text-sm text-gray-500 dark:bg-gray-900">Pilih provinsi melalui diagram atau dropdown untuk melihat rincian kota dan poster event.</p>
+                      )}
+                      {(eventLocationStats?.missingLocations || []).length > 0 && <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/20"><strong>Lokasi Belum Lengkap</strong>{eventLocationStats.missingLocations.map((item: any) => <p key={item.name}>{item.name}: {item.total} event</p>)}</div>}
+                    </>
+                  )}
                 </section>
               </section>
             )}
