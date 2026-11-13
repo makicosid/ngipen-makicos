@@ -1068,6 +1068,7 @@ const resumeWeekCarouselSoon = () => {
   const [eventLocationStatsLoading, setEventLocationStatsLoading] = useState(false);
   const [eventLocationStatsError, setEventLocationStatsError] = useState("");
   const [selectedStatsProvince, setSelectedStatsProvince] = useState("");
+  const [statsProvinceLimit, setStatsProvinceLimit] = useState<"3" | "5" | "10" | "all">("3");
   const [adminEventSponsorFilter, setAdminEventSponsorFilter] = useState<"Semua" | "Sponsor" | "Non-Sponsor">("Semua");
   const [selectedPendingEventIds, setSelectedPendingEventIds] = useState<string[]>([]);
   const [bulkApproveLoading, setBulkApproveLoading] = useState(false);
@@ -5181,16 +5182,27 @@ const shareEvent = async (event: Event) => {
                   ) : (
                     <>
                       <div className="rounded-xl border border-gray-100 p-3 dark:border-gray-800 sm:p-4">
-                        <div className="mb-3 flex items-center justify-between gap-2">
-                          <h4 className="text-sm font-bold text-gray-900 dark:text-white">Jumlah Event per Provinsi</h4>
-                          <span className="text-[11px] text-gray-500">Pilih batang untuk melihat detail</span>
+                        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                          <div>
+                            <h4 className="text-sm font-bold text-gray-900 dark:text-white">Jumlah Event per Provinsi</h4>
+                            <span className="text-[11px] text-gray-500">Pilih batang untuk melihat detail</span>
+                          </div>
+                          <label className="flex items-center gap-2 text-xs font-semibold text-gray-600 dark:text-gray-300">
+                            Tampilkan
+                            <select value={statsProvinceLimit} onChange={(event) => setStatsProvinceLimit(event.target.value as "3" | "5" | "10" | "all")} className="rounded-lg border border-gray-200 bg-white px-2.5 py-2 text-xs font-semibold text-gray-900 outline-none focus:border-red-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
+                              <option value="3">3 daerah</option>
+                              <option value="5">5 daerah</option>
+                              <option value="10">10 daerah</option>
+                              <option value="all">Semua daerah</option>
+                            </select>
+                          </label>
                         </div>
                         <div className="space-y-2.5">
-                          {(eventLocationStats?.provinces || []).map((province: any) => {
+                          {[...(eventLocationStats?.provinces || [])].sort((a: any, b: any) => b.total - a.total).slice(0, statsProvinceLimit === "all" ? undefined : Number(statsProvinceLimit)).map((province: any) => {
                             const maxTotal = Math.max(1, ...(eventLocationStats?.provinces || []).map((item: any) => item.total));
                             const selected = selectedStatsProvince === province.name;
                             return (
-                              <button key={province.name} type="button" onClick={() => setSelectedStatsProvince(province.name)} aria-pressed={selected} className={`block w-full rounded-lg p-2 text-left transition ${selected ? "bg-red-50 ring-1 ring-red-200 dark:bg-red-950/30 dark:ring-red-900" : "hover:bg-gray-50 dark:hover:bg-gray-800/60"}`}>
+                              <button key={province.name} type="button" onClick={() => { setSelectedStatsProvince(province.name); window.setTimeout(() => document.getElementById("admin-stats-location-detail")?.scrollIntoView({ behavior: "smooth", block: "start" }), 120); }} aria-pressed={selected} className={`block w-full rounded-lg p-2 text-left transition ${selected ? "bg-red-50 ring-1 ring-red-200 dark:bg-red-950/30 dark:ring-red-900" : "hover:bg-gray-50 dark:hover:bg-gray-800/60"}`}>
                                 <span className="mb-1.5 flex items-center justify-between gap-2">
                                   <span className={`text-xs font-semibold ${selected ? "text-red-700 dark:text-red-300" : "text-gray-700 dark:text-gray-200"}`}>{province.name}</span>
                                   <span className="text-xs font-bold tabular-nums text-gray-900 dark:text-white">{province.total}</span>
@@ -5206,9 +5218,9 @@ const shareEvent = async (event: Event) => {
 
                       <div className="mt-4">
                         <label htmlFor="admin-stats-province" className="mb-1.5 block text-sm font-bold text-gray-900 dark:text-white">Pilih Provinsi</label>
-                        <select id="admin-stats-province" value={selectedStatsProvince} onChange={(event) => setSelectedStatsProvince(event.target.value)} className="w-full rounded-xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-900 outline-none focus:border-red-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
-                          <option value="">Pilih provinsi untuk melihat rincian</option>
-                          {(eventLocationStats?.provinces || []).map((province: any) => <option key={province.name} value={province.name}>{province.name} ({province.total} event)</option>)}
+                        <select id="admin-stats-province" value={selectedStatsProvince} onChange={(event) => { setSelectedStatsProvince(event.target.value); if (event.target.value) window.setTimeout(() => document.getElementById("admin-stats-location-detail")?.scrollIntoView({ behavior: "smooth", block: "start" }), 120); }} className="w-full rounded-xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-900 outline-none focus:border-red-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
+                          <option value="">Pilih daerah lainnya untuk melihat rincian</option>
+                          {[...(eventLocationStats?.provinces || [])].sort((a: any, b: any) => b.total - a.total).map((province: any) => <option key={province.name} value={province.name}>{province.name} ({province.total} event)</option>)}
                         </select>
                       </div>
 
@@ -5240,7 +5252,7 @@ const shareEvent = async (event: Event) => {
                           hidden: provinceEvents.filter((event) => event.is_hidden || event.moderation_status === "Hidden").length,
                         };
                         return (
-                          <div className="mt-4 rounded-xl border border-red-100 bg-gray-50/70 p-3 dark:border-red-900/40 dark:bg-gray-950/30 sm:p-4">
+                          <div id="admin-stats-location-detail" className="mt-4 scroll-mt-24 rounded-xl border border-red-100 bg-gray-50/70 p-3 dark:border-red-900/40 dark:bg-gray-950/30 sm:p-4">
                             <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
                               <div><h4 className="text-base font-black text-gray-900 dark:text-white">{selectedStatsProvince}</h4><p className="text-xs text-gray-500">{provinceStats?.cities?.length || 0} kota terdata</p></div>
                               <div className="text-right"><strong className="text-2xl tabular-nums text-[#B42335]">{provinceStats?.total ?? provinceEvents.length}</strong><p className="text-[10px] text-gray-500">Total event</p></div>
@@ -9081,7 +9093,7 @@ accept="image/jpeg,image/png,image/webp"
                 <div className="col-span-2 border-t border-gray-200 pt-4 text-xs leading-relaxed sm:col-span-3 lg:col-span-1 lg:border-t-0 lg:pt-0 lg:text-right">
                   <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 lg:flex-col lg:items-end lg:gap-0">
                     <span>© 2026 NGIPEN</span>
-                    <span className="text-[11px] font-medium text-gray-400 dark:text-gray-500">v 1.3.1a</span>
+                    <span className="text-[11px] font-medium text-gray-400 dark:text-gray-500">v 1.3.4A</span>
                   </div>
                 </div>
               </div>
