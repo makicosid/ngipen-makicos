@@ -5074,14 +5074,117 @@ const shareEvent = async (event: Event) => {
                             <th scope="row" className="px-4 py-3 text-left font-semibold text-gray-600 dark:text-gray-300">Total pengguna</th>
                             <td className="px-4 py-3 text-right font-black tabular-nums">{adminUsers.length.toLocaleString("id-ID")}</td>
                           </tr>
-                          <tr>
+                          <tr className="border-b border-gray-100 dark:border-gray-800">
                             <th scope="row" className="px-4 py-3 text-left font-semibold text-gray-600 dark:text-gray-300">Member MAKICOS aktif</th>
                             <td className="px-4 py-3 text-right font-black tabular-nums text-amber-700 dark:text-amber-300">{adminUsers.filter((user) => user.is_makicos_member).length.toLocaleString("id-ID")}</td>
+                          </tr>
+                          <tr>
+                            <th scope="row" className="px-4 py-3 text-left font-semibold text-gray-600 dark:text-gray-300">Top Supporter</th>
+                            <td className="px-4 py-3 text-right font-black tabular-nums text-[#B42335] dark:text-[#F3A1A8]">{adminUsers.filter((user) => (user.profile_titles || []).some((title) => title.title_key === "top_supporter")).length.toLocaleString("id-ID")}</td>
                           </tr>
                         </tbody>
                       </table>
                     )}
                   </div>
+
+                  {!adminUsersLoading && !adminUsersLoadError && (() => {
+                    const totalUsers = adminUsers.length;
+                    const memberUsers = adminUsers.filter((user) => user.is_makicos_member).length;
+                    const nonMemberUsers = Math.max(0, totalUsers - memberUsers);
+                    const topSupporterUsers = adminUsers.filter((user) =>
+                      (user.profile_titles || []).some((title) => title.title_key === "top_supporter")
+                    ).length;
+                    const memberPercent = totalUsers > 0 ? (memberUsers / totalUsers) * 100 : 0;
+                    const nonMemberPercent = totalUsers > 0 ? (nonMemberUsers / totalUsers) * 100 : 0;
+                    const donutCircumference = 2 * Math.PI * 42;
+                    const memberDash = (memberPercent / 100) * donutCircumference;
+
+                    return (
+                      <section className="mt-3 rounded-xl border border-red-100 bg-white p-4 dark:border-red-900/50 dark:bg-gray-900 sm:p-5">
+                        <div className="mb-4">
+                          <h3 className="text-sm font-black text-gray-900 dark:text-white">Visualisasi Statistik Pengguna</h3>
+                          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Diagram dihitung dari seluruh {totalUsers.toLocaleString("id-ID")} akun pengguna, bukan hanya halaman daftar yang sedang dibuka.</p>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+                          <div className="rounded-lg border border-gray-100 p-3 dark:border-gray-800 sm:p-4">
+                            <h4 className="mb-4 text-sm font-bold text-gray-800 dark:text-gray-100">Perbandingan Jumlah Pengguna</h4>
+                            <div className="space-y-4">
+                              {[
+                                { label: "Total pengguna", value: totalUsers, color: "bg-slate-500" },
+                                { label: "Member MAKICOS", value: memberUsers, color: "bg-amber-500" },
+                                { label: "Top Supporter", value: topSupporterUsers, color: "bg-[#B42335]" },
+                              ].map((item) => (
+                                <div key={item.label}>
+                                  <div className="mb-1.5 flex items-center justify-between gap-3 text-xs">
+                                    <span className="font-medium text-gray-600 dark:text-gray-300">{item.label}</span>
+                                    <span className="font-black tabular-nums text-gray-900 dark:text-white">{item.value.toLocaleString("id-ID")}</span>
+                                  </div>
+                                  <div className="h-2.5 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
+                                    <div
+                                      className={`h-full rounded-full ${item.color}`}
+                                      style={{ width: `${totalUsers > 0 ? (item.value / totalUsers) * 100 : 0}%` }}
+                                    />
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                            <p className="mt-3 text-[11px] leading-relaxed text-gray-400">Kategori Member dan Top Supporter dapat tumpang tindih; angka ditampilkan sebagai perbandingan, bukan bagian kelompok eksklusif.</p>
+                          </div>
+
+                          <div className="rounded-lg border border-gray-100 p-3 dark:border-gray-800 sm:p-4">
+                            <h4 className="mb-4 text-sm font-bold text-gray-800 dark:text-gray-100">Komposisi Keanggotaan</h4>
+                            <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
+                              <div className="relative h-36 w-36 shrink-0">
+                                <svg viewBox="0 0 120 120" role="img" aria-label={`Komposisi pengguna: ${memberUsers} Member MAKICOS dan ${nonMemberUsers} non-member`} className="h-full w-full -rotate-90">
+                                  <circle cx="60" cy="60" r="42" fill="none" stroke="currentColor" className="text-gray-200 dark:text-gray-700" strokeWidth="15" />
+                                  {totalUsers > 0 && (
+                                    <circle
+                                      cx="60"
+                                      cy="60"
+                                      r="42"
+                                      fill="none"
+                                      stroke="#D69E22"
+                                      strokeWidth="15"
+                                      strokeDasharray={`${memberDash} ${donutCircumference - memberDash}`}
+                                      strokeLinecap="butt"
+                                    />
+                                  )}
+                                </svg>
+                                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                  <span className="text-2xl font-black tabular-nums text-gray-900 dark:text-white">{totalUsers.toLocaleString("id-ID")}</span>
+                                  <span className="text-[10px] text-gray-500">Pengguna</span>
+                                </div>
+                              </div>
+                              <div className="w-full space-y-3 sm:max-w-[190px]">
+                                <div className="flex items-start gap-2">
+                                  <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-sm bg-amber-500" />
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex justify-between gap-2 text-xs">
+                                      <span className="text-gray-600 dark:text-gray-300">Member MAKICOS</span>
+                                      <strong className="tabular-nums text-gray-900 dark:text-white">{memberUsers.toLocaleString("id-ID")}</strong>
+                                    </div>
+                                    <p className="text-[11px] text-gray-400">{memberPercent.toFixed(1)}%</p>
+                                  </div>
+                                </div>
+                                <div className="flex items-start gap-2">
+                                  <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-sm bg-slate-500" />
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex justify-between gap-2 text-xs">
+                                      <span className="text-gray-600 dark:text-gray-300">Non-member</span>
+                                      <strong className="tabular-nums text-gray-900 dark:text-white">{nonMemberUsers.toLocaleString("id-ID")}</strong>
+                                    </div>
+                                    <p className="text-[11px] text-gray-400">{nonMemberPercent.toFixed(1)}%</p>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                            <p className="mt-3 text-[11px] leading-relaxed text-gray-400">Top Supporter tidak dihitung sebagai kategori terpisah karena pengguna dapat sekaligus menjadi Member MAKICOS.</p>
+                          </div>
+                        </div>
+                      </section>
+                    );
+                  })()}
                 </div>
               </section>
             )}
