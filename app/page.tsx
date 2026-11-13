@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useMemo, useRef, type TouchEvent as ReactTouchEvent } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { supabase } from "../lib/supabase";
 import AdminCleanupPanel from "./admin-cleanup-panel";
 import EventAttendance from "./event-attendance";
@@ -344,7 +344,7 @@ const GUIDE_BOOK_PAGES = [
       "Tenang, kamu bisa menggunakan fitur simpan event setelah login sebagai User."
     ],
     "bullets": [
-      "Simpan event favorit agar lebih mudah ditemukan lagi melalui tab Tersimpan.",
+      "Simpan event favorit, lalu temukan kembali melalui menu Kalender Saya.",
       "Berikan rating untuk event.",
       "Tulis komentar dan lihat komentar dari pengguna lain.",
       "Unggah dokumentasi event jika fitur tersebut tersedia pada Detail Event.",
@@ -537,7 +537,7 @@ const GUIDE_SCREENSHOTS: Record<number, { src: string; caption: string }> = {
   3: { src: "/guidebook/jelajahi-event.webp", caption: "Contoh daftar event, kolom pencarian, filter, dan tombol Reset Filter." },
   4: { src: "/guidebook/kalender.webp", caption: "Contoh Kalender Event dan daftar event berdasarkan tanggal." },
   5: { src: "/guidebook/detail-event.webp", caption: "Contoh halaman Detail Event, rating, komentar, dan dokumentasi." },
-  6: { src: "/guidebook/event-tersimpan.webp", caption: "Contoh tab Tersimpan pada Jelajahi Event." },
+  6: { src: "/guidebook/event-tersimpan.webp", caption: "Contoh daftar event yang tersimpan pada akun pengguna." },
   7: { src: "/guidebook/upload-event.webp", caption: "Contoh formulir untuk memublikasikan poster dan informasi event." },
   9: { src: "/guidebook/rental-costume.webp", caption: "Contoh halaman Partner Ship Makicos dan daftar rental costume." },
   12: { src: "/guidebook/daftar-akun.webp", caption: "Contoh formulir pendaftaran akun User." },
@@ -577,8 +577,6 @@ export default function Page() {
   const [dark, setDark] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isFooterVisible, setIsFooterVisible] = useState(false);
-  const mobileFabTouchStartXRef = useRef<number | null>(null);
-  const mobileFabDidSwipeRef = useRef(false);
   const footerRef = useRef<HTMLElementTagNameMap["footer"] | null>(null);
   const [showGuideBook, setShowGuideBook] = useState(false);
   const [guidePage, setGuidePage] = useState(0);
@@ -628,9 +626,10 @@ export default function Page() {
 
   const [sortMode, setSortMode] =
     useState<"Terbaru" | "Terpopuler">("Terbaru");
-  const [userTab, setUserTab] =
-    useState<"Semua" | "Tersimpan">("Semua");
-const [showCalendar, setShowCalendar] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [showSavedCalendar, setShowSavedCalendar] = useState(false);
+  const [savedCalendarMonth, setSavedCalendarMonth] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1));
+  const [isFabExpanded, setIsFabExpanded] = useState(false);
   const [activeNav, setActiveNav] = useState<"home" | "explore" | "costume" | "calendar" | "guide">("home");
   const activeNavHistoryRef = useRef<"home" | "explore" | "costume" | "calendar" | "guide">("home");
   const suppressActiveNavHistoryRef = useRef(false);
@@ -677,7 +676,8 @@ const [eventStatusTab, setEventStatusTab] = useState<
     observer.observe(footer);
     return () => observer.disconnect();
   }, [selectedEvent]);
-const eventOpenSourceRef = useRef<"calendar" | "explore" | "other">("explore");
+const eventOpenSourceRef = useRef<"calendar" | "saved-calendar" | "explore" | "other">("explore");
+const eventPreviousSavedCalendarRef = useRef(false);
 const calendarScrollYRef = useRef(0);
 // Browser history entry khusus untuk detail event yang dibuka di dalam halaman utama.
 // Ini membuat swipe-back Chrome Android dan tombol Back Android menutup detail,
@@ -710,6 +710,7 @@ const pushEventHistoryEntry = (event: Event) => {
   if (currentUrl.searchParams.get("event") === String(event.id)) return;
 
   eventPreviousScrollYRef.current = window.scrollY;
+  eventPreviousSavedCalendarRef.current = showSavedCalendar;
   currentUrl.searchParams.set("event", String(event.id));
   window.history.pushState(
     {
@@ -748,6 +749,7 @@ useEffect(() => {
       setSelectedEvent(null);
       sharedEventOpenedRef.current = null;
       setShowCostumeDirectory(false);
+      setShowSavedCalendar(eventPreviousSavedCalendarRef.current);
 
       const restoreView =
         previousView === "home" || previousView === "explore" || previousView === "costume" || previousView === "calendar" || previousView === "guide"
@@ -991,6 +993,7 @@ const resumeWeekCarouselSoon = () => {
     }
 
     setSelectedEvent(null);
+    setShowSavedCalendar(false);
     setShowCostumeDirectory(false);
     setShowCalendar(true);
     setCalendarMonth(new Date());
@@ -1492,6 +1495,8 @@ const handleRentalImage = (file: File | null) => {
       setCurrentRole("guest");
       setCurrentUser("");
       setCurrentUserId("");
+      // Jangan biarkan state simpanan sesi sebelumnya terbawa ke guest.
+      setSavedIds([]);
     }
   } catch (error) {
     console.error("Gagal memulihkan sesi:", error);
@@ -1544,7 +1549,6 @@ const handleRentalImage = (file: File | null) => {
     selectedCat,
     selectedTicket,
     sortMode,
-    userTab,
     eventStatusTab,
     showThisWeekOnly,
   ]);
@@ -1743,14 +1747,17 @@ const savedUserId =
           const savesResult = await savesResponse.json();
 
           if (savesResponse.ok && savesResult.success) {
-            setSavedIds(savesResult.savedIds || []);
+            setSavedIds(Array.isArray(savesResult.savedIds) ? savesResult.savedIds : []);
           } else {
+            // Gagal mengambil data tidak boleh menampilkan simpanan lama dari state.
+            setSavedIds([]);
             console.error(
               "Gagal memuat event tersimpan:",
               savesResult.error
             );
           }
-
+        } else {
+          setSavedIds([]);
         }
 
         if (savedUserId || currentRole === "admin") {
@@ -1941,8 +1948,9 @@ const handlePosterUpload = (
       const savesResult = await savesResponse.json();
 
       if (savesResponse.ok && savesResult.success) {
-        setSavedIds(savesResult.savedIds || []);
+        setSavedIds(Array.isArray(savesResult.savedIds) ? savesResult.savedIds : []);
       } else {
+        setSavedIds([]);
         console.error(
           "Gagal memuat event tersimpan setelah login:",
           savesResult.error
@@ -2137,7 +2145,8 @@ const logout = async () => {
     setShowCalendar(false);
     setShowCostumeDirectory(false);
     setSelectedCalendarDate("");
-    setUserTab("Semua");
+
+
     setEventStatusTab("Semua");
     eventOpenSourceRef.current = "explore";
     setActiveEventPreview(null);
@@ -2447,7 +2456,8 @@ const logout = async () => {
   // diverifikasi kembali di server, bukan menghapus langsung dari browser.
   // Simpan atau hapus event dari daftar tersimpan
   const toggleSave = async (eventId: string) => {
-    if (currentRole !== "user") {
+    if (currentRole !== "user" || !currentUserId) {
+      setToast("Login terlebih dahulu untuk menyimpan event.");
       setShowLoginUser(true);
       return;
     }
@@ -3276,10 +3286,6 @@ useEffect(() => {
   const applyCommonFilters = (eventsToCount: Event[]) => {
     let result = [...eventsToCount];
 
-    if (userTab === "Tersimpan") {
-      result = result.filter((event) => savedIds.includes(event.id));
-    }
-
     if (search.trim()) {
       const query = search.toLowerCase();
 
@@ -3388,7 +3394,6 @@ return {
 };
 }, [
   approvedEvents,
-  userTab,
   savedIds,
   search,
   selectedProv,
@@ -3410,10 +3415,6 @@ return {
       result = result.filter(
         (event) => getTimeStatus(event) === eventStatusTab
       );
-    }
-
-    if (userTab === "Tersimpan") {
-      result = result.filter((event) => savedIds.includes(event.id));
     }
 
     if (search.trim()) {
@@ -3521,7 +3522,7 @@ return {
   }, [
     approvedEvents,
     eventStatusTab,
-    userTab,
+
     savedIds,
     search,
     selectedProv,
@@ -3687,8 +3688,8 @@ const handleEventCardClick = (event: Event) => {
   void openEvent(event);
 };
 
-const openEvent = async (event: Event) => {
-  eventOpenSourceRef.current = "explore";
+const openEvent = async (event: Event, source: "explore" | "saved-calendar" = "explore") => {
+  eventOpenSourceRef.current = source;
   eventPreviousActiveNavRef.current = activeNav;
   setActiveEventPreview(null);
   if (currentRole === "guest") {
@@ -3846,79 +3847,6 @@ const shareEvent = async (event: Event) => {
 };
 
 
-  type MobileFabItem = "home" | "explore" | "costume" | "upload" | "profile";
-  const mobileFabItems: MobileFabItem[] = currentRole === "user"
-    ? ["home", "explore", "costume", "upload", "profile"]
-    : ["home", "explore", "profile"];
-
-  const navigateMobileFab = (target: MobileFabItem) => {
-    setMobileOpen(false);
-    setEventFormOpen(false);
-    if (target === "upload") {
-      if (currentRole !== "user") return;
-      setPosterFile(null);
-      setPosterPreview("");
-      setPosterError("");
-      setEventFormOpen(true);
-      return;
-    }
-    if (target === "home") {
-      setSelectedEvent(null);
-      setShowCostumeDirectory(false);
-      setShowCalendar(false);
-      setUserTab("Semua");
-      setActiveNav("home");
-      window.scrollTo({ top: 0, behavior: "smooth" });
-      return;
-    }
-    if (target === "explore") {
-      setSelectedEvent(null);
-      setShowCostumeDirectory(false);
-      setShowCalendar(false);
-      setUserTab("Semua");
-      setActiveNav("explore");
-      window.setTimeout(() => {
-        document.getElementById("event-search-input")?.scrollIntoView({ behavior: "smooth", block: "center" });
-      }, 180);
-      return;
-    }
-    if (target === "costume") {
-      setSelectedEvent(null);
-      setShowCostumeDirectory(true);
-      setShowCalendar(false);
-      setActiveNav("costume");
-      window.scrollTo({ top: 0, behavior: "smooth" });
-      return;
-    }
-    if (currentRole === "guest") {
-      setShowLoginUser(true);
-    } else if (currentRole === "admin") {
-      setShowAdmin(true);
-    } else {
-      setShowUserProfile(true);
-    }
-  };
-
-  const handleMobileFabTouchStart = (event: ReactTouchEvent<HTMLDivElement>) => {
-    mobileFabTouchStartXRef.current = event.touches[0]?.clientX ?? null;
-    mobileFabDidSwipeRef.current = false;
-  };
-
-  const handleMobileFabTouchEnd = (event: ReactTouchEvent<HTMLDivElement>) => {
-    const startX = mobileFabTouchStartXRef.current;
-    const endX = event.changedTouches[0]?.clientX;
-    mobileFabTouchStartXRef.current = null;
-    if (startX === null || typeof endX !== "number") return;
-    const delta = endX - startX;
-    if (Math.abs(delta) < 45) return;
-    mobileFabDidSwipeRef.current = true;
-    window.setTimeout(() => { mobileFabDidSwipeRef.current = false; }, 400);
-    const activeKey = eventFormOpen ? "upload" : showUserProfile || showAdmin || showLoginUser ? "profile" : activeNavKey === "costume" ? "costume" : activeNavKey === "explore" ? "explore" : "home";
-    const currentIndex = Math.max(0, mobileFabItems.indexOf(activeKey as MobileFabItem));
-    const nextIndex = Math.min(mobileFabItems.length - 1, Math.max(0, currentIndex + (delta < 0 ? 1 : -1)));
-    if (nextIndex !== currentIndex) navigateMobileFab(mobileFabItems[nextIndex]);
-  };
-
   return (
     <div className={dark ? "dark" : ""}>
       <div className="min-h-screen bg-gray-50 text-gray-900 transition-colors dark:bg-gray-950 dark:text-white">
@@ -3969,7 +3897,8 @@ const shareEvent = async (event: Event) => {
   setSelectedEvent(null);
   setShowCostumeDirectory(false);
   setShowCalendar(false);
-  setUserTab("Semua");
+
+
   setActiveNav("home");
 }}
                 aria-current={activeNavKey === "home" ? "page" : undefined}
@@ -3983,7 +3912,8 @@ const shareEvent = async (event: Event) => {
   setSelectedEvent(null);
   setShowCostumeDirectory(false);
   setShowCalendar(false);
-  setUserTab("Semua");
+
+
   setActiveNav("explore");
 
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -4163,8 +4093,8 @@ const shareEvent = async (event: Event) => {
               <div className="flex flex-col gap-3">
                 <div className="flex flex-col gap-1">
                   <p className="px-3 pb-1 text-[10px] font-bold uppercase tracking-[0.16em] text-gray-400">Navigasi</p>
-                  <button onClick={() => { setSelectedEvent(null); setShowCostumeDirectory(false); setShowCalendar(false); setMobileOpen(false); setUserTab("Semua"); setActiveNav("home"); window.scrollTo({ top: 0, behavior: "smooth" }); }} aria-current={activeNavKey === "home" ? "page" : undefined} className={`rounded-xl px-3 py-3 text-left font-semibold transition-colors ${activeNavKey === "home" ? "bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-300" : "hover:bg-gray-100 dark:hover:bg-gray-900"}`}>Beranda</button>
-                  <button onClick={() => { setSelectedEvent(null); setShowCostumeDirectory(false); setShowCalendar(false); setMobileOpen(false); setUserTab("Semua"); setActiveNav("explore"); window.scrollTo({ top: 0, behavior: "smooth" }); setTimeout(() => document.getElementById("daftar-event")?.scrollIntoView({ behavior: "smooth" }), 200); }} aria-current={activeNavKey === "explore" ? "page" : undefined} className={`rounded-xl px-3 py-3 text-left font-semibold transition-colors ${activeNavKey === "explore" ? "bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-300" : "hover:bg-gray-100 dark:hover:bg-gray-900"}`}>Jelajahi Event</button>
+                  <button onClick={() => { setSelectedEvent(null); setShowCostumeDirectory(false); setShowCalendar(false); setMobileOpen(false); setActiveNav("home"); window.scrollTo({ top: 0, behavior: "smooth" }); }} aria-current={activeNavKey === "home" ? "page" : undefined} className={`rounded-xl px-3 py-3 text-left font-semibold transition-colors ${activeNavKey === "home" ? "bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-300" : "hover:bg-gray-100 dark:hover:bg-gray-900"}`}>Beranda</button>
+                  <button onClick={() => { setSelectedEvent(null); setShowCostumeDirectory(false); setShowCalendar(false); setMobileOpen(false); setActiveNav("explore"); window.scrollTo({ top: 0, behavior: "smooth" }); setTimeout(() => document.getElementById("daftar-event")?.scrollIntoView({ behavior: "smooth" }), 200); }} aria-current={activeNavKey === "explore" ? "page" : undefined} className={`rounded-xl px-3 py-3 text-left font-semibold transition-colors ${activeNavKey === "explore" ? "bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-300" : "hover:bg-gray-100 dark:hover:bg-gray-900"}`}>Jelajahi Event</button>
                   {currentRole === "user" && (
                   <button onClick={() => { setMobileOpen(false); setSelectedEvent(null); setShowCostumeDirectory(true); setShowCalendar(false); setActiveNav("costume"); window.scrollTo({ top: 0, behavior: "smooth" }); }} aria-current={activeNavKey === "costume" ? "page" : undefined} className={`rounded-xl px-3 py-3 text-left font-semibold transition-colors ${activeNavKey === "costume" ? "bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-300" : "hover:bg-gray-100 dark:hover:bg-gray-900"}`}>Cari Costume</button>
                   )}
@@ -4207,43 +4137,61 @@ const shareEvent = async (event: Event) => {
           )}
         </header>
 
-        {/* FLOATING BOTTOM NAVIGATION - MOBILE */}
-        {!isFooterVisible && !mobileOpen && (
-          <div
-            className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-1/2 z-[65] w-[min(calc(100%-2rem),420px)] -translate-x-1/2 md:hidden"
-            onTouchStart={handleMobileFabTouchStart}
-            onTouchEnd={handleMobileFabTouchEnd}
-            onTouchCancel={() => { mobileFabTouchStartXRef.current = null; }}
-          >
-            <nav aria-label="Navigasi utama" className="flex items-center justify-around gap-1 rounded-full border border-gray-200/90 bg-white/95 px-2 py-2 shadow-[0_8px_30px_rgba(15,23,42,0.18)] backdrop-blur-xl dark:border-gray-700 dark:bg-gray-900/95">
-              {mobileFabItems.map((item) => {
-                const active = item === activeNavKey || (item === "profile" && (showUserProfile || showAdmin || showLoginUser));
-                const label = item === "home" ? "Beranda" : item === "explore" ? "Jelajahi" : item === "costume" ? "Costume" : item === "upload" ? "Upload Event" : "Profil";
-                const activeClass = active ? "bg-red-50 text-red-700 dark:bg-red-950/50 dark:text-red-300" : "text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800";
-                return (
-                  <button
-                    key={item}
-                    type="button"
-                    onClick={() => {
-                      if (mobileFabDidSwipeRef.current) return;
-                      navigateMobileFab(item);
-                    }}
-                    aria-label={label}
-                    aria-current={active ? "page" : undefined}
-                    className={"flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-full px-1.5 py-1.5 text-[10px] font-semibold transition-all duration-200 " + activeClass}
-                  >
-                    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                      {item === "home" && <><path d="m3 10 9-7 9 7" /><path d="M5 9v11h14V9M9 20v-6h6v6" /></>}
-                      {item === "explore" && <><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 4.5 4.5" /></>}
-                      {item === "costume" && <><path d="M8 4.5 12 7l4-2.5 4 3.5-3 3-2-1v9H9v-9l-2 1-3-3z" /><path d="M9 19h6" /></>}
-                      {item === "upload" && <><path d="M12 16V4" /><path d="m7 9 5-5 5 5" /><path d="M5 15v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4" /></>}
-                      {item === "profile" && <><circle cx="12" cy="8" r="3.5" /><path d="M5 21c.6-4 3-6 7-6s6.4 2 7 6" /></>}
-                    </svg>
-                    <span className="truncate leading-none">{label}</span>
+        {/* EXPANDABLE FLOATING ACTION MENU - MOBILE */}
+        {!isFooterVisible && (
+          <div className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-4 z-[65] flex flex-col items-end gap-3 md:hidden">
+            {isFabExpanded && (
+              <nav aria-label="Menu cepat" className="flex max-h-[70vh] flex-col items-end gap-2 overflow-y-auto rounded-2xl border border-gray-200 bg-white/95 p-3 shadow-[0_12px_40px_rgba(15,23,42,0.22)] backdrop-blur-xl dark:border-gray-700 dark:bg-gray-900/95">
+                {([
+                  { id: "profile", label: currentRole === "admin" ? "Panel Admin" : currentRole === "guest" ? "Login / Profil" : "Profil", icon: "user" },
+                  ...(currentRole === "user" ? [{ id: "saved", label: "Kalender Saya", icon: "calendar" }] : []),
+                  ...(currentRole === "user" ? [{ id: "upload", label: "Upload Event", icon: "upload" }] : []),
+                  { id: "costume", label: "Cari Costume", icon: "costume" },
+                  { id: "explore", label: "Jelajahi Event", icon: "search" },
+                  { id: "home", label: "Beranda", icon: "home" },
+                ] as { id: string; label: string; icon: string }[]).map((item) => (
+                  <button key={item.id} type="button" onClick={() => {
+                    setIsFabExpanded(false);
+                    setEventFormOpen(false);
+                    if (item.id === "saved") {
+                      if (currentRole !== "user") { setShowLoginUser(true); return; }
+                      setSelectedEvent(null); setShowCalendar(false); setShowCostumeDirectory(false);
+                      setShowSavedCalendar(true); setSavedCalendarMonth(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
+                      window.scrollTo({ top: 0, behavior: "smooth" }); return;
+                    }
+                    setShowSavedCalendar(false);
+                    if (item.id === "upload") {
+                      setPosterFile(null); setPosterPreview(""); setPosterError(""); setEventFormOpen(true); return;
+                    }
+                    if (item.id === "home") {
+                      setSelectedEvent(null); setShowCalendar(false); setShowCostumeDirectory(false); setActiveNav("home");
+                      window.scrollTo({ top: 0, behavior: "smooth" }); return;
+                    }
+                    if (item.id === "explore") {
+                      setSelectedEvent(null); setShowCalendar(false); setShowCostumeDirectory(false); setActiveNav("explore");
+                      window.setTimeout(() => document.getElementById("event-search-input")?.scrollIntoView({ behavior: "smooth", block: "center" }), 180); return;
+                    }
+                    if (item.id === "costume") {
+                      setSelectedEvent(null); setShowCalendar(false); setShowCostumeDirectory(true); setActiveNav("costume");
+                      window.scrollTo({ top: 0, behavior: "smooth" }); return;
+                    }
+                    if (currentRole === "guest") setShowLoginUser(true);
+                    else if (currentRole === "admin") setShowAdmin(true);
+                    else setShowUserProfile(true);
+                  }} className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold text-gray-700 transition hover:bg-red-50 hover:text-red-700 dark:text-gray-100 dark:hover:bg-red-950/40">
+                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-50 text-lg text-red-700 dark:bg-red-950/50 dark:text-red-300">
+                      {item.icon === "home" ? "⌂" : item.icon === "search" ? "⌕" : item.icon === "costume" ? "衣" : item.icon === "upload" ? "＋" : item.icon === "calendar" ? "▦" : "♙"}
+                    </span>
+                    {item.label}
                   </button>
-                );
-              })}
-            </nav>
+                ))}
+              </nav>
+            )}
+            <button type="button" aria-label={isFabExpanded ? "Tutup menu cepat" : "Buka menu cepat"} aria-expanded={isFabExpanded}
+              onClick={() => setIsFabExpanded((open) => !open)}
+              className="flex h-14 w-14 items-center justify-center rounded-full bg-[#bb212d] text-3xl font-light text-white shadow-[0_8px_28px_rgba(187,33,45,0.42)] ring-4 ring-white/80 transition-transform duration-200 hover:scale-105 active:scale-95 dark:ring-gray-900/80">
+              <span className={isFabExpanded ? "rotate-45 transition-transform" : "transition-transform"}>＋</span>
+            </button>
           </div>
         )}
 
@@ -4267,7 +4215,7 @@ const shareEvent = async (event: Event) => {
         </button>
 
         {/* BERANDA */}
-       {!selectedEvent && !showCostumeDirectory && (
+       {!selectedEvent && !showCostumeDirectory && !showSavedCalendar && (
           <main>
             {/* HERO */}
             <section className="mx-auto max-w-[1400px] px-4 pb-6 pt-8 sm:pt-10">
@@ -4399,6 +4347,9 @@ const shareEvent = async (event: Event) => {
     </div>
   </section>
 )}
+
+
+
 
 {showCalendar && currentRole === "user" && (
   <section id="user-event-calendar" className="mx-auto max-w-[1400px] px-4 pb-8">
@@ -5445,11 +5396,12 @@ const shareEvent = async (event: Event) => {
                 <div className="flex flex-wrap gap-2">
                   <button
                    onClick={() => {
-  setUserTab("Semua");
+
+
   setEventStatusTab("Semua");
 }}
                     className={`rounded-full px-4 py-2 text-sm font-bold ${
-                      userTab === "Semua"
+                      eventStatusTab === "Semua" && !showThisWeekOnly
                         ? "bg-red-600 text-white"
                         : "bg-gray-100 text-gray-600 dark:bg-gray-900 dark:text-gray-300"
                     }`}
@@ -5488,18 +5440,6 @@ const shareEvent = async (event: Event) => {
   </button>
 ))}
 
-                  {currentRole === "user" && (
-                    <button
-                      onClick={() => setUserTab("Tersimpan")}
-                      className={`rounded-full px-4 py-2 text-sm font-bold ${
-                        userTab === "Tersimpan"
-                          ? "bg-red-600 text-white"
-                          : "bg-gray-100 text-gray-600 dark:bg-gray-900 dark:text-gray-300"
-                      }`}
-                    >
-                      ♥ Tersimpan
-                    </button>
-                  )}
                 </div>
 
                 <select
@@ -5766,6 +5706,100 @@ const shareEvent = async (event: Event) => {
           )}
           </main>
         )}
+
+        {showSavedCalendar && currentRole === "user" && (
+  <section id="my-saved-calendar" className="mx-auto max-w-[1400px] px-4 pb-10">
+    <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900 sm:p-6">
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-red-600">Personal event planner</p>
+          <h2 className="mt-1 text-2xl font-black">Kalender Saya</h2>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Event yang kamu simpan dari akunmu sendiri.</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <button type="button" onClick={() => { setShowSavedCalendar(false); setShowCalendar(false); setShowCostumeDirectory(false); setSelectedEvent(null); setActiveNav("home"); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800">← Beranda</button>
+          <button type="button" onClick={() => { setShowSavedCalendar(false); setShowCalendar(false); setShowCostumeDirectory(false); setSelectedEvent(null); setActiveNav("explore"); window.scrollTo({ top: 0, behavior: "smooth" }); window.setTimeout(() => document.getElementById("daftar-event")?.scrollIntoView({ behavior: "smooth", block: "start" }), 200); }} className="rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-red-700">Jelajahi Event →</button>
+        </div>
+      </div>
+      {(() => {
+        const savedEvents = approvedEvents.filter((event) => savedIds.includes(event.id));
+        const year = savedCalendarMonth.getFullYear();
+        const month = savedCalendarMonth.getMonth();
+        const firstDay = new Date(year, month, 1);
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const offset = (firstDay.getDay() + 6) % 7;
+        const monthLabel = savedCalendarMonth.toLocaleDateString("id-ID", { month: "long", year: "numeric" });
+        const dayKey = (date: Date) => `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,"0")}-${String(date.getDate()).padStart(2,"0")}`;
+        const eventsByDay = new Map<string, Event[]>();
+        savedEvents.forEach((event) => {
+          if (!event.start_date) return;
+          const start = new Date(event.start_date + "T00:00:00");
+          const end = new Date((event.end_date || event.start_date) + "T00:00:00");
+          for (let cursor = new Date(start); cursor <= end; cursor.setDate(cursor.getDate()+1)) {
+            const key = dayKey(cursor);
+            eventsByDay.set(key, [...(eventsByDay.get(key) || []), event]);
+          }
+        });
+        return (
+          <div className="grid gap-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(300px,.85fr)]">
+            <div className="min-w-0 rounded-2xl border border-gray-200 p-3 dark:border-gray-800 sm:p-5">
+              <div className="mb-4 flex items-center justify-between gap-2">
+                <button type="button" aria-label="Bulan sebelumnya" onClick={() => setSavedCalendarMonth(new Date(year, month-1, 1))} className="rounded-lg border border-gray-200 px-3 py-2 dark:border-gray-700">‹</button>
+                <h3 className="text-base font-black capitalize sm:text-lg">{monthLabel}</h3>
+                <button type="button" aria-label="Bulan berikutnya" onClick={() => setSavedCalendarMonth(new Date(year, month+1, 1))} className="rounded-lg border border-gray-200 px-3 py-2 dark:border-gray-700">›</button>
+              </div>
+              <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-bold text-gray-500 sm:gap-2 sm:text-xs">
+                {["Sen","Sel","Rab","Kam","Jum","Sab","Min"].map((day) => <div key={day} className="py-2">{day}</div>)}
+              </div>
+              <div className="grid grid-cols-7 gap-1 sm:gap-2">
+                {Array.from({length: offset}, (_,i) => <div key={"blank-"+i} />)}
+                {Array.from({length: daysInMonth}, (_,i) => {
+                  const date = new Date(year,month,i+1);
+                  const dayEvents = eventsByDay.get(dayKey(date)) || [];
+                  return <div key={i+1} className={"min-h-[76px] rounded-lg border p-1 sm:min-h-[94px] sm:p-2 " + (dayEvents.length ? "border-red-200 bg-red-50/70 dark:border-red-900 dark:bg-red-950/20" : "border-gray-100 dark:border-gray-800")}>
+                    <span className="text-xs font-bold">{i+1}</span>
+                    <div className="mt-1 space-y-1">
+                      {dayEvents.slice(0,2).map((event) => <button key={event.id} type="button" title={event.title} onClick={() => { void openEvent(event, "saved-calendar"); }} className="block w-full truncate rounded bg-red-600 px-1 py-1 text-left text-[9px] font-semibold text-white sm:text-[10px]">{event.title}</button>)}
+                      {dayEvents.length > 2 && <span className="block text-[9px] font-semibold text-red-700">+{dayEvents.length-2} event</span>}
+                    </div>
+                  </div>;
+                })}
+              </div>
+              <p className="mt-3 text-[11px] text-gray-500">Tanggal bertanda merah memiliki event yang kamu simpan.</p>
+            </div>
+            <aside className="min-w-0">
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="font-black">Daftar Tersimpan</h3>
+                <span className="rounded-full bg-red-50 px-3 py-1 text-xs font-bold text-red-700 dark:bg-red-950/40 dark:text-red-300">{savedEvents.length} event</span>
+              </div>
+              {savedEvents.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-gray-300 px-4 py-10 text-center dark:border-gray-700">
+                  <div className="text-3xl">♡</div><p className="mt-2 font-bold">Belum ada event tersimpan</p>
+                  <p className="mt-1 text-sm text-gray-500">Simpan event dari Detail Event untuk menambahkannya ke kalender ini.</p>
+                </div>
+              ) : (
+                <div className="max-h-[620px] space-y-2 overflow-y-auto pr-1">
+                  {savedEvents.map((event) => (
+                    <article key={event.id} className="flex items-center gap-3 rounded-xl border border-gray-200 p-3 dark:border-gray-800">
+                      <img src={event.poster_url} alt="" className="h-16 w-12 shrink-0 rounded-lg bg-gray-100 object-cover" />
+                      <button type="button" onClick={() => { void openEvent(event, "saved-calendar"); }} className="min-w-0 flex-1 text-left">
+                        <span className="block line-clamp-2 text-sm font-bold">{event.title}</span>
+                        <span className="mt-1 block text-xs text-gray-500">{formatEventDate(event.start_date,event.end_date)}</span>
+                        <span className="block truncate text-[11px] text-gray-500">{event.city}, {event.province}</span>
+                      </button>
+                      <button type="button" aria-label={"Hapus "+event.title+" dari tersimpan"} onClick={() => void toggleSave(event.id)} className="rounded-lg px-3 py-2 text-lg font-bold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40">×</button>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </aside>
+          </div>
+        );
+      })()}
+    </div>
+  </section>
+)}
+
         
         {/* HALAMAN CARI COSTUME */}
 {showCostumeDirectory && !selectedEvent && (
@@ -5884,7 +5918,8 @@ const shareEvent = async (event: Event) => {
   setShowCostumeDirectory(false);
   setShowCalendar(false);
   setSelectedEvent(null);
-  setUserTab("Semua");
+
+
   setActiveNav("home");
   window.scrollTo({ top: 0, behavior: "smooth" });
 }}
@@ -5908,6 +5943,10 @@ const shareEvent = async (event: Event) => {
                   }
                   setSelectedEvent(null);
                   sharedEventOpenedRef.current = null;
+                  if (eventOpenSourceRef.current === "saved-calendar") {
+                    setShowSavedCalendar(true);
+                    return;
+                  }
                   eventOpenSourceRef.current = "explore";
                   setShowCalendar(false);
                   setShowCostumeDirectory(false);
@@ -5918,7 +5957,7 @@ const shareEvent = async (event: Event) => {
                 }}
                 className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-bold hover:border-red-500 hover:text-red-600 dark:border-gray-700 dark:bg-gray-900"
               >
-                ← Kembali ke Beranda
+                {eventOpenSourceRef.current === "saved-calendar" ? "← Kembali ke Kalender Saya" : "← Kembali ke Beranda"}
               </button>
               {eventOpenSourceRef.current === "calendar" && (
                 <button
@@ -7709,6 +7748,9 @@ accept="image/jpeg,image/png,image/webp"
 
               {currentRole === "user" ? (
                 <>
+                  <button type="button" onClick={() => { setShowUserProfile(false); setShowCalendar(false); setShowCostumeDirectory(false); setSelectedEvent(null); setShowSavedCalendar(true); setSavedCalendarMonth(new Date(new Date().getFullYear(), new Date().getMonth(), 1)); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="mb-5 flex min-h-12 w-full items-center justify-between rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-left text-sm font-bold text-red-700 transition hover:border-red-400 hover:bg-red-100 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300 dark:hover:bg-red-950/50">
+                    <span className="flex items-center gap-3"><span className="text-lg">▦</span>Kalender Saya</span><span aria-hidden="true">→</span>
+                  </button>
                   <form
                     onSubmit={(event) => {
                       event.preventDefault();
