@@ -1068,6 +1068,7 @@ const resumeWeekCarouselSoon = () => {
   const [eventLocationStatsLoading, setEventLocationStatsLoading] = useState(false);
   const [eventLocationStatsError, setEventLocationStatsError] = useState("");
   const [selectedStatsProvince, setSelectedStatsProvince] = useState("");
+  const [statsProvinceLimit, setStatsProvinceLimit] = useState<"3" | "5" | "10" | "all">("3");
   const [adminEventSponsorFilter, setAdminEventSponsorFilter] = useState<"Semua" | "Sponsor" | "Non-Sponsor">("Semua");
   const [selectedPendingEventIds, setSelectedPendingEventIds] = useState<string[]>([]);
   const [bulkApproveLoading, setBulkApproveLoading] = useState(false);
@@ -5181,12 +5182,23 @@ const shareEvent = async (event: Event) => {
                   ) : (
                     <>
                       <div className="rounded-xl border border-gray-100 p-3 dark:border-gray-800 sm:p-4">
-                        <div className="mb-3 flex items-center justify-between gap-2">
-                          <h4 className="text-sm font-bold text-gray-900 dark:text-white">Jumlah Event per Provinsi</h4>
-                          <span className="text-[11px] text-gray-500">Pilih batang untuk melihat detail</span>
+                        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                          <div>
+                            <h4 className="text-sm font-bold text-gray-900 dark:text-white">Jumlah Event per Provinsi</h4>
+                            <span className="text-[11px] text-gray-500">Pilih batang untuk melihat detail</span>
+                          </div>
+                          <label className="flex items-center gap-2 text-xs font-semibold text-gray-600 dark:text-gray-300">
+                            Tampilkan
+                            <select value={statsProvinceLimit} onChange={(event) => setStatsProvinceLimit(event.target.value as "3" | "5" | "10" | "all")} className="rounded-lg border border-gray-200 bg-white px-2.5 py-2 text-xs font-semibold text-gray-900 outline-none focus:border-red-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
+                              <option value="3">3 daerah</option>
+                              <option value="5">5 daerah</option>
+                              <option value="10">10 daerah</option>
+                              <option value="all">Semua daerah</option>
+                            </select>
+                          </label>
                         </div>
                         <div className="space-y-2.5">
-                          {[...(eventLocationStats?.provinces || [])].sort((a: any, b: any) => b.total - a.total).slice(0, 3).map((province: any) => {
+                          {[...(eventLocationStats?.provinces || [])].sort((a: any, b: any) => b.total - a.total).slice(0, statsProvinceLimit === "all" ? undefined : Number(statsProvinceLimit)).map((province: any) => {
                             const maxTotal = Math.max(1, ...(eventLocationStats?.provinces || []).map((item: any) => item.total));
                             const selected = selectedStatsProvince === province.name;
                             return (
@@ -5208,7 +5220,7 @@ const shareEvent = async (event: Event) => {
                         <label htmlFor="admin-stats-province" className="mb-1.5 block text-sm font-bold text-gray-900 dark:text-white">Pilih Provinsi</label>
                         <select id="admin-stats-province" value={selectedStatsProvince} onChange={(event) => { setSelectedStatsProvince(event.target.value); if (event.target.value) window.setTimeout(() => document.getElementById("admin-stats-location-detail")?.scrollIntoView({ behavior: "smooth", block: "start" }), 120); }} className="w-full rounded-xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-900 outline-none focus:border-red-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
                           <option value="">Pilih daerah lainnya untuk melihat rincian</option>
-                          {[...(eventLocationStats?.provinces || [])].sort((a: any, b: any) => b.total - a.total).slice(3).map((province: any) => <option key={province.name} value={province.name}>{province.name} ({province.total} event)</option>)}
+                          {[...(eventLocationStats?.provinces || [])].sort((a: any, b: any) => b.total - a.total).map((province: any) => <option key={province.name} value={province.name}>{province.name} ({province.total} event)</option>)}
                         </select>
                       </div>
 
