@@ -676,7 +676,8 @@ const [eventStatusTab, setEventStatusTab] = useState<
     observer.observe(footer);
     return () => observer.disconnect();
   }, [selectedEvent]);
-const eventOpenSourceRef = useRef<"calendar" | "explore" | "other">("explore");
+const eventOpenSourceRef = useRef<"calendar" | "saved-calendar" | "explore" | "other">("explore");
+const eventPreviousSavedCalendarRef = useRef(false);
 const calendarScrollYRef = useRef(0);
 // Browser history entry khusus untuk detail event yang dibuka di dalam halaman utama.
 // Ini membuat swipe-back Chrome Android dan tombol Back Android menutup detail,
@@ -709,6 +710,7 @@ const pushEventHistoryEntry = (event: Event) => {
   if (currentUrl.searchParams.get("event") === String(event.id)) return;
 
   eventPreviousScrollYRef.current = window.scrollY;
+  eventPreviousSavedCalendarRef.current = showSavedCalendar;
   currentUrl.searchParams.set("event", String(event.id));
   window.history.pushState(
     {
@@ -747,6 +749,7 @@ useEffect(() => {
       setSelectedEvent(null);
       sharedEventOpenedRef.current = null;
       setShowCostumeDirectory(false);
+      setShowSavedCalendar(eventPreviousSavedCalendarRef.current);
 
       const restoreView =
         previousView === "home" || previousView === "explore" || previousView === "costume" || previousView === "calendar" || previousView === "guide"
@@ -3684,8 +3687,8 @@ const handleEventCardClick = (event: Event) => {
   void openEvent(event);
 };
 
-const openEvent = async (event: Event) => {
-  eventOpenSourceRef.current = "explore";
+const openEvent = async (event: Event, source: "explore" | "saved-calendar" = "explore") => {
+  eventOpenSourceRef.current = source;
   eventPreviousActiveNavRef.current = activeNav;
   setActiveEventPreview(null);
   if (currentRole === "guest") {
@@ -4211,7 +4214,7 @@ const shareEvent = async (event: Event) => {
         </button>
 
         {/* BERANDA */}
-       {!selectedEvent && !showCostumeDirectory && (
+       {!selectedEvent && !showCostumeDirectory && !showSavedCalendar && (
           <main>
             {/* HERO */}
             <section className="mx-auto max-w-[1400px] px-4 pb-6 pt-8 sm:pt-10">
@@ -4345,95 +4348,7 @@ const shareEvent = async (event: Event) => {
 )}
 
 
-{showSavedCalendar && currentRole === "user" && (
-  <section id="my-saved-calendar" className="mx-auto max-w-[1400px] px-4 pb-10">
-    <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900 sm:p-6">
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-red-600">Personal event planner</p>
-          <h2 className="mt-1 text-2xl font-black">Kalender Saya</h2>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Event yang kamu simpan dari akunmu sendiri.</p>
-        </div>
-        <button type="button" onClick={() => setShowSavedCalendar(false)} className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800">Tutup</button>
-      </div>
-      {(() => {
-        const savedEvents = approvedEvents.filter((event) => savedIds.includes(event.id));
-        const year = savedCalendarMonth.getFullYear();
-        const month = savedCalendarMonth.getMonth();
-        const firstDay = new Date(year, month, 1);
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
-        const offset = (firstDay.getDay() + 6) % 7;
-        const monthLabel = savedCalendarMonth.toLocaleDateString("id-ID", { month: "long", year: "numeric" });
-        const dayKey = (date: Date) => `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,"0")}-${String(date.getDate()).padStart(2,"0")}`;
-        const eventsByDay = new Map<string, Event[]>();
-        savedEvents.forEach((event) => {
-          if (!event.start_date) return;
-          const start = new Date(event.start_date + "T00:00:00");
-          const end = new Date((event.end_date || event.start_date) + "T00:00:00");
-          for (let cursor = new Date(start); cursor <= end; cursor.setDate(cursor.getDate()+1)) {
-            const key = dayKey(cursor);
-            eventsByDay.set(key, [...(eventsByDay.get(key) || []), event]);
-          }
-        });
-        return (
-          <div className="grid gap-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(300px,.85fr)]">
-            <div className="min-w-0 rounded-2xl border border-gray-200 p-3 dark:border-gray-800 sm:p-5">
-              <div className="mb-4 flex items-center justify-between gap-2">
-                <button type="button" aria-label="Bulan sebelumnya" onClick={() => setSavedCalendarMonth(new Date(year, month-1, 1))} className="rounded-lg border border-gray-200 px-3 py-2 dark:border-gray-700">‹</button>
-                <h3 className="text-base font-black capitalize sm:text-lg">{monthLabel}</h3>
-                <button type="button" aria-label="Bulan berikutnya" onClick={() => setSavedCalendarMonth(new Date(year, month+1, 1))} className="rounded-lg border border-gray-200 px-3 py-2 dark:border-gray-700">›</button>
-              </div>
-              <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-bold text-gray-500 sm:gap-2 sm:text-xs">
-                {["Sen","Sel","Rab","Kam","Jum","Sab","Min"].map((day) => <div key={day} className="py-2">{day}</div>)}
-              </div>
-              <div className="grid grid-cols-7 gap-1 sm:gap-2">
-                {Array.from({length: offset}, (_,i) => <div key={"blank-"+i} />)}
-                {Array.from({length: daysInMonth}, (_,i) => {
-                  const date = new Date(year,month,i+1);
-                  const dayEvents = eventsByDay.get(dayKey(date)) || [];
-                  return <div key={i+1} className={"min-h-[76px] rounded-lg border p-1 sm:min-h-[94px] sm:p-2 " + (dayEvents.length ? "border-red-200 bg-red-50/70 dark:border-red-900 dark:bg-red-950/20" : "border-gray-100 dark:border-gray-800")}>
-                    <span className="text-xs font-bold">{i+1}</span>
-                    <div className="mt-1 space-y-1">
-                      {dayEvents.slice(0,2).map((event) => <button key={event.id} type="button" title={event.title} onClick={() => { setShowSavedCalendar(false); setSelectedEvent(event); }} className="block w-full truncate rounded bg-red-600 px-1 py-1 text-left text-[9px] font-semibold text-white sm:text-[10px]">{event.title}</button>)}
-                      {dayEvents.length > 2 && <span className="block text-[9px] font-semibold text-red-700">+{dayEvents.length-2} event</span>}
-                    </div>
-                  </div>;
-                })}
-              </div>
-              <p className="mt-3 text-[11px] text-gray-500">Tanggal bertanda merah memiliki event yang kamu simpan.</p>
-            </div>
-            <aside className="min-w-0">
-              <div className="mb-3 flex items-center justify-between">
-                <h3 className="font-black">Daftar Tersimpan</h3>
-                <span className="rounded-full bg-red-50 px-3 py-1 text-xs font-bold text-red-700 dark:bg-red-950/40 dark:text-red-300">{savedEvents.length} event</span>
-              </div>
-              {savedEvents.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-gray-300 px-4 py-10 text-center dark:border-gray-700">
-                  <div className="text-3xl">♡</div><p className="mt-2 font-bold">Belum ada event tersimpan</p>
-                  <p className="mt-1 text-sm text-gray-500">Simpan event dari Detail Event untuk menambahkannya ke kalender ini.</p>
-                </div>
-              ) : (
-                <div className="max-h-[620px] space-y-2 overflow-y-auto pr-1">
-                  {savedEvents.map((event) => (
-                    <article key={event.id} className="flex items-center gap-3 rounded-xl border border-gray-200 p-3 dark:border-gray-800">
-                      <img src={event.poster_url} alt="" className="h-16 w-12 shrink-0 rounded-lg bg-gray-100 object-cover" />
-                      <button type="button" onClick={() => { setShowSavedCalendar(false); setSelectedEvent(event); }} className="min-w-0 flex-1 text-left">
-                        <span className="block line-clamp-2 text-sm font-bold">{event.title}</span>
-                        <span className="mt-1 block text-xs text-gray-500">{formatEventDate(event.start_date,event.end_date)}</span>
-                        <span className="block truncate text-[11px] text-gray-500">{event.city}, {event.province}</span>
-                      </button>
-                      <button type="button" aria-label={"Hapus "+event.title+" dari tersimpan"} onClick={() => void toggleSave(event.id)} className="rounded-lg px-3 py-2 text-lg font-bold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40">×</button>
-                    </article>
-                  ))}
-                </div>
-              )}
-            </aside>
-          </div>
-        );
-      })()}
-    </div>
-  </section>
-)}
+
 
 {showCalendar && currentRole === "user" && (
   <section id="user-event-calendar" className="mx-auto max-w-[1400px] px-4 pb-8">
@@ -5789,6 +5704,97 @@ const shareEvent = async (event: Event) => {
                       </section>
           )}
           </main>
+
+        {showSavedCalendar && currentRole === "user" && (
+  <section id="my-saved-calendar" className="mx-auto max-w-[1400px] px-4 pb-10">
+    <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900 sm:p-6">
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-red-600">Personal event planner</p>
+          <h2 className="mt-1 text-2xl font-black">Kalender Saya</h2>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Event yang kamu simpan dari akunmu sendiri.</p>
+        </div>
+        <button type="button" onClick={() => { setShowSavedCalendar(false); setActiveNav("home"); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800">← Beranda</button>
+      </div>
+      {(() => {
+        const savedEvents = approvedEvents.filter((event) => savedIds.includes(event.id));
+        const year = savedCalendarMonth.getFullYear();
+        const month = savedCalendarMonth.getMonth();
+        const firstDay = new Date(year, month, 1);
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const offset = (firstDay.getDay() + 6) % 7;
+        const monthLabel = savedCalendarMonth.toLocaleDateString("id-ID", { month: "long", year: "numeric" });
+        const dayKey = (date: Date) => `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,"0")}-${String(date.getDate()).padStart(2,"0")}`;
+        const eventsByDay = new Map<string, Event[]>();
+        savedEvents.forEach((event) => {
+          if (!event.start_date) return;
+          const start = new Date(event.start_date + "T00:00:00");
+          const end = new Date((event.end_date || event.start_date) + "T00:00:00");
+          for (let cursor = new Date(start); cursor <= end; cursor.setDate(cursor.getDate()+1)) {
+            const key = dayKey(cursor);
+            eventsByDay.set(key, [...(eventsByDay.get(key) || []), event]);
+          }
+        });
+        return (
+          <div className="grid gap-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(300px,.85fr)]">
+            <div className="min-w-0 rounded-2xl border border-gray-200 p-3 dark:border-gray-800 sm:p-5">
+              <div className="mb-4 flex items-center justify-between gap-2">
+                <button type="button" aria-label="Bulan sebelumnya" onClick={() => setSavedCalendarMonth(new Date(year, month-1, 1))} className="rounded-lg border border-gray-200 px-3 py-2 dark:border-gray-700">‹</button>
+                <h3 className="text-base font-black capitalize sm:text-lg">{monthLabel}</h3>
+                <button type="button" aria-label="Bulan berikutnya" onClick={() => setSavedCalendarMonth(new Date(year, month+1, 1))} className="rounded-lg border border-gray-200 px-3 py-2 dark:border-gray-700">›</button>
+              </div>
+              <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-bold text-gray-500 sm:gap-2 sm:text-xs">
+                {["Sen","Sel","Rab","Kam","Jum","Sab","Min"].map((day) => <div key={day} className="py-2">{day}</div>)}
+              </div>
+              <div className="grid grid-cols-7 gap-1 sm:gap-2">
+                {Array.from({length: offset}, (_,i) => <div key={"blank-"+i} />)}
+                {Array.from({length: daysInMonth}, (_,i) => {
+                  const date = new Date(year,month,i+1);
+                  const dayEvents = eventsByDay.get(dayKey(date)) || [];
+                  return <div key={i+1} className={"min-h-[76px] rounded-lg border p-1 sm:min-h-[94px] sm:p-2 " + (dayEvents.length ? "border-red-200 bg-red-50/70 dark:border-red-900 dark:bg-red-950/20" : "border-gray-100 dark:border-gray-800")}>
+                    <span className="text-xs font-bold">{i+1}</span>
+                    <div className="mt-1 space-y-1">
+                      {dayEvents.slice(0,2).map((event) => <button key={event.id} type="button" title={event.title} onClick={() => { void openEvent(event, "saved-calendar"); }} className="block w-full truncate rounded bg-red-600 px-1 py-1 text-left text-[9px] font-semibold text-white sm:text-[10px]">{event.title}</button>)}
+                      {dayEvents.length > 2 && <span className="block text-[9px] font-semibold text-red-700">+{dayEvents.length-2} event</span>}
+                    </div>
+                  </div>;
+                })}
+              </div>
+              <p className="mt-3 text-[11px] text-gray-500">Tanggal bertanda merah memiliki event yang kamu simpan.</p>
+            </div>
+            <aside className="min-w-0">
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="font-black">Daftar Tersimpan</h3>
+                <span className="rounded-full bg-red-50 px-3 py-1 text-xs font-bold text-red-700 dark:bg-red-950/40 dark:text-red-300">{savedEvents.length} event</span>
+              </div>
+              {savedEvents.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-gray-300 px-4 py-10 text-center dark:border-gray-700">
+                  <div className="text-3xl">♡</div><p className="mt-2 font-bold">Belum ada event tersimpan</p>
+                  <p className="mt-1 text-sm text-gray-500">Simpan event dari Detail Event untuk menambahkannya ke kalender ini.</p>
+                </div>
+              ) : (
+                <div className="max-h-[620px] space-y-2 overflow-y-auto pr-1">
+                  {savedEvents.map((event) => (
+                    <article key={event.id} className="flex items-center gap-3 rounded-xl border border-gray-200 p-3 dark:border-gray-800">
+                      <img src={event.poster_url} alt="" className="h-16 w-12 shrink-0 rounded-lg bg-gray-100 object-cover" />
+                      <button type="button" onClick={() => { void openEvent(event, "saved-calendar"); }} className="min-w-0 flex-1 text-left">
+                        <span className="block line-clamp-2 text-sm font-bold">{event.title}</span>
+                        <span className="mt-1 block text-xs text-gray-500">{formatEventDate(event.start_date,event.end_date)}</span>
+                        <span className="block truncate text-[11px] text-gray-500">{event.city}, {event.province}</span>
+                      </button>
+                      <button type="button" aria-label={"Hapus "+event.title+" dari tersimpan"} onClick={() => void toggleSave(event.id)} className="rounded-lg px-3 py-2 text-lg font-bold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40">×</button>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </aside>
+          </div>
+        );
+      })()}
+    </div>
+  </section>
+)}
+
         )}
         
         {/* HALAMAN CARI COSTUME */}
@@ -5933,6 +5939,10 @@ const shareEvent = async (event: Event) => {
                   }
                   setSelectedEvent(null);
                   sharedEventOpenedRef.current = null;
+                  if (eventOpenSourceRef.current === "saved-calendar") {
+                    setShowSavedCalendar(true);
+                    return;
+                  }
                   eventOpenSourceRef.current = "explore";
                   setShowCalendar(false);
                   setShowCostumeDirectory(false);
@@ -5943,7 +5953,7 @@ const shareEvent = async (event: Event) => {
                 }}
                 className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-bold hover:border-red-500 hover:text-red-600 dark:border-gray-700 dark:bg-gray-900"
               >
-                ← Kembali ke Beranda
+                {eventOpenSourceRef.current === "saved-calendar" ? "← Kembali ke Kalender Saya" : "← Kembali ke Beranda"}
               </button>
               {eventOpenSourceRef.current === "calendar" && (
                 <button
@@ -7734,6 +7744,9 @@ accept="image/jpeg,image/png,image/webp"
 
               {currentRole === "user" ? (
                 <>
+                  <button type="button" onClick={() => { setShowUserProfile(false); setShowCalendar(false); setShowCostumeDirectory(false); setSelectedEvent(null); setShowSavedCalendar(true); setSavedCalendarMonth(new Date(new Date().getFullYear(), new Date().getMonth(), 1)); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="mb-5 flex min-h-12 w-full items-center justify-between rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-left text-sm font-bold text-red-700 transition hover:border-red-400 hover:bg-red-100 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300 dark:hover:bg-red-950/50">
+                    <span className="flex items-center gap-3"><span className="text-lg">▦</span>Kalender Saya</span><span aria-hidden="true">→</span>
+                  </button>
                   <form
                     onSubmit={(event) => {
                       event.preventDefault();
