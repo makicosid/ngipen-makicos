@@ -1060,6 +1060,11 @@ const resumeWeekCarouselSoon = () => {
   const [adminEventSearch, setAdminEventSearch] = useState("");
   const [adminEventCategoryFilter, setAdminEventCategoryFilter] = useState("Semua");
   const [adminEventProvinceFilter, setAdminEventProvinceFilter] = useState("Semua");
+  const [adminEventCityFilter, setAdminEventCityFilter] = useState("Semua");
+  const [eventLocationStats, setEventLocationStats] = useState<any>(null);
+  const [eventLocationStatsLoading, setEventLocationStatsLoading] = useState(false);
+  const [eventLocationStatsError, setEventLocationStatsError] = useState("");
+  const [selectedStatsProvince, setSelectedStatsProvince] = useState("");
   const [adminEventSponsorFilter, setAdminEventSponsorFilter] = useState<"Semua" | "Sponsor" | "Non-Sponsor">("Semua");
   const [selectedPendingEventIds, setSelectedPendingEventIds] = useState<string[]>([]);
   const [bulkApproveLoading, setBulkApproveLoading] = useState(false);
@@ -1112,6 +1117,27 @@ const [rentalSaving, setRentalSaving] = useState(false);
 };
 useEffect(() => {
   refreshRentals();
+}, [currentRole]);
+
+useEffect(() => {
+  if (currentRole !== "admin") return;
+  let cancelled = false;
+  const load = async () => {
+    setEventLocationStatsLoading(true);
+    setEventLocationStatsError("");
+    try {
+      const response = await fetch("/api/admin/event-location-stats", { credentials: "include", cache: "no-store" });
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.error || "Gagal memuat statistik lokasi.");
+      if (!cancelled) setEventLocationStats(result);
+    } catch (error) {
+      if (!cancelled) setEventLocationStatsError(error instanceof Error ? error.message : "Gagal memuat statistik lokasi.");
+    } finally {
+      if (!cancelled) setEventLocationStatsLoading(false);
+    }
+  };
+  load();
+  return () => { cancelled = true; };
 }, [currentRole]);
   const resetRentalForm = () => {
   setRentalName("");
@@ -3510,7 +3536,7 @@ return {
   useEffect(() => {
     setSelectedPendingEventIds([]);
     setSelectedDeleteEventIds([]);
-  }, [adminEventTab, adminEventSearch, adminEventCategoryFilter, adminEventProvinceFilter, adminEventSponsorFilter]);
+  }, [adminEventTab, adminEventSearch, adminEventCategoryFilter, adminEventProvinceFilter, adminEventCityFilter, adminEventSponsorFilter]);
 
   const adminFilteredEvents = useMemo(() => {
     const query = adminEventSearch.trim().toLocaleLowerCase("id-ID");
@@ -3536,6 +3562,7 @@ return {
       if (query && !searchable.includes(query)) return false;
       if (adminEventCategoryFilter !== "Semua" && !(event.categories || []).some((category) => adminEventCategoryFilter === "Performance" ? category === "Performance" || category === "Pefomance" : category === adminEventCategoryFilter)) return false;
       if (adminEventProvinceFilter !== "Semua" && event.province !== adminEventProvinceFilter) return false;
+      if (adminEventCityFilter !== "Semua" && String(event.city || "").trim().toLocaleLowerCase("id-ID") !== adminEventCityFilter.toLocaleLowerCase("id-ID")) return false;
       if (adminEventSponsorFilter === "Sponsor" && !event.is_sponsored) return false;
       if (adminEventSponsorFilter === "Non-Sponsor" && event.is_sponsored) return false;
       return true;
@@ -5074,15 +5101,247 @@ const shareEvent = async (event: Event) => {
                             <th scope="row" className="px-4 py-3 text-left font-semibold text-gray-600 dark:text-gray-300">Total pengguna</th>
                             <td className="px-4 py-3 text-right font-black tabular-nums">{adminUsers.length.toLocaleString("id-ID")}</td>
                           </tr>
-                          <tr>
+                          <tr className="border-b border-gray-100 dark:border-gray-800">
                             <th scope="row" className="px-4 py-3 text-left font-semibold text-gray-600 dark:text-gray-300">Member MAKICOS aktif</th>
                             <td className="px-4 py-3 text-right font-black tabular-nums text-amber-700 dark:text-amber-300">{adminUsers.filter((user) => user.is_makicos_member).length.toLocaleString("id-ID")}</td>
+                          </tr>
+                          <tr>
+                            <th scope="row" className="px-4 py-3 text-left font-semibold text-gray-600 dark:text-gray-300">Top Supporter</th>
+                            <td className="px-4 py-3 text-right font-black tabular-nums text-[#B42335] dark:text-[#F3A1A8]">{adminUsers.filter((user) => (user.profile_titles || []).some((title) => title.title_key === "top_supporter")).length.toLocaleString("id-ID")}</td>
                           </tr>
                         </tbody>
                       </table>
                     )}
                   </div>
+
+                  {!adminUsersLoading && !adminUsersLoadError && (() => {
+                    const totalUsers = adminUsers.length;
+                    const memberUsers = adminUsers.filter((user) => user.is_makicos_member).length;
+                    const nonMemberUsers = Math.max(0, totalUsers - memberUsers);
+                    const topSupporterUsers = adminUsers.filter((user) =>
+                      (user.profile_titles || []).some((title) => title.title_key === "top_supporter")
+                    ).length;
+                    const memberPercent = totalUsers > 0 ? (memberUsers / totalUsers) * 100 : 0;
+                    const nonMemberPercent = totalUsers > 0 ? (nonMemberUsers / totalUsers) * 100 : 0;
+                    const donutCircumference = 2 * Math.PI * 42;
+                    const memberDash = (memberPercent / 100) * donutCircumference;
+
+                    return (
+                      <section className="mt-3 rounded-xl border border-red-100 bg-white p-4 dark:border-red-900/50 dark:bg-gray-900 sm:p-5">
+                        <div className="mb-4">
+                          <h3 className="text-sm font-black text-gray-900 dark:text-white">Visualisasi Statistik Pengguna</h3>
+                          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Diagram dihitung dari seluruh {totalUsers.toLocaleString("id-ID")} akun pengguna, bukan hanya halaman daftar yang sedang dibuka.</p>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+                          <div className="rounded-lg border border-gray-100 p-3 dark:border-gray-800 sm:p-4">
+                            <h4 className="mb-4 text-sm font-bold text-gray-800 dark:text-gray-100">Perbandingan Jumlah Pengguna</h4>
+                            <div className="space-y-4">
+                              {[
+                                { label: "Total pengguna", value: totalUsers, color: "bg-slate-500" },
+                                { label: "Member MAKICOS", value: memberUsers, color: "bg-amber-500" },
+                                { label: "Top Supporter", value: topSupporterUsers, color: "bg-[#B42335]" },
+                              ].map((item) => (
+                                <div key={item.label}>
+                                  <div className="mb-1.5 flex items-center justify-between gap-3 text-xs">
+                                    <span className="font-medium text-gray-600 dark:text-gray-300">{item.label}</span>
+                                    <span className="font-black tabular-nums text-gray-900 dark:text-white">{item.value.toLocaleString("id-ID")}</span>
+                                  </div>
+                                  <div className="h-2.5 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
+                                    <div
+                                      className={`h-full rounded-full ${item.color}`}
+                                      style={{ width: `${totalUsers > 0 ? (item.value / totalUsers) * 100 : 0}%` }}
+                                    />
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                            <p className="mt-3 text-[11px] leading-relaxed text-gray-400">Kategori Member dan Top Supporter dapat tumpang tindih; angka ditampilkan sebagai perbandingan, bukan bagian kelompok eksklusif.</p>
+                          </div>
+
+                          <div className="rounded-lg border border-gray-100 p-3 dark:border-gray-800 sm:p-4">
+                            <h4 className="mb-4 text-sm font-bold text-gray-800 dark:text-gray-100">Komposisi Keanggotaan</h4>
+                            <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
+                              <div className="relative h-36 w-36 shrink-0">
+                                <svg viewBox="0 0 120 120" role="img" aria-label={`Komposisi pengguna: ${memberUsers} Member MAKICOS dan ${nonMemberUsers} non-member`} className="h-full w-full -rotate-90">
+                                  <circle cx="60" cy="60" r="42" fill="none" stroke="currentColor" className="text-gray-200 dark:text-gray-700" strokeWidth="15" />
+                                  {totalUsers > 0 && (
+                                    <circle
+                                      cx="60"
+                                      cy="60"
+                                      r="42"
+                                      fill="none"
+                                      stroke="#D69E22"
+                                      strokeWidth="15"
+                                      strokeDasharray={`${memberDash} ${donutCircumference - memberDash}`}
+                                      strokeLinecap="butt"
+                                    />
+                                  )}
+                                </svg>
+                                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                  <span className="text-2xl font-black tabular-nums text-gray-900 dark:text-white">{totalUsers.toLocaleString("id-ID")}</span>
+                                  <span className="text-[10px] text-gray-500">Pengguna</span>
+                                </div>
+                              </div>
+                              <div className="w-full space-y-3 sm:max-w-[190px]">
+                                <div className="flex items-start gap-2">
+                                  <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-sm bg-amber-500" />
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex justify-between gap-2 text-xs">
+                                      <span className="text-gray-600 dark:text-gray-300">Member MAKICOS</span>
+                                      <strong className="tabular-nums text-gray-900 dark:text-white">{memberUsers.toLocaleString("id-ID")}</strong>
+                                    </div>
+                                    <p className="text-[11px] text-gray-400">{memberPercent.toFixed(1)}%</p>
+                                  </div>
+                                </div>
+                                <div className="flex items-start gap-2">
+                                  <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-sm bg-slate-500" />
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex justify-between gap-2 text-xs">
+                                      <span className="text-gray-600 dark:text-gray-300">Non-member</span>
+                                      <strong className="tabular-nums text-gray-900 dark:text-white">{nonMemberUsers.toLocaleString("id-ID")}</strong>
+                                    </div>
+                                    <p className="text-[11px] text-gray-400">{nonMemberPercent.toFixed(1)}%</p>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                            <p className="mt-3 text-[11px] leading-relaxed text-gray-400">Top Supporter tidak dihitung sebagai kategori terpisah karena pengguna dapat sekaligus menjadi Member MAKICOS.</p>
+                          </div>
+                        </div>
+                      </section>
+                    );
+                  })()}
                 </div>
+
+                
+                <section className="mt-4 rounded-xl border border-red-100 bg-white p-4 dark:border-red-900/50 dark:bg-gray-900 sm:p-5">
+                  <div className="mb-4 flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                      <h3 className="text-sm font-black text-gray-900 dark:text-white">Statistik Event Berdasarkan Lokasi</h3>
+                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Persebaran seluruh event berdasarkan provinsi, kota, dan jadwal.</p>
+                    </div>
+                    {eventLocationStats && <div className="text-right text-xs text-gray-500">{eventLocationStats.provinceCount} provinsi · {Number(eventLocationStats.totalEvents).toLocaleString("id-ID")} event</div>}
+                  </div>
+                  {eventLocationStatsLoading ? (
+                    <p className="py-8 text-center text-sm text-gray-500">Memuat statistik lokasi...</p>
+                  ) : eventLocationStatsError ? (
+                    <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950/30 dark:text-red-300">{eventLocationStatsError}</div>
+                  ) : (
+                    <>
+                      <div className="rounded-xl border border-gray-100 p-3 dark:border-gray-800 sm:p-4">
+                        <div className="mb-3 flex items-center justify-between gap-2">
+                          <h4 className="text-sm font-bold text-gray-900 dark:text-white">Jumlah Event per Provinsi</h4>
+                          <span className="text-[11px] text-gray-500">Pilih batang untuk melihat detail</span>
+                        </div>
+                        <div className="space-y-2.5">
+                          {(eventLocationStats?.provinces || []).map((province: any) => {
+                            const maxTotal = Math.max(1, ...(eventLocationStats?.provinces || []).map((item: any) => item.total));
+                            const selected = selectedStatsProvince === province.name;
+                            return (
+                              <button key={province.name} type="button" onClick={() => setSelectedStatsProvince(province.name)} aria-pressed={selected} className={`block w-full rounded-lg p-2 text-left transition ${selected ? "bg-red-50 ring-1 ring-red-200 dark:bg-red-950/30 dark:ring-red-900" : "hover:bg-gray-50 dark:hover:bg-gray-800/60"}`}>
+                                <span className="mb-1.5 flex items-center justify-between gap-2">
+                                  <span className={`text-xs font-semibold ${selected ? "text-red-700 dark:text-red-300" : "text-gray-700 dark:text-gray-200"}`}>{province.name}</span>
+                                  <span className="text-xs font-bold tabular-nums text-gray-900 dark:text-white">{province.total}</span>
+                                </span>
+                                <span className="block h-2.5 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
+                                  <span className={`block h-full rounded-full transition-all ${selected ? "bg-red-700" : "bg-red-400"}`} style={{ width: `${(province.total / maxTotal) * 100}%` }} />
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      <div className="mt-4">
+                        <label htmlFor="admin-stats-province" className="mb-1.5 block text-sm font-bold text-gray-900 dark:text-white">Pilih Provinsi</label>
+                        <select id="admin-stats-province" value={selectedStatsProvince} onChange={(event) => setSelectedStatsProvince(event.target.value)} className="w-full rounded-xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-900 outline-none focus:border-red-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
+                          <option value="">Pilih provinsi untuk melihat rincian</option>
+                          {(eventLocationStats?.provinces || []).map((province: any) => <option key={province.name} value={province.name}>{province.name} ({province.total} event)</option>)}
+                        </select>
+                      </div>
+
+                      {selectedStatsProvince ? (() => {
+                        const provinceStats = (eventLocationStats?.provinces || []).find((item: any) => item.name === selectedStatsProvince);
+                        const provinceEvents = events.filter((event) =>
+                          String(event.province || "").trim().replace(/\\s+/g, " ").toLocaleLowerCase("id-ID") === selectedStatsProvince.trim().replace(/\\s+/g, " ").toLocaleLowerCase("id-ID")
+                        );
+                        const cityGroups = new Map<string, { name: string; events: Event[] }>();
+                        provinceEvents.forEach((event) => {
+                          const rawCity = String(event.city || "").trim().replace(/\\s+/g, " ");
+                          const cityKey = rawCity ? rawCity.toLocaleLowerCase("id-ID") : "__missing_city__";
+                          const cityName = rawCity || "Kota belum diisi";
+                          if (!cityGroups.has(cityKey)) cityGroups.set(cityKey, { name: cityName, events: [] });
+                          cityGroups.get(cityKey)!.events.push(event);
+                        });
+                        const compareEvents = (a: Event, b: Event) => {
+                          const aCompleted = getTimeStatus(a) === "Completed";
+                          const bCompleted = getTimeStatus(b) === "Completed";
+                          if (aCompleted !== bCompleted) return aCompleted ? 1 : -1;
+                          if (aCompleted && bCompleted) return String(b.end_date || b.start_date).localeCompare(String(a.end_date || a.start_date));
+                          return String(a.start_date).localeCompare(String(b.start_date)) || String(a.start_time || "").localeCompare(String(b.start_time || ""));
+                        };
+                        const sortedCities = Array.from(cityGroups.values()).sort((a, b) => a.name.localeCompare(b.name, "id"));
+                        const statusCounts = {
+                          approved: provinceEvents.filter((event) => !event.is_hidden && event.moderation_status === "Approved").length,
+                          pending: provinceEvents.filter((event) => !event.is_hidden && event.moderation_status === "Pending").length,
+                          rejected: provinceEvents.filter((event) => !event.is_hidden && event.moderation_status === "Rejected").length,
+                          hidden: provinceEvents.filter((event) => event.is_hidden || event.moderation_status === "Hidden").length,
+                        };
+                        return (
+                          <div className="mt-4 rounded-xl border border-red-100 bg-gray-50/70 p-3 dark:border-red-900/40 dark:bg-gray-950/30 sm:p-4">
+                            <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
+                              <div><h4 className="text-base font-black text-gray-900 dark:text-white">{selectedStatsProvince}</h4><p className="text-xs text-gray-500">{provinceStats?.cities?.length || 0} kota terdata</p></div>
+                              <div className="text-right"><strong className="text-2xl tabular-nums text-[#B42335]">{provinceStats?.total ?? provinceEvents.length}</strong><p className="text-[10px] text-gray-500">Total event</p></div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                              {[
+                                { label: "Approved", value: statusCounts.approved, style: "text-green-700 dark:text-green-300" },
+                                { label: "Pending", value: statusCounts.pending, style: "text-amber-700 dark:text-amber-300" },
+                                { label: "Rejected", value: statusCounts.rejected, style: "text-red-700 dark:text-red-300" },
+                                { label: "Hidden", value: statusCounts.hidden, style: "text-gray-700 dark:text-gray-300" },
+                              ].map((item) => <div key={item.label} className="rounded-lg border border-gray-200 bg-white p-2 dark:border-gray-800 dark:bg-gray-900"><strong className={`block text-lg tabular-nums ${item.style}`}>{item.value}</strong><span className="text-[10px] text-gray-500">{item.label}</span></div>)}
+                            </div>
+                            <div className="mt-4 space-y-4">
+                              {sortedCities.map((city) => (
+                                <section key={city.name}>
+                                  <div className="mb-2 flex items-center justify-between gap-2">
+                                    <h5 className="text-sm font-bold text-gray-900 dark:text-white">{city.name}</h5>
+                                    <span className="text-xs font-semibold text-gray-500">{city.events.length} event</span>
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+                                    {city.events.sort(compareEvents).map((event) => {
+                                      const hidden = Boolean(event.is_hidden) || event.moderation_status === "Hidden";
+                                      const statusLabel = hidden ? "Hidden" : event.moderation_status;
+                                      const statusClass = statusLabel === "Approved" ? "bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-300" : statusLabel === "Pending" ? "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300" : statusLabel === "Rejected" ? "bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-300" : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300";
+                                      return (
+                                        <button key={event.id} type="button" onClick={() => void openEvent(event)} className="group min-w-0 overflow-hidden rounded-lg border border-gray-200 bg-white text-left transition hover:-translate-y-0.5 hover:border-red-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-red-500 dark:border-gray-800 dark:bg-gray-900">
+                                          <div className="aspect-[3/4] overflow-hidden bg-gray-100 dark:bg-gray-800">
+                                            {event.poster_url ? <img src={event.poster_url} alt={`Poster ${event.title}`} loading="lazy" className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-[1.03]" /> : <div className="flex h-full items-center justify-center text-xs text-gray-400"><span>Poster tidak tersedia</span></div>}
+                                          </div>
+                                          <div className="space-y-1.5 p-2">
+                                            <p className="line-clamp-2 min-h-8 text-xs font-bold text-gray-900 dark:text-white">{event.title}</p>
+                                            <p className="text-[10px] text-gray-500">📅 {formatEventDate(event.start_date, event.end_date)}</p>
+                                            <p className="text-[10px] text-gray-500">🕒 {event.start_time || "Waktu belum diisi"}{event.end_time ? `–${event.end_time}` : ""} WIB</p>
+                                            <span className={`inline-flex rounded-full px-2 py-0.5 text-[9px] font-bold ${statusClass}`}>{statusLabel}</span>
+                                          </div>
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </section>
+                              ))}
+                              {sortedCities.length === 0 && <p className="py-6 text-center text-sm text-gray-500">Belum ada event dengan kota yang terdata di provinsi ini.</p>}
+                            </div>
+                          </div>
+                        );
+                      })() : (
+                        <p className="mt-4 rounded-lg bg-gray-50 p-4 text-center text-sm text-gray-500 dark:bg-gray-900">Pilih provinsi melalui diagram atau dropdown untuk melihat rincian kota dan poster event.</p>
+                      )}
+                      {(eventLocationStats?.missingLocations || []).length > 0 && <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/20"><strong>Lokasi Belum Lengkap</strong>{eventLocationStats.missingLocations.map((item: any) => <p key={item.name}>{item.name}: {item.total} event</p>)}</div>}
+                    </>
+                  )}
+                </section>
               </section>
             )}
 
@@ -8780,7 +9039,7 @@ accept="image/jpeg,image/png,image/webp"
                 <div className="col-span-2 border-t border-gray-200 pt-4 text-xs leading-relaxed sm:col-span-3 lg:col-span-1 lg:border-t-0 lg:pt-0 lg:text-right">
                   <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 lg:flex-col lg:items-end lg:gap-0">
                     <span>© 2026 NGIPEN</span>
-                    <span className="text-[11px] font-medium text-gray-400 dark:text-gray-500">v1.3.1</span>
+                    <span className="text-[11px] font-medium text-gray-400 dark:text-gray-500">v 1.3.1a</span>
                   </div>
                 </div>
               </div>

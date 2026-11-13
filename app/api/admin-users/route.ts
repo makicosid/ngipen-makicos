@@ -136,29 +136,49 @@ export async function GET(request: NextRequest) {
 
     const supabase = getSupabaseAdmin();
 
-    const { data: users, error: usersError } = await supabase
-      .from("users")
-      .select("id,username,display_name,bio,avatar_url,instagram_url,tiktok_url,created_at,is_makicos_member,selected_frame_key")
-      .order("created_at", { ascending: false });
+    // Ambil seluruh akun dengan pagination agar statistik tidak terpotong
+    // oleh batas maksimum baris default Supabase.
+    const users: any[] = [];
+    for (let from = 0; ; from += PAGE_SIZE) {
+      const { data: userPage, error: usersError } = await supabase
+        .from("users")
+        .select("id,username,display_name,bio,avatar_url,instagram_url,tiktok_url,created_at,is_makicos_member,selected_frame_key")
+        .order("created_at", { ascending: false })
+        .range(from, from + PAGE_SIZE - 1);
 
-    if (usersError) {
-      console.error("Admin users query error:", usersError);
-      return json({ error: "Gagal mengambil daftar pengguna." }, 500);
+      if (usersError) {
+        console.error("Admin users query error:", usersError);
+        return json({ error: "Gagal mengambil daftar pengguna." }, 500);
+      }
+
+      const page = userPage || [];
+      users.push(...page);
+      if (page.length < PAGE_SIZE) break;
     }
 
-    const userIds = (users || []).map((user: any) => String(user.id));
-    const titleRowsResult = userIds.length ? await supabase
-      .from("user_profile_titles")
-      .select("user_id,profile_titles(title_key,title_name,title_type,style_variant,display_order)")
-      .in("user_id", userIds) : { data: [], error: null };
-    if (titleRowsResult.error) return json({ error: "Gagal mengambil title pengguna." }, 500);
+    const userIds = users.map((user: any) => String(user.id));
     const titlesByUser = new Map<string, any[]>();
-    (titleRowsResult.data || []).forEach((row: any) => {
-      if (!row.profile_titles) return;
-      const list = titlesByUser.get(String(row.user_id)) || [];
-      list.push(row.profile_titles);
-      titlesByUser.set(String(row.user_id), list);
-    });
+
+    // Pecah daftar ID menjadi beberapa batch agar query relasi tetap terukur.
+    for (let index = 0; index < userIds.length; index += 500) {
+      const batchIds = userIds.slice(index, index + 500);
+      const { data: titleRows, error: titleRowsError } = await supabase
+        .from("user_profile_titles")
+        .select("user_id,profile_titles(title_key,title_name,title_type,style_variant,display_order)")
+        .in("user_id", batchIds);
+
+      if (titleRowsError) {
+        console.error("Admin profile titles query error:", titleRowsError);
+        return json({ error: "Gagal mengambil title pengguna." }, 500);
+      }
+
+      (titleRows || []).forEach((row: any) => {
+        if (!row.profile_titles) return;
+        const list = titlesByUser.get(String(row.user_id)) || [];
+        list.push(row.profile_titles);
+        titlesByUser.set(String(row.user_id), list);
+      });
+    }
 
     const [savedRows, viewRows, attendanceRows] = await Promise.all([
       fetchAllRows("event_saves"),
