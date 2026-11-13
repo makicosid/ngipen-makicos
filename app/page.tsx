@@ -1060,6 +1060,11 @@ const resumeWeekCarouselSoon = () => {
   const [adminEventSearch, setAdminEventSearch] = useState("");
   const [adminEventCategoryFilter, setAdminEventCategoryFilter] = useState("Semua");
   const [adminEventProvinceFilter, setAdminEventProvinceFilter] = useState("Semua");
+  const [adminEventCityFilter, setAdminEventCityFilter] = useState("Semua");
+  const [eventLocationStats, setEventLocationStats] = useState<any>(null);
+  const [eventLocationStatsLoading, setEventLocationStatsLoading] = useState(false);
+  const [eventLocationStatsError, setEventLocationStatsError] = useState("");
+  const [expandedEventProvince, setExpandedEventProvince] = useState<string | null>(null);
   const [adminEventSponsorFilter, setAdminEventSponsorFilter] = useState<"Semua" | "Sponsor" | "Non-Sponsor">("Semua");
   const [selectedPendingEventIds, setSelectedPendingEventIds] = useState<string[]>([]);
   const [bulkApproveLoading, setBulkApproveLoading] = useState(false);
@@ -1112,6 +1117,27 @@ const [rentalSaving, setRentalSaving] = useState(false);
 };
 useEffect(() => {
   refreshRentals();
+}, [currentRole]);
+
+useEffect(() => {
+  if (currentRole !== "admin") return;
+  let cancelled = false;
+  const load = async () => {
+    setEventLocationStatsLoading(true);
+    setEventLocationStatsError("");
+    try {
+      const response = await fetch("/api/admin/event-location-stats", { credentials: "include", cache: "no-store" });
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.error || "Gagal memuat statistik lokasi.");
+      if (!cancelled) setEventLocationStats(result);
+    } catch (error) {
+      if (!cancelled) setEventLocationStatsError(error instanceof Error ? error.message : "Gagal memuat statistik lokasi.");
+    } finally {
+      if (!cancelled) setEventLocationStatsLoading(false);
+    }
+  };
+  load();
+  return () => { cancelled = true; };
 }, [currentRole]);
   const resetRentalForm = () => {
   setRentalName("");
@@ -3510,7 +3536,7 @@ return {
   useEffect(() => {
     setSelectedPendingEventIds([]);
     setSelectedDeleteEventIds([]);
-  }, [adminEventTab, adminEventSearch, adminEventCategoryFilter, adminEventProvinceFilter, adminEventSponsorFilter]);
+  }, [adminEventTab, adminEventSearch, adminEventCategoryFilter, adminEventProvinceFilter, adminEventCityFilter, adminEventSponsorFilter]);
 
   const adminFilteredEvents = useMemo(() => {
     const query = adminEventSearch.trim().toLocaleLowerCase("id-ID");
@@ -3536,6 +3562,7 @@ return {
       if (query && !searchable.includes(query)) return false;
       if (adminEventCategoryFilter !== "Semua" && !(event.categories || []).some((category) => adminEventCategoryFilter === "Performance" ? category === "Performance" || category === "Pefomance" : category === adminEventCategoryFilter)) return false;
       if (adminEventProvinceFilter !== "Semua" && event.province !== adminEventProvinceFilter) return false;
+      if (adminEventCityFilter !== "Semua" && String(event.city || "").trim().toLocaleLowerCase("id-ID") !== adminEventCityFilter.toLocaleLowerCase("id-ID")) return false;
       if (adminEventSponsorFilter === "Sponsor" && !event.is_sponsored) return false;
       if (adminEventSponsorFilter === "Non-Sponsor" && event.is_sponsored) return false;
       return true;
@@ -5186,6 +5213,18 @@ const shareEvent = async (event: Event) => {
                     );
                   })()}
                 </div>
+
+                <section className="mt-4 rounded-xl border border-red-100 bg-white p-4 dark:border-red-900/50 dark:bg-gray-900 sm:p-5">
+                  <div className="mb-4 flex flex-wrap items-start justify-between gap-2"><div><h3 className="text-sm font-black text-gray-900 dark:text-white">Statistik Event Berdasarkan Lokasi</h3><p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Seluruh event sepanjang waktu, dikelompokkan berdasarkan provinsi dan kota.</p></div>{eventLocationStats && <div className="text-right text-xs text-gray-500">{eventLocationStats.provinceCount} provinsi · {Number(eventLocationStats.totalEvents).toLocaleString("id-ID")} event</div>}</div>
+                  {eventLocationStatsLoading ? <p className="py-6 text-center text-sm text-gray-500">Memuat statistik lokasi...</p> : eventLocationStatsError ? <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950/30 dark:text-red-300">{eventLocationStatsError}</p> : <div className="space-y-2">
+                    {(eventLocationStats?.provinces || []).map((province: any) => { const expanded = expandedEventProvince === province.name; return <div key={province.name} className="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-800">
+                      <button type="button" onClick={() => setExpandedEventProvince(expanded ? null : province.name)} className="flex w-full items-center gap-3 p-3 text-left hover:bg-gray-50 dark:hover:bg-gray-800/60"><span className="min-w-0 flex-1"><span className="block text-sm font-bold text-gray-900 dark:text-white">{province.name}</span><span className="text-xs text-gray-500">{province.cities.length} kota · A {province.approved} · P {province.pending} · R {province.rejected} · H {province.hidden}</span></span><strong className="text-lg tabular-nums text-[#B42335]">{province.total} <span className="text-[10px] font-medium">event</span></strong><span className="text-gray-400">{expanded ? "−" : "+"}</span></button>
+                      {expanded && <div className="border-t border-gray-100 bg-gray-50/70 p-2 dark:border-gray-800 dark:bg-gray-950/30">{province.cities.map((city: any) => <button key={city.name} type="button" onClick={() => { setAdminEventProvinceFilter(province.name); setAdminEventCityFilter(city.name); setAdminEventTab("Pending"); setAdminTab("moderation"); setAdminEventSearch(""); window.setTimeout(() => document.getElementById("admin-event-moderation")?.scrollIntoView({ behavior: "smooth", block: "start" }), 100); }} className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left hover:bg-white dark:hover:bg-gray-800"><span className="min-w-0 flex-1 text-xs font-medium text-gray-700 dark:text-gray-200">{city.name}</span><span className="text-[10px] text-gray-500">A {city.approved} · P {city.pending} · R {city.rejected} · H {city.hidden}</span><strong className="w-7 text-right text-sm tabular-nums">{city.total}</strong></button>)}</div>}
+                    </div>; })}
+                    {(eventLocationStats?.missingLocations || []).length > 0 && <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/20"><strong>Lokasi Belum Lengkap</strong>{eventLocationStats.missingLocations.map((item: any) => <p key={item.name}>{item.name}: {item.total} event</p>)}</div>}
+                    {eventLocationStats?.totalEvents === 0 && <p className="py-4 text-center text-sm text-gray-500">Belum ada data event.</p>}
+                  </div>}
+                </section>
               </section>
             )}
 
@@ -8883,7 +8922,7 @@ accept="image/jpeg,image/png,image/webp"
                 <div className="col-span-2 border-t border-gray-200 pt-4 text-xs leading-relaxed sm:col-span-3 lg:col-span-1 lg:border-t-0 lg:pt-0 lg:text-right">
                   <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 lg:flex-col lg:items-end lg:gap-0">
                     <span>© 2026 NGIPEN</span>
-                    <span className="text-[11px] font-medium text-gray-400 dark:text-gray-500">v1.3.1</span>
+                    <span className="text-[11px] font-medium text-gray-400 dark:text-gray-500">v 1.3.1a</span>
                   </div>
                 </div>
               </div>
