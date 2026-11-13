@@ -344,7 +344,7 @@ const GUIDE_BOOK_PAGES = [
       "Tenang, kamu bisa menggunakan fitur simpan event setelah login sebagai User."
     ],
     "bullets": [
-      "Simpan event favorit agar lebih mudah ditemukan lagi melalui tab Tersimpan.",
+      "Simpan event favorit, lalu temukan kembali melalui menu Kalender Saya.",
       "Berikan rating untuk event.",
       "Tulis komentar dan lihat komentar dari pengguna lain.",
       "Unggah dokumentasi event jika fitur tersebut tersedia pada Detail Event.",
@@ -537,7 +537,7 @@ const GUIDE_SCREENSHOTS: Record<number, { src: string; caption: string }> = {
   3: { src: "/guidebook/jelajahi-event.webp", caption: "Contoh daftar event, kolom pencarian, filter, dan tombol Reset Filter." },
   4: { src: "/guidebook/kalender.webp", caption: "Contoh Kalender Event dan daftar event berdasarkan tanggal." },
   5: { src: "/guidebook/detail-event.webp", caption: "Contoh halaman Detail Event, rating, komentar, dan dokumentasi." },
-  6: { src: "/guidebook/event-tersimpan.webp", caption: "Contoh tab Tersimpan pada Jelajahi Event." },
+  6: { src: "/guidebook/event-tersimpan.webp", caption: "Contoh daftar event yang tersimpan pada akun pengguna." },
   7: { src: "/guidebook/upload-event.webp", caption: "Contoh formulir untuk memublikasikan poster dan informasi event." },
   9: { src: "/guidebook/rental-costume.webp", caption: "Contoh halaman Partner Ship Makicos dan daftar rental costume." },
   12: { src: "/guidebook/daftar-akun.webp", caption: "Contoh formulir pendaftaran akun User." },
