@@ -5704,6 +5704,7 @@ const shareEvent = async (event: Event) => {
                       </section>
           )}
           </main>
+        )}
 
         {showSavedCalendar && currentRole === "user" && (
   <section id="my-saved-calendar" className="mx-auto max-w-[1400px] px-4 pb-10">
@@ -5795,7 +5796,6 @@ const shareEvent = async (event: Event) => {
   </section>
 )}
 
-        )}
         
         {/* HALAMAN CARI COSTUME */}
 {showCostumeDirectory && !selectedEvent && (
