@@ -1492,6 +1492,8 @@ const handleRentalImage = (file: File | null) => {
       setCurrentRole("guest");
       setCurrentUser("");
       setCurrentUserId("");
+      // Jangan biarkan state simpanan sesi sebelumnya terbawa ke guest.
+      setSavedIds([]);
     }
   } catch (error) {
     console.error("Gagal memulihkan sesi:", error);
@@ -1743,14 +1745,17 @@ const savedUserId =
           const savesResult = await savesResponse.json();
 
           if (savesResponse.ok && savesResult.success) {
-            setSavedIds(savesResult.savedIds || []);
+            setSavedIds(Array.isArray(savesResult.savedIds) ? savesResult.savedIds : []);
           } else {
+            // Gagal mengambil data tidak boleh menampilkan simpanan lama dari state.
+            setSavedIds([]);
             console.error(
               "Gagal memuat event tersimpan:",
               savesResult.error
             );
           }
-
+        } else {
+          setSavedIds([]);
         }
 
         if (savedUserId || currentRole === "admin") {
@@ -1941,8 +1946,9 @@ const handlePosterUpload = (
       const savesResult = await savesResponse.json();
 
       if (savesResponse.ok && savesResult.success) {
-        setSavedIds(savesResult.savedIds || []);
+        setSavedIds(Array.isArray(savesResult.savedIds) ? savesResult.savedIds : []);
       } else {
+        setSavedIds([]);
         console.error(
           "Gagal memuat event tersimpan setelah login:",
           savesResult.error
@@ -2447,7 +2453,8 @@ const logout = async () => {
   // diverifikasi kembali di server, bukan menghapus langsung dari browser.
   // Simpan atau hapus event dari daftar tersimpan
   const toggleSave = async (eventId: string) => {
-    if (currentRole !== "user") {
+    if (currentRole !== "user" || !currentUserId) {
+      setToast("Login terlebih dahulu untuk menyimpan event.");
       setShowLoginUser(true);
       return;
     }
