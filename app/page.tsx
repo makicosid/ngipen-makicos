@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useMemo, useRef, type TouchEvent as ReactTouchEvent } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { supabase } from "../lib/supabase";
 import AdminCleanupPanel from "./admin-cleanup-panel";
 import EventAttendance from "./event-attendance";
@@ -577,8 +577,6 @@ export default function Page() {
   const [dark, setDark] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isFooterVisible, setIsFooterVisible] = useState(false);
-  const mobileFabTouchStartXRef = useRef<number | null>(null);
-  const mobileFabDidSwipeRef = useRef(false);
   const footerRef = useRef<HTMLElementTagNameMap["footer"] | null>(null);
   const [showGuideBook, setShowGuideBook] = useState(false);
   const [guidePage, setGuidePage] = useState(0);
@@ -1547,7 +1545,6 @@ const handleRentalImage = (file: File | null) => {
     selectedCat,
     selectedTicket,
     sortMode,
-    userTab,
     eventStatusTab,
     showThisWeekOnly,
   ]);
@@ -3392,7 +3389,6 @@ return {
 };
 }, [
   approvedEvents,
-  userTab,
   savedIds,
   search,
   selectedProv,
@@ -3845,77 +3841,6 @@ const shareEvent = async (event: Event) => {
   }
 };
 
-
-  type MobileFabItem = "home" | "explore" | "costume" | "upload" | "profile";
-  const mobileFabItems: MobileFabItem[] = currentRole === "user"
-    ? ["home", "explore", "costume", "upload", "profile"]
-    : ["home", "explore", "profile"];
-
-  const navigateMobileFab = (target: MobileFabItem) => {
-    setMobileOpen(false);
-    setEventFormOpen(false);
-    if (target === "upload") {
-      if (currentRole !== "user") return;
-      setPosterFile(null);
-      setPosterPreview("");
-      setPosterError("");
-      setEventFormOpen(true);
-      return;
-    }
-    if (target === "home") {
-      setSelectedEvent(null);
-      setShowCostumeDirectory(false);
-      setShowCalendar(false);
-      setActiveNav("home");
-      window.scrollTo({ top: 0, behavior: "smooth" });
-      return;
-    }
-    if (target === "explore") {
-      setSelectedEvent(null);
-      setShowCostumeDirectory(false);
-      setShowCalendar(false);
-      setActiveNav("explore");
-      window.setTimeout(() => {
-        document.getElementById("event-search-input")?.scrollIntoView({ behavior: "smooth", block: "center" });
-      }, 180);
-      return;
-    }
-    if (target === "costume") {
-      setSelectedEvent(null);
-      setShowCostumeDirectory(true);
-      setShowCalendar(false);
-      setActiveNav("costume");
-      window.scrollTo({ top: 0, behavior: "smooth" });
-      return;
-    }
-    if (currentRole === "guest") {
-      setShowLoginUser(true);
-    } else if (currentRole === "admin") {
-      setShowAdmin(true);
-    } else {
-      setShowUserProfile(true);
-    }
-  };
-
-  const handleMobileFabTouchStart = (event: ReactTouchEvent<HTMLDivElement>) => {
-    mobileFabTouchStartXRef.current = event.touches[0]?.clientX ?? null;
-    mobileFabDidSwipeRef.current = false;
-  };
-
-  const handleMobileFabTouchEnd = (event: ReactTouchEvent<HTMLDivElement>) => {
-    const startX = mobileFabTouchStartXRef.current;
-    const endX = event.changedTouches[0]?.clientX;
-    mobileFabTouchStartXRef.current = null;
-    if (startX === null || typeof endX !== "number") return;
-    const delta = endX - startX;
-    if (Math.abs(delta) < 45) return;
-    mobileFabDidSwipeRef.current = true;
-    window.setTimeout(() => { mobileFabDidSwipeRef.current = false; }, 400);
-    const activeKey = eventFormOpen ? "upload" : showUserProfile || showAdmin || showLoginUser ? "profile" : activeNavKey === "costume" ? "costume" : activeNavKey === "explore" ? "explore" : "home";
-    const currentIndex = Math.max(0, mobileFabItems.indexOf(activeKey as MobileFabItem));
-    const nextIndex = Math.min(mobileFabItems.length - 1, Math.max(0, currentIndex + (delta < 0 ? 1 : -1)));
-    if (nextIndex !== currentIndex) navigateMobileFab(mobileFabItems[nextIndex]);
-  };
 
   return (
     <div className={dark ? "dark" : ""}>
