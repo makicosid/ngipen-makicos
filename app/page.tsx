@@ -2141,7 +2141,8 @@ const logout = async () => {
     setShowCalendar(false);
     setShowCostumeDirectory(false);
     setSelectedCalendarDate("");
-    setUserTab("Semua");
+
+
     setEventStatusTab("Semua");
     eventOpenSourceRef.current = "explore";
     setActiveEventPreview(null);
@@ -3517,7 +3518,7 @@ return {
   }, [
     approvedEvents,
     eventStatusTab,
-    userTab,
+
     savedIds,
     search,
     selectedProv,
@@ -3892,7 +3893,8 @@ const shareEvent = async (event: Event) => {
   setSelectedEvent(null);
   setShowCostumeDirectory(false);
   setShowCalendar(false);
-  setUserTab("Semua");
+
+
   setActiveNav("home");
 }}
                 aria-current={activeNavKey === "home" ? "page" : undefined}
@@ -3906,7 +3908,8 @@ const shareEvent = async (event: Event) => {
   setSelectedEvent(null);
   setShowCostumeDirectory(false);
   setShowCalendar(false);
-  setUserTab("Semua");
+
+
   setActiveNav("explore");
 
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -4086,8 +4089,8 @@ const shareEvent = async (event: Event) => {
               <div className="flex flex-col gap-3">
                 <div className="flex flex-col gap-1">
                   <p className="px-3 pb-1 text-[10px] font-bold uppercase tracking-[0.16em] text-gray-400">Navigasi</p>
-                  <button onClick={() => { setSelectedEvent(null); setShowCostumeDirectory(false); setShowCalendar(false); setMobileOpen(false); setUserTab("Semua"); setActiveNav("home"); window.scrollTo({ top: 0, behavior: "smooth" }); }} aria-current={activeNavKey === "home" ? "page" : undefined} className={`rounded-xl px-3 py-3 text-left font-semibold transition-colors ${activeNavKey === "home" ? "bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-300" : "hover:bg-gray-100 dark:hover:bg-gray-900"}`}>Beranda</button>
-                  <button onClick={() => { setSelectedEvent(null); setShowCostumeDirectory(false); setShowCalendar(false); setMobileOpen(false); setUserTab("Semua"); setActiveNav("explore"); window.scrollTo({ top: 0, behavior: "smooth" }); setTimeout(() => document.getElementById("daftar-event")?.scrollIntoView({ behavior: "smooth" }), 200); }} aria-current={activeNavKey === "explore" ? "page" : undefined} className={`rounded-xl px-3 py-3 text-left font-semibold transition-colors ${activeNavKey === "explore" ? "bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-300" : "hover:bg-gray-100 dark:hover:bg-gray-900"}`}>Jelajahi Event</button>
+                  <button onClick={() => { setSelectedEvent(null); setShowCostumeDirectory(false); setShowCalendar(false); setMobileOpen(false); setActiveNav("home"); window.scrollTo({ top: 0, behavior: "smooth" }); }} aria-current={activeNavKey === "home" ? "page" : undefined} className={`rounded-xl px-3 py-3 text-left font-semibold transition-colors ${activeNavKey === "home" ? "bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-300" : "hover:bg-gray-100 dark:hover:bg-gray-900"}`}>Beranda</button>
+                  <button onClick={() => { setSelectedEvent(null); setShowCostumeDirectory(false); setShowCalendar(false); setMobileOpen(false); setActiveNav("explore"); window.scrollTo({ top: 0, behavior: "smooth" }); setTimeout(() => document.getElementById("daftar-event")?.scrollIntoView({ behavior: "smooth" }), 200); }} aria-current={activeNavKey === "explore" ? "page" : undefined} className={`rounded-xl px-3 py-3 text-left font-semibold transition-colors ${activeNavKey === "explore" ? "bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-300" : "hover:bg-gray-100 dark:hover:bg-gray-900"}`}>Jelajahi Event</button>
                   {currentRole === "user" && (
                   <button onClick={() => { setMobileOpen(false); setSelectedEvent(null); setShowCostumeDirectory(true); setShowCalendar(false); setActiveNav("costume"); window.scrollTo({ top: 0, behavior: "smooth" }); }} aria-current={activeNavKey === "costume" ? "page" : undefined} className={`rounded-xl px-3 py-3 text-left font-semibold transition-colors ${activeNavKey === "costume" ? "bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-300" : "hover:bg-gray-100 dark:hover:bg-gray-900"}`}>Cari Costume</button>
                   )}
@@ -5477,11 +5480,12 @@ const shareEvent = async (event: Event) => {
                 <div className="flex flex-wrap gap-2">
                   <button
                    onClick={() => {
-  setUserTab("Semua");
+
+
   setEventStatusTab("Semua");
 }}
                     className={`rounded-full px-4 py-2 text-sm font-bold ${
-                      userTab === "Semua"
+
                         ? "bg-red-600 text-white"
                         : "bg-gray-100 text-gray-600 dark:bg-gray-900 dark:text-gray-300"
                     }`}
@@ -5904,7 +5908,8 @@ const shareEvent = async (event: Event) => {
   setShowCostumeDirectory(false);
   setShowCalendar(false);
   setSelectedEvent(null);
-  setUserTab("Semua");
+
+
   setActiveNav("home");
   window.scrollTo({ top: 0, behavior: "smooth" });
 }}
