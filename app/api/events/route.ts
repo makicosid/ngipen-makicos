@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { createHash, randomUUID } from "crypto";
+import { createHash } from "crypto";
+import { readBoundedFormData, uploadOptimizedImage, removeImageThumbnail, ImageValidationError } from "@/lib/image/upload";
 
 export const runtime = "nodejs";
 
@@ -347,7 +348,8 @@ export async function POST(request: NextRequest) {
       }, 401);
     }
 
-    const form = await request.formData();
+    const form = await readBoundedFormData(request, MAX_POSTER_SIZE + 512 * 1024);
+    if (!form) return json({ error: "Ukuran atau format permintaan upload tidak valid." }, 413);
 
     const value = (key: string) => {
       const item = form.get(key);
@@ -479,67 +481,24 @@ export async function POST(request: NextRequest) {
     }
 
     const posterBuffer = Buffer.from(await poster.arrayBuffer());
-
-    const dimensions = getImageDimensions(
-      posterBuffer,
-      poster.type
-    );
-
-    if (
-      !dimensions ||
-      dimensions.width < 1 ||
-      dimensions.height < 1
-    ) {
-      return json({
-        error: "File poster tidak valid atau tidak dapat dibaca.",
-      }, 400);
-    }
-
-    const ratio = dimensions.width / dimensions.height;
-    const allowedRatios = [3 / 4, 1, 4 / 5, 9 / 16];
-
-    if (
-      !allowedRatios.some(
-        (allowed) => Math.abs(ratio - allowed) <= 0.02
-      )
-    ) {
-      return json({
-        error: "Rasio poster harus 3:4, 1:1, 4:5, atau 9:16.",
-      }, 400);
-    }
-
-    const extension =
-      poster.type === "image/jpeg"
-        ? "jpg"
-        : poster.type === "image/png"
-          ? "png"
-          : "webp";
-
-    uploadedPath = `events/${randomUUID()}.${extension}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from(POSTER_BUCKET)
-      .upload(uploadedPath, posterBuffer, {
-        upsert: false,
-        cacheControl: "3600",
-        contentType: poster.type,
+    let optimizedUpload: Awaited<ReturnType<typeof uploadOptimizedImage>>;
+    try {
+      optimizedUpload = await uploadOptimizedImage({
+        bucket: supabase.storage.from(POSTER_BUCKET), buffer: posterBuffer, mimeType: poster.type,
+        preset: "poster", maxBytes: MAX_POSTER_SIZE, pathPrefix: "events", cacheControl: "3600",
       });
-
-    if (uploadError) {
-      console.error("Event poster upload error:", uploadError);
-      uploadedPath = null;
-
-      return json({
-        error: "Gagal mengunggah poster event.",
-      }, 500);
+    } catch (error) {
+      if (error instanceof ImageValidationError) return json({ error: error.message }, 400);
+      throw error;
     }
-
-    const { data: publicUrlData } = supabase.storage
-      .from(POSTER_BUCKET)
-      .getPublicUrl(uploadedPath);
-
-    const posterUrl =
-      `${publicUrlData.publicUrl}?v=${Date.now()}`;
+    uploadedPath = optimizedUpload.originalPath;
+    const ratio = optimizedUpload.width / optimizedUpload.height;
+    if (![3 / 4, 1, 4 / 5, 9 / 16].some((allowed) => Math.abs(ratio - allowed) <= 0.02)) {
+      await removeImageThumbnail(supabase.storage.from(POSTER_BUCKET), uploadedPath);
+      uploadedPath = null;
+      return json({ error: "Rasio poster harus 3:4, 1:1, 4:5, atau 9:16." }, 400);
+    }
+    const posterUrl = `${optimizedUpload.thumbnailUrl}?v=${Date.now()}`;
 
     const payload = {
       organizer_id: user.id,
@@ -581,7 +540,7 @@ export async function POST(request: NextRequest) {
       if (uploadedPath) {
         const { error: cleanupError } = await supabase.storage
           .from(POSTER_BUCKET)
-          .remove([uploadedPath]);
+          .remove([`${uploadedPath}.thumb.webp`]);
 
         if (cleanupError) {
           console.error("Event poster cleanup error:", cleanupError);
