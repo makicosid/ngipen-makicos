@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     const now = new Date().toISOString();
     const [{ data: slotData, error: slotError }, { data: campaigns, error }] = await Promise.all([
       supabase.from("ad_slots").select("max_visible,is_enabled").eq("slot_code", slot).maybeSingle(),
-      supabase.from("ad_campaigns").select("id,slot_code,campaign_name,image_path,target_url,starts_at,ends_at,sponsor:ad_sponsors(brand_name)").eq("slot_code", slot).in("status", ["active", "scheduled"]).lte("starts_at", now).gt("ends_at", now).limit(10),
+      supabase.from("ad_campaigns").select("id,sponsor_id,slot_code,campaign_name,image_path,target_url,starts_at,ends_at").eq("slot_code", slot).in("status", ["active", "scheduled"]).lte("starts_at", now).gt("ends_at", now).limit(10),
     ]);
     if (slotError || error) return NextResponse.json({ error: "Gagal memuat iklan." }, { status: 500 });
     if (!slotData?.is_enabled) return NextResponse.json({ ads: [] }, { headers: { "Cache-Control": "no-store" } });
@@ -30,13 +30,19 @@ export async function GET(request: NextRequest) {
       { length: Math.min(limit, eligible.length) },
       (_, index) => eligible[(rotationOffset + index) % eligible.length]
     );
+    const sponsorIds = Array.from(new Set(selected.map((campaign) => campaign.sponsor_id)));
+    const { data: sponsors, error: sponsorsError } = sponsorIds.length
+      ? await supabase.from("ad_sponsors").select("id,brand_name").in("id", sponsorIds)
+      : { data: [], error: null };
+    if (sponsorsError) return NextResponse.json({ error: "Gagal memuat data sponsor." }, { status: 500 });
+    const sponsorNames = new Map((sponsors ?? []).map((sponsor) => [sponsor.id, sponsor.brand_name]));
     const ads = selected.map((campaign) => ({
       id: campaign.id,
       slot: campaign.slot_code,
       name: campaign.campaign_name,
       imageUrl: supabase.storage.from("ad-assets").getPublicUrl(campaign.image_path).data.publicUrl,
       targetUrl: campaign.target_url,
-      sponsorName: Array.isArray(campaign.sponsor) ? campaign.sponsor[0]?.brand_name : campaign.sponsor?.brand_name,
+      sponsorName: sponsorNames.get(campaign.sponsor_id) ?? null,
     }));
     const response = NextResponse.json({ ads }, { headers: { "Cache-Control": "no-store" } });
     const session = sessionHash(request);
