@@ -25,7 +25,11 @@ export async function GET(request: NextRequest) {
 
     const eligible = (campaigns ?? []).sort((a, b) => a.id.localeCompare(b.id));
     const limit = Math.max(1, Math.min(2, slotData.max_visible || 1));
-    const selected = eligible.slice(0, limit);
+    const rotationOffset = eligible.length ? Math.floor(Date.now() / 30000) % eligible.length : 0;
+    const selected = Array.from(
+      { length: Math.min(limit, eligible.length) },
+      (_, index) => eligible[(rotationOffset + index) % eligible.length]
+    );
     const ads = selected.map((campaign) => ({
       id: campaign.id,
       slot: campaign.slot_code,
