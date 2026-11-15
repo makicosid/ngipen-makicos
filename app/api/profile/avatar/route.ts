@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { createHash } from "crypto";
-import { uploadOptimizedImage, ImageValidationError } from "@/lib/image/upload";
+import { uploadOptimizedImage, ImageValidationError } from "../../../../lib/image/upload";
 
 export const runtime = "nodejs";
 
