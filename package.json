@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "test:image": "node --test scripts/image-processor.test.cjs"
   },
   "dependencies": {
     "next": "14.2.5",
