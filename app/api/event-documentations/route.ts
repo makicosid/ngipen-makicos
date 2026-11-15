@@ -436,7 +436,7 @@ export async function POST(request: NextRequest) {
         await getSupabaseAdmin()
           .storage
           .from(BUCKET_NAME)
-          .remove([uploadedPath]);
+          .remove([`${uploadedPath}.thumb.webp`]);
       } catch (cleanupError) {
         console.error("Documentation cleanup error:", cleanupError);
       }
