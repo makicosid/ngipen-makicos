@@ -72,7 +72,8 @@ export async function uploadOptimizedImage(input: {
 
 export async function removeImageThumbnail(bucket: StorageBucket, originalPath: string) {
   if (!originalPath) return;
-  const { error } = await bucket.remove([`${originalPath}.thumb.webp`]);
+  const thumbnailPath = originalPath.endsWith(".thumb.webp") ? originalPath : `${originalPath}.thumb.webp`;
+  const { error } = await bucket.remove([thumbnailPath]);
   if (error) console.error("Image thumbnail cleanup error:", error.message);
 }
 export { ImageValidationError };
