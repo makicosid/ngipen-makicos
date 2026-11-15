@@ -6911,7 +6911,7 @@ accept="image/jpeg,image/png,image/webp"
                     <button
                       type="button"
                       onClick={() => setAdminTab("advertising")}
-                      className="rounded-xl bg-gray-100 px-3 py-2 text-sm font-bold dark:bg-gray-800"
+                      className={`rounded-xl px-3 py-2 text-sm font-bold ${adminTab === "advertising" ? "bg-red-600 text-white" : "bg-gray-100 dark:bg-gray-800"}`}
                     >
                       Advertising Partner
                     </button>
