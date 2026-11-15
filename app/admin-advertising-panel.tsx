@@ -175,7 +175,6 @@ export default function AdminAdvertisingPanel() {
           const sponsor = Array.isArray(c.ad_sponsors) ? c.ad_sponsors[0]?.brand_name : c.ad_sponsors?.brand_name;
           return <article key={c.id} className="rounded-xl border border-gray-200 p-4 dark:border-gray-800">
             <div className="flex flex-wrap items-start gap-3">
-              <img src={`https://${"placeholder.invalid"}`} alt="" className="hidden" />
               <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><h4 className="font-bold">{c.campaign_name}</h4><span className="rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-bold dark:bg-gray-800">{statusLabel[c.status] || c.status}</span></div><p className="mt-1 text-xs text-gray-500">{sponsor || "Sponsor"} · {c.slot_code}</p><p className="mt-1 break-all text-xs text-gray-500">{c.target_url}</p><p className="mt-2 text-xs text-gray-500">{new Date(c.starts_at).toLocaleString("id-ID")} – {new Date(c.ends_at).toLocaleString("id-ID")}</p></div>
               <div className="flex gap-3 text-xs"><span>👁 {c.metrics.impressions.toLocaleString("id-ID")}</span><span>↗ {c.metrics.clicks.toLocaleString("id-ID")}</span></div>
             </div>
