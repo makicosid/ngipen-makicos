@@ -6,6 +6,8 @@ import { supabase } from "../lib/supabase";
 import AdminCleanupPanel from "./admin-cleanup-panel";
 import EventAttendance from "./event-attendance";
 import AdminPushPanel from "./admin-push-panel";
+import AdminAdvertisingPanel from "./admin-advertising-panel";
+import AdvertisingSlot from "../components/advertising-slot";
 import ProfileAvatar from "../components/profile-avatar";
 import ProfileTitleBadges, { type ProfileTitle } from "../components/profile-title-badges";
 
@@ -1056,7 +1058,7 @@ const resumeWeekCarouselSoon = () => {
   const [newTicketType, setNewTicketType] = useState<TicketType>("Gratis");
 
  const [adminTab, setAdminTab] =
-    useState<"moderation" | "users" | "rentals" | "cleanup" | "push">("moderation");
+    useState<"moderation" | "users" | "rentals" | "cleanup" | "push" | "advertising">("moderation");
   const [adminEventTab, setAdminEventTab] = useState<
     "Pending" | "Approved" | "Rejected" | "Sponsored" | "Completed" | "Hidden"
   >("Pending");
@@ -4708,6 +4710,9 @@ const shareEvent = async (event: Event) => {
               </section>
             )}
 
+            {/* PAID ADVERTISEMENT BANNER — independent from existing sponsored events */}
+            {!showCostumeDirectory && <AdvertisingSlot slot="banner" />}
+
             {/* CAROUSEL SPONSOR / PROMOTE */}
            {!showCostumeDirectory && sponsoredEvents.length > 0 && (
               <section className="mx-auto max-w-[1400px] px-4 pb-8">
@@ -6516,7 +6521,9 @@ accept="image/jpeg,image/png,image/webp"
                 </p>
               )}
             </section>
-          </main>
+          <AdvertisingSlot slot="floating" />
+    <AdvertisingSlot slot="popup" />
+    </main>
         )}
 
         {/* MODAL LOGIN USER */}
@@ -6900,6 +6907,13 @@ accept="image/jpeg,image/png,image/webp"
                       }`}
                     >
                       Event Cleanup
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAdminTab("advertising")}
+                      className="rounded-xl bg-gray-100 px-3 py-2 text-sm font-bold dark:bg-gray-800"
+                    >
+                      Advertising Partner
                     </button>
                     <button
                       type="button"
@@ -7438,6 +7452,8 @@ accept="image/jpeg,image/png,image/webp"
                 />
               ) : adminTab === "push" ? (
                 <AdminPushPanel />
+              ) : adminTab === "advertising" ? (
+                <AdminAdvertisingPanel />
               ) : (
                 <div className="mt-4 space-y-5">
                   <div id="admin-rental-form" className={`rounded-2xl border p-4 transition-all duration-500 dark:border-gray-800 ${rentalFormHighlight ? "border-red-500 bg-red-50 shadow-lg shadow-red-200/60 ring-2 ring-red-300 dark:bg-red-950/30 dark:shadow-red-950/40" : "border-gray-200"}`}>
