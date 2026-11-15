@@ -221,7 +221,7 @@ export async function POST(request: NextRequest) {
     return json({ success: true, event: updated });
   } catch (error) {
     console.error("Admin event update error:", error);
-    if (supabase && uploadedPath) await supabase.storage.from(POSTER_BUCKET).remove([uploadedPath]);
+    if (supabase && uploadedPath) await removeImageThumbnail(supabase.storage.from(POSTER_BUCKET), uploadedPath);
     return json({ error: error instanceof Error ? error.message : "Terjadi kesalahan pada server." }, 500);
   }
 }
