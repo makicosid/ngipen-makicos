@@ -1,7 +1,8 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { createHash, randomUUID } from "crypto";
+import { createHash } from "crypto";
+import { readBoundedFormData, uploadOptimizedImage, removeImageThumbnail, ImageValidationError } from "@/lib/image/upload";
 
 export const runtime = "nodejs";
 
@@ -144,56 +145,25 @@ function isValidImage(buffer: Buffer, type: string) {
 }
 
 async function uploadImage(file: File) {
-  const extension = getImageExtension(file.type);
-
-  if (!extension) {
-    throw new Error("Foto harus JPG, PNG, atau WebP.");
-  }
-
-  if (file.size <= 0 || file.size > MAX_FILE_SIZE) {
-    throw new Error("Ukuran foto maksimal 5 MB.");
-  }
-
-  const path = `${randomUUID()}.${extension}`;
+  if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) throw new Error("Foto harus JPG, PNG, atau WebP.");
+  if (file.size <= 0 || file.size > MAX_FILE_SIZE) throw new Error("Ukuran foto maksimal 5 MB.");
   const buffer = Buffer.from(await file.arrayBuffer());
-  if (buffer.length !== file.size || !isValidImage(buffer, file.type)) {
-    throw new Error("File bukan gambar JPG, PNG, atau WebP yang valid.");
-  }
-
-  const { error } = await getSupabaseAdmin()
-    .storage
-    .from(BUCKET)
-    .upload(path, buffer, {
-      contentType: file.type,
-      upsert: false,
+  if (buffer.length !== file.size) throw new Error("File foto rental tidak valid.");
+  try {
+    const uploaded = await uploadOptimizedImage({
+      bucket: getSupabaseAdmin().storage.from(BUCKET), buffer, mimeType: file.type,
+      preset: "rental", maxBytes: MAX_FILE_SIZE, pathPrefix: "rentals", cacheControl: "3600",
     });
-
-  if (error) {
-    throw new Error("Gagal mengunggah foto rental.");
+    return { image_path: uploaded.originalPath, image_url: uploaded.thumbnailUrl };
+  } catch (error) {
+    if (error instanceof ImageValidationError) throw new Error(error.message);
+    throw error;
   }
-
-  const { data } = getSupabaseAdmin()
-    .storage
-    .from(BUCKET)
-    .getPublicUrl(path);
-
-  return {
-    image_path: path,
-    image_url: data.publicUrl,
-  };
 }
-
 async function removeImage(path: string) {
   if (!path) return;
-
-  const { error } = await getSupabaseAdmin()
-    .storage
-    .from(BUCKET)
-    .remove([path]);
-
-  if (error) {
-    console.error("Rental image cleanup error:", error);
-  }
+  // Original files are retained; cleanup only removes generated thumbnails.
+  await removeImageThumbnail(getSupabaseAdmin().storage.from(BUCKET), path);
 }
 
 // GET: Guest hanya menerima maksimal 3 rental Subscription aktif.
@@ -302,7 +272,8 @@ export async function POST(request: NextRequest) {
       return json({ error: "Sesi admin tidak valid." }, 401);
     }
 
-    const form = await request.formData();
+    const form = await readBoundedFormData(request, MAX_FILE_SIZE + 512 * 1024);
+    if (!form) return json({ error: "Ukuran atau format permintaan upload tidak valid." }, 413);
 
     const name = String(form.get("name") || "").trim();
     const region = String(form.get("region") || "").trim();
