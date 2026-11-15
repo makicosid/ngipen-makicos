@@ -1,6 +1,6 @@
 import { createHash } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { getSupabaseAdmin } from "../../../lib/server/advertising";
+import { getSupabaseAdmin, isSameOrigin } from "../../../lib/server/advertising";
 
 export const runtime = "nodejs";
 
@@ -46,6 +46,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    if (!isSameOrigin(request)) return NextResponse.json({ error: "Permintaan tidak diizinkan." }, { status: 403 });
     const body: unknown = await request.json().catch(() => null);
     if (!body || typeof body !== "object" || Array.isArray(body)) return NextResponse.json({ error: "Data tracking tidak valid." }, { status: 400 });
     const input = body as Record<string, unknown>;
