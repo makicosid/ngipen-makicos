@@ -373,7 +373,8 @@ export async function PATCH(request: NextRequest) {
       return json({ error: "Sesi admin tidak valid." }, 401);
     }
 
-    const form = await request.formData();
+    const form = await readBoundedFormData(request, MAX_FILE_SIZE + 512 * 1024);
+    if (!form) return json({ error: "Ukuran atau format permintaan upload tidak valid." }, 413);
 
     const id = String(form.get("id") || "").trim();
     const name = String(form.get("name") || "").trim();
