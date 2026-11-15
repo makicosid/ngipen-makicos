@@ -214,8 +214,7 @@ export async function POST(request: NextRequest) {
     if (uploadedPath) {
       const oldPath = getOldPosterPath(String(current.poster_url || ""));
       if (oldPath && oldPath !== uploadedPath) {
-        const { error: cleanupError } = await removeImageThumbnail(supabase.storage.from(POSTER_BUCKET), oldPath);
-        if (cleanupError) console.error("Old event poster cleanup error:", cleanupError);
+        await removeImageThumbnail(supabase.storage.from(POSTER_BUCKET), oldPath);
       }
     }
     return json({ success: true, event: updated });
