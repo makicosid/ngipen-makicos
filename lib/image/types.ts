@@ -28,7 +28,14 @@ export interface ValidatedImage {
   metadata: Metadata;
 }
 
-export interface ImageProcessingOptions { maxBytes?: number; maxPixels?: number; declaredMimeType?: string; quality?: number; }\n\nexport interface ProcessedImage {
+export interface ImageProcessingOptions {
+  maxBytes?: number;
+  maxPixels?: number;
+  declaredMimeType?: string;
+  quality?: number;
+}
+
+export interface ProcessedImage {
   buffer: Buffer;
   contentType: "image/webp";
   extension: "webp";
