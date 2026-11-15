@@ -11,7 +11,7 @@ type StorageBucket = {
 
 export async function readBoundedFormData(request: Request, maxBytes: number): Promise<FormData | null> {
   const contentType = request.headers.get("content-type") || "";
-  if (!/^multipart\\/form-data(?:;|$)/i.test(contentType)) return null;
+  if (!/^multipart\/form-data(?:;|$)/i.test(contentType)) return null;
   const length = request.headers.get("content-length");
   if (length !== null) {
     const parsed = Number(length);
