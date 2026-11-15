@@ -559,13 +559,7 @@ export async function POST(request: NextRequest) {
     console.error("Create event API error:", error);
 
     if (supabase && uploadedPath) {
-      const { error: cleanupError } = await supabase.storage
-        .from(POSTER_BUCKET)
-        .remove([uploadedPath]);
-
-      if (cleanupError) {
-        console.error("Event poster cleanup error:", cleanupError);
-      }
+      await removeImageThumbnail(supabase.storage.from(POSTER_BUCKET), uploadedPath);
     }
 
     return json({
