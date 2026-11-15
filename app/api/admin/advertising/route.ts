@@ -87,8 +87,12 @@ export async function POST(request: NextRequest) {
       if (!targetUrl) return adminJson({ error: "URL tujuan wajib menggunakan HTTPS." }, 400);
       if (!startsAt || !endsAt || !Number.isFinite(startsAt.getTime()) || !Number.isFinite(endsAt.getTime()) || endsAt <= startsAt) return adminJson({ error: "Periode kampanye tidak valid." }, 400);
 
-      const { data: sponsor, error: sponsorError } = await supabase.from("ad_sponsors").select("id").eq("id", sponsorId).eq("status", "active").maybeSingle();
+      const [{ data: sponsor, error: sponsorError }, { data: slot, error: slotError }] = await Promise.all([
+        supabase.from("ad_sponsors").select("id").eq("id", sponsorId).eq("status", "active").maybeSingle(),
+        supabase.from("ad_slots").select("slot_code,is_enabled").eq("slot_code", slotCode).maybeSingle(),
+      ]);
       if (sponsorError || !sponsor) return adminJson({ error: "Sponsor tidak ditemukan atau tidak aktif." }, 400);
+      if (slotError || !slot?.is_enabled) return adminJson({ error: "Slot iklan tidak ditemukan atau sedang dinonaktifkan." }, 400);
       const { data, error } = await supabase.from("ad_campaigns").insert({
         sponsor_id: sponsorId, slot_code: slotCode, campaign_name: campaignName, image_path: imagePath,
         target_url: targetUrl, status: "scheduled", starts_at: startsAt.toISOString(), ends_at: endsAt.toISOString(),
