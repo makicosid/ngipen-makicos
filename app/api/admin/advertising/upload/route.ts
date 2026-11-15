@@ -25,8 +25,8 @@ export async function POST(request: NextRequest) {
     const startsWith = (...bytes: number[]) => bytes.every((byte, index) => signature[index] === byte);
     const isJpeg = startsWith(0xff, 0xd8, 0xff);
     const isPng = startsWith(0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a);
-    const isWebp = startsWith(0x52, 0x49, 0x46, 0x46) && String.fromCharCode(...signature.slice(8, 12)) === "WEBP";
-    const isAvif = String.fromCharCode(...signature.slice(4, 12)).startsWith("ftypavif") || String.fromCharCode(...signature.slice(4, 12)).startsWith("ftypavis");
+    const isWebp = startsWith(0x52, 0x49, 0x46, 0x46) && String.fromCharCode(signature[8], signature[9], signature[10], signature[11]) === "WEBP";
+    const isAvif = String.fromCharCode(signature[4], signature[5], signature[6], signature[7], signature[8], signature[9], signature[10], signature[11]).startsWith("ftypavif") || String.fromCharCode(signature[4], signature[5], signature[6], signature[7], signature[8], signature[9], signature[10], signature[11]).startsWith("ftypavis");
     const signatureMatches = file.type === "image/jpeg" ? isJpeg : file.type === "image/png" ? isPng : file.type === "image/webp" ? isWebp : isAvif;
     if (!signatureMatches) return adminJson({ error: "Isi file tidak sesuai dengan format gambar yang dipilih." }, 400);
 
