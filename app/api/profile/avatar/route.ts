@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { createHash, randomUUID } from "crypto";
+import { createHash } from "crypto";
+import { uploadOptimizedImage, ImageValidationError } from "@/lib/image/upload";
 
 export const runtime = "nodejs";
 
@@ -142,27 +143,17 @@ export async function POST(request: NextRequest) {
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
-    if (buffer.length !== file.size || !isValidImage(buffer, file.type)) {
-      return json({ error: "File avatar bukan gambar JPG, PNG, atau WebP yang valid." }, 400);
-    }
-
-    const extension = file.type === "image/jpeg" ? "jpg" : file.type === "image/png" ? "png" : "webp";
-    const path = `users/${session.user_id}/${randomUUID()}.${extension}`;
-    const { error: uploadError } = await supabase.storage
-      .from(BUCKET_NAME)
-      .upload(path, buffer, {
-        upsert: false,
-        cacheControl: "3600",
-        contentType: file.type,
+    if (buffer.length !== file.size) return json({ error: "File avatar tidak valid." }, 400);
+    try {
+      const uploaded = await uploadOptimizedImage({
+        bucket: supabase.storage.from(BUCKET_NAME), buffer, mimeType: file.type,
+        preset: "avatar", maxBytes: MAX_FILE_SIZE, pathPrefix: `users/${session.user_id}`, cacheControl: "3600",
       });
-
-    if (uploadError) {
-      console.error("Avatar upload failed.");
-      return json({ error: "Gagal mengunggah avatar." }, 500);
+      return json({ success: true, url: uploaded.thumbnailUrl });
+    } catch (error) {
+      if (error instanceof ImageValidationError) return json({ error: error.message }, 400);
+      throw error;
     }
-
-    const { data } = supabase.storage.from(BUCKET_NAME).getPublicUrl(path);
-    return json({ success: true, url: data.publicUrl });
   } catch {
     console.error("Profile avatar endpoint failed.");
     return json({ error: "Terjadi kesalahan pada server." }, 500);
