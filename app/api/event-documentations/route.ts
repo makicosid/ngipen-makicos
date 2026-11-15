@@ -1,7 +1,8 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { createHash, randomUUID } from "crypto";
+import { createHash } from "crypto";
+import { readBoundedFormData, uploadOptimizedImage, ImageValidationError } from "@/lib/image/upload";
 
 export const runtime = "nodejs";
 
@@ -267,7 +268,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const formData = await request.formData();
+    const formData = await readBoundedFormData(request, MAX_FILE_SIZE + 512 * 1024);
+    if (!formData) return json({ error: "Ukuran atau format permintaan upload tidak valid." }, 413);
 
     const eventId =
       typeof formData.get("eventId") === "string"
@@ -364,50 +366,19 @@ export async function POST(request: NextRequest) {
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
-
-    if (
-      buffer.length !== file.size ||
-      !isValidImage(buffer, file.type)
-    ) {
-      return json(
-        { error: "File bukan gambar JPG, PNG, atau WebP yang valid." },
-        400
-      );
-    }
-
-    const extension =
-      file.type === "image/jpeg"
-        ? "jpg"
-        : file.type === "image/png"
-          ? "png"
-          : "webp";
-
-    // Nama file acak untuk mencegah benturan nama dan overwrite.
-    uploadedPath = `events/${eventId}/${randomUUID()}.${extension}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from(BUCKET_NAME)
-      .upload(uploadedPath, buffer, {
-        contentType: file.type,
-        cacheControl: "3600",
-        upsert: false,
+    if (buffer.length !== file.size) return json({ error: "File dokumentasi tidak valid." }, 400);
+    let optimized: Awaited<ReturnType<typeof uploadOptimizedImage>>;
+    try {
+      optimized = await uploadOptimizedImage({
+        bucket: supabase.storage.from(BUCKET_NAME), buffer, mimeType: file.type,
+        preset: "documentation", maxBytes: MAX_FILE_SIZE, pathPrefix: `events/${eventId}`, cacheControl: "3600",
       });
-
-    if (uploadError) {
-      console.error("Documentation storage upload error:", uploadError);
-      uploadedPath = null;
-
-      return json(
-        { error: "Gagal mengunggah foto dokumentasi." },
-        500
-      );
+    } catch (error) {
+      if (error instanceof ImageValidationError) return json({ error: error.message }, 400);
+      throw error;
     }
-
-    const { data: publicUrlData } = supabase.storage
-      .from(BUCKET_NAME)
-      .getPublicUrl(uploadedPath);
-
-    const imageUrl = publicUrlData.publicUrl;
+    uploadedPath = optimized.originalPath;
+    const imageUrl = optimized.thumbnailUrl;
 
     const displayName = user.display_name?.trim() || "Pengunjung";
 
@@ -429,7 +400,7 @@ export async function POST(request: NextRequest) {
       // Hapus file jika penyimpanan metadata gagal.
       const { error: cleanupError } = await supabase.storage
         .from(BUCKET_NAME)
-        .remove([uploadedPath]);
+        .remove([`${uploadedPath}.thumb.webp`]);
 
       if (cleanupError) {
         console.error("Documentation cleanup error:", cleanupError);
