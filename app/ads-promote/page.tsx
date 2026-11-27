@@ -73,13 +73,19 @@ export default function AdsPromotePage() {
   return (
     <main className="ads-promote-page min-h-screen overflow-hidden bg-[#faf9f7] text-[#242424] dark:bg-[#101114] dark:text-white">
       <div className="mx-auto w-full max-w-[1400px] px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
-        <div className="ads-promote-enter mb-8 flex items-center justify-between gap-4 sm:mb-12">
+        <div className="ads-promote-enter mb-8 flex flex-wrap items-center justify-between gap-3 sm:mb-12">
           <Link
             href="/"
             className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2.5 text-sm font-bold text-gray-700 shadow-sm transition hover:-translate-y-0.5 hover:border-red-200 hover:text-red-700 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200"
           >
             <span aria-hidden="true">←</span>
             Kembali ke NGIPEN
+          </Link>
+          <Link
+            href="/ads-promote/availability"
+            className="inline-flex items-center gap-2 rounded-full bg-red-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-red-700"
+          >
+            Cek Ketersediaan Iklan <span aria-hidden="true">→</span>
           </Link>
         </div>
 

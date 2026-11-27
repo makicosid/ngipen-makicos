@@ -17,18 +17,23 @@ const inputClass = "mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 
 const buttonClass = "rounded-xl bg-red-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50";
 type EditCreative = { imagePath: string; targetUrl: string; file: File | null };
 
-// Date input is interpreted in the admin's local timezone.
-// Campaign starts at 00:00 on the selected start date and ends at 23:59:59.999
-// on the selected end date, so admins never need to enter a time manually.
+// Campaign dates use Asia/Jakarta consistently with the public booked calendar.
+function jakartaDateKey(date: Date) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Jakarta", year: "numeric", month: "2-digit", day: "2-digit",
+  }).formatToParts(date);
+  const get = (type: string) => parts.find(part => part.type === type)?.value ?? "";
+  return `${get("year")}-${get("month")}-${get("day")}`;
+}
+
 function dateOnlyToIso(value: string, endOfDay = false) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) throw new Error("Pilih tanggal mulai dan berakhir.");
   const now = new Date();
-  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-  // If the campaign starts today, start at the actual posting time.
-  // A future start date begins automatically at local midnight.
-  const date = !endOfDay && value === today
-    ? now
-    : new Date(`${value}T${endOfDay ? "23:59:59.999" : "00:00:00"}`);
+  if (!endOfDay && value === jakartaDateKey(now)) return now.toISOString();
+  const [year, month, day] = value.split("-").map(Number);
+  // WIB is UTC+7: local midnight is 17:00 UTC on the previous day.
+  const utc = Date.UTC(year, month - 1, day, endOfDay ? 16 : -7, endOfDay ? 59 : 0, endOfDay ? 59 : 0, endOfDay ? 999 : 0);
+  const date = new Date(utc);
   if (!Number.isFinite(date.getTime())) throw new Error("Tanggal kampanye tidak valid.");
   return date.toISOString();
 }
@@ -146,10 +151,7 @@ export default function AdminAdvertisingPanel() {
   }
 
   function beginEdit(campaign: Campaign) {
-    const dateValue = (value: string) => {
-      const date = new Date(value);
-      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-    };
+    const dateValue = (value: string) => jakartaDateKey(new Date(value));
     setEditingCampaign(campaign);
     setEditCampaignName(campaign.campaign_name);
     setEditStartsAt(dateValue(campaign.starts_at));
