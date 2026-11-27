@@ -120,15 +120,13 @@ export default function AdvertisingSlot({ slot, className = "" }: Props) {
     setFloatingVisible(false);
     if (floatingNextTimer.current !== undefined) window.clearTimeout(floatingNextTimer.current);
     floatingNextTimer.current = window.setTimeout(() => {
-      setCurrentIndex(index => {
-        const next = index + 1;
-        if (next >= ads.length) {
-          setFloatingFinished(true);
-          return index;
-        }
-        setFloatingVisible(true);
-        return next;
-      });
+      const next = currentIndex + 1;
+      if (next >= ads.length) {
+        setFloatingFinished(true);
+        return;
+      }
+      setCurrentIndex(next);
+      setFloatingVisible(true);
     }, FLOATING_CLOSE_DELAY_MS);
   };
 
