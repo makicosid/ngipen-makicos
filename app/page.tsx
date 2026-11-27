@@ -8,6 +8,7 @@ import EventAttendance from "./event-attendance";
 import AdminPushPanel from "./admin-push-panel";
 import AdminAdvertisingPanel from "./admin-advertising-panel";
 import AdvertisingSlot from "../components/advertising-slot";
+import EventDateRangePicker from "../components/event-date-range-picker";
 import ProfileAvatar from "../components/profile-avatar";
 import ProfileTitleBadges, { type ProfileTitle } from "../components/profile-title-badges";
 
@@ -4140,7 +4141,16 @@ const shareEvent = async (event: Event) => {
           )}
         </header>
 
-        {/* Iklan non-banner dipasang pada root agar tersedia di beranda dan halaman detail. */}
+        {/* Banner dipasang pada shell aplikasi agar tampil di seluruh tampilan User. */}
+        {currentRole === "user" && !showAdmin && (
+          <AdvertisingSlot
+            key={selectedEvent?.id || (showCostumeDirectory ? "costume" : showCalendar ? "calendar" : showSaved ? "saved" : "home")}
+            slot="banner"
+            className="pt-4"
+          />
+        )}
+
+        {/* Iklan non-banner tetap berada pada root aplikasi. */}
         {currentRole === "user" && !showAdmin && (
           <>
             <AdvertisingSlot slot="floating" />
@@ -4717,9 +4727,6 @@ const shareEvent = async (event: Event) => {
                 </div>
               </section>
             )}
-
-            {/* PAID ADVERTISEMENT BANNER — independent from existing sponsored events */}
-            {currentRole === "user" && !showAdmin && !showCostumeDirectory && <AdvertisingSlot slot="banner" />}
 
             {/* CAROUSEL SPONSOR / PROMOTE */}
            {!showCostumeDirectory && sponsoredEvents.length > 0 && (
@@ -8278,37 +8285,7 @@ accept="image/jpeg,image/png,image/webp"
 
                 {/* TANGGAL DAN WAKTU */}
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <div>
-                    <label
-                      htmlFor="new-start"
-                      className="mb-1 block text-sm font-bold"
-                    >
-                      Tanggal mulai *
-                    </label>
-                    <input
-                      id="new-start"
-                      type="date"
-                      defaultValue=""
-                      required
-                      className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-3 dark:border-gray-700 dark:bg-gray-950"
-                    />
-                  </div>
-
-                  <div>
-                    <label
-                      htmlFor="new-end"
-                      className="mb-1 block text-sm font-bold"
-                    >
-                      Tanggal selesai *
-                    </label>
-                    <input
-                      id="new-end"
-                      type="date"
-                      defaultValue=""
-                      required
-                      className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-3 dark:border-gray-700 dark:bg-gray-950"
-                    />
-                  </div>
+                  <EventDateRangePicker startId="new-start" endId="new-end" />
 
                   <div>
                     <label
