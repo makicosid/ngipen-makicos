@@ -99,7 +99,13 @@ export default function AdvertisingSlot({ slot, className = "" }: Props) {
           <button type="button" onClick={() => openAd(ad)} className="block w-full text-left">
             <img src={ad.imageUrl} alt={ad.name} className="max-h-[65dvh] w-full object-contain" />
           </button>
-          <div className="flex items-center justify-between gap-3 px-4 py-3"><div className="min-w-0"><p className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Iklan Partner</p><p className="truncate text-sm font-bold">{ad.sponsorName || ad.name}</p></div><button type="button" onClick={() => openAd(ad)} className="shrink-0 rounded-lg bg-red-600 px-4 py-2 text-xs font-bold text-white">Lihat</button></div>
+          <div className="flex items-center justify-between gap-2 px-4 py-3">
+            <div className="min-w-0"><p className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Iklan Partner</p><p className="truncate text-sm font-bold">{ad.sponsorName || ad.name}</p></div>
+            <div className="flex shrink-0 items-center gap-2">
+              <button type="button" onClick={() => { setDismissed(true); setPopupOpen(false); }} className="rounded-lg border border-gray-300 px-3 py-2 text-xs font-bold text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800">Tutup</button>
+              <button type="button" onClick={() => openAd(ad)} className="rounded-lg bg-red-600 px-4 py-2 text-xs font-bold text-white">Lihat</button>
+            </div>
+          </div>
         </div>
       </div>
     );

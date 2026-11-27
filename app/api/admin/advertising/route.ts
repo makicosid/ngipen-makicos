@@ -110,6 +110,76 @@ export async function POST(request: NextRequest) {
   }
 }
 
+export async function DELETE(request: NextRequest) {
+  try {
+    if (!isSameOrigin(request)) return adminJson({ error: "Permintaan tidak diizinkan." }, 403);
+    const supabase = await requireAdmin(request);
+    if (!supabase) return adminJson({ error: "Sesi admin tidak valid." }, 401);
+
+    const body: unknown = await request.json().catch(() => null);
+    if (!body || typeof body !== "object" || Array.isArray(body)) return adminJson({ error: "Format data tidak valid." }, 400);
+    const id = typeof (body as Record<string, unknown>).id === "string" ? String((body as Record<string, unknown>).id) : "";
+    if (!id) return adminJson({ error: "Kampanye tidak valid." }, 400);
+
+    const { data: campaign, error: campaignError } = await supabase
+      .from("ad_campaigns")
+      .select("id,campaign_name,image_path,status,ends_at")
+      .eq("id", id)
+      .maybeSingle();
+    if (campaignError || !campaign) return adminJson({ error: "Kampanye tidak ditemukan." }, 404);
+
+    const hasEnded = new Date(campaign.ends_at).getTime() <= Date.now();
+    if (campaign.status !== "completed" && !hasEnded) {
+      return adminJson({ error: "Hanya kampanye yang sudah selesai yang dapat dihapus." }, 400);
+    }
+
+    const [{ count: impressions }, { count: clicks }] = await Promise.all([
+      supabase.from("ad_events").select("id", { count: "exact", head: true }).eq("campaign_id", id).eq("event_type", "impression"),
+      supabase.from("ad_events").select("id", { count: "exact", head: true }).eq("campaign_id", id).eq("event_type", "click"),
+    ]);
+
+    // Keep an audit trail while detaching the campaign foreign key before deleting it.
+    const { error: detachAuditError } = await supabase
+      .from("ad_audit_logs")
+      .update({ campaign_id: null })
+      .eq("campaign_id", id);
+    if (detachAuditError) {
+      console.error("Advertising audit detach failed:", detachAuditError.code);
+      return adminJson({ error: "Riwayat audit kampanye tidak dapat diamankan; kampanye tidak dihapus." }, 500);
+    }
+
+    const { error: eventsError } = await supabase.from("ad_events").delete().eq("campaign_id", id);
+    if (eventsError) {
+      console.error("Advertising events delete failed:", eventsError.code);
+      return adminJson({ error: "Gagal menghapus statistik kampanye." }, 500);
+    }
+
+    const { error: deleteError } = await supabase.from("ad_campaigns").delete().eq("id", id);
+    if (deleteError) {
+      console.error("Advertising campaign delete failed:", deleteError.code);
+      return adminJson({ error: "Gagal menghapus kampanye." }, 500);
+    }
+
+    await writeAudit(supabase, "campaign_deleted", null, {
+      campaign_id: id,
+      campaign_name: campaign.campaign_name,
+      impressions: impressions ?? 0,
+      clicks: clicks ?? 0,
+    });
+
+    const imagePath = typeof campaign.image_path === "string" ? campaign.image_path : "";
+    if (imagePath && !imagePath.startsWith("/") && !imagePath.includes("..")) {
+      const { error: storageError } = await supabase.storage.from("ad-assets").remove([imagePath]);
+      if (storageError) console.error("Advertising image cleanup failed:", storageError.message);
+    }
+
+    return adminJson({ success: true });
+  } catch (error) {
+    console.error("Advertising DELETE failed:", error);
+    return adminJson({ error: "Terjadi kesalahan saat menghapus kampanye." }, 500);
+  }
+}
+
 export async function PATCH(request: NextRequest) {
   try {
     if (!isSameOrigin(request)) return adminJson({ error: "Permintaan tidak diizinkan." }, 403);

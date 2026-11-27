@@ -36,6 +36,7 @@ export default function AdminAdvertisingPanel() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [deletingCampaignId, setDeletingCampaignId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [brandName, setBrandName] = useState("");
@@ -142,6 +143,31 @@ export default function AdminAdvertisingPanel() {
     } catch (e) { setError(e instanceof Error ? e.message : "Gagal memperbarui status."); }
   }
 
+  async function deleteCampaign(campaign: Campaign) {
+    const confirmed = window.confirm(
+      `Hapus kampanye "${campaign.campaign_name}" secara permanen? Statistik kampanye akan dihapus, sedangkan catatan audit tetap disimpan.`
+    );
+    if (!confirmed) return;
+
+    setDeletingCampaignId(campaign.id);
+    setError(""); setNotice("");
+    try {
+      const response = await fetch("/api/admin/advertising", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: campaign.id }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Gagal menghapus kampanye.");
+      setNotice("Kampanye selesai berhasil dihapus.");
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Gagal menghapus kampanye.");
+    } finally {
+      setDeletingCampaignId(null);
+    }
+  }
+
   const statusLabel: Record<string, string> = { draft: "Draft", scheduled: "Terjadwal", active: "Aktif", paused: "Dijeda", completed: "Selesai" };
   const imageGuidance = {
     banner: { size: "1200 × 300 px", ratio: "4:1", note: "Banner horizontal untuk area konten halaman." },
@@ -204,6 +230,7 @@ export default function AdminAdvertisingPanel() {
         <div className="flex flex-wrap items-center justify-between gap-2"><div><h3 className="font-bold">Daftar Kampanye</h3><p className="text-xs text-gray-500">Statistik impression dan click dalam 30 hari terakhir.</p></div><button type="button" onClick={() => void load()} disabled={loading} className="rounded-lg border border-gray-300 px-3 py-2 text-xs font-bold dark:border-gray-700">Muat Ulang</button></div>
         {loading ? <p className="py-6 text-center text-sm text-gray-500">Memuat data...</p> : !data?.campaigns.length ? <p className="rounded-xl border border-dashed border-gray-300 py-8 text-center text-sm text-gray-500 dark:border-gray-700">Belum ada kampanye iklan.</p> : data.campaigns.map(c => {
           const sponsor = Array.isArray(c.ad_sponsors) ? c.ad_sponsors[0]?.brand_name : c.ad_sponsors?.brand_name;
+          const campaignFinished = c.status === "completed" || new Date(c.ends_at).getTime() <= Date.now();
           return <article key={c.id} className="rounded-xl border border-gray-200 p-4 dark:border-gray-800">
             <div className="flex flex-wrap items-start gap-3">
               <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><h4 className="font-bold">{c.campaign_name}</h4><span className="rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-bold dark:bg-gray-800">{statusLabel[c.status] || c.status}</span></div><p className="mt-1 text-xs text-gray-500">{sponsor || "Sponsor"} · {c.slot_code}</p><p className="mt-1 break-all text-xs text-gray-500">{c.target_url}</p><p className="mt-2 text-xs text-gray-500">{new Date(c.starts_at).toLocaleString("id-ID")} – {new Date(c.ends_at).toLocaleString("id-ID")}</p></div>
@@ -213,6 +240,7 @@ export default function AdminAdvertisingPanel() {
               {c.status !== "paused" && c.status !== "completed" ? <button type="button" onClick={() => void updateStatus(c.id, "paused")} className="rounded-lg border border-gray-300 px-3 py-2 text-xs font-bold dark:border-gray-700">Jeda</button> : null}
               {(c.status === "paused" || c.status === "completed") && new Date(c.ends_at).getTime() > Date.now() ? <button type="button" onClick={() => void updateStatus(c.id, new Date(c.starts_at).getTime() > Date.now() ? "scheduled" : "active")} className="rounded-lg bg-green-600 px-3 py-2 text-xs font-bold text-white">{new Date(c.starts_at).getTime() > Date.now() ? "Jadwalkan Ulang" : "Aktifkan Kembali"}</button> : null}
               {c.status !== "completed" && <button type="button" onClick={() => void updateStatus(c.id, "completed")} className="rounded-lg border border-red-200 px-3 py-2 text-xs font-bold text-red-600 dark:border-red-900">Akhiri</button>}
+              {campaignFinished && <button type="button" onClick={() => void deleteCampaign(c)} disabled={deletingCampaignId === c.id} className="rounded-lg border border-red-300 px-3 py-2 text-xs font-bold text-red-700 hover:bg-red-50 disabled:opacity-50 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950">{deletingCampaignId === c.id ? "Menghapus..." : "Hapus Kampanye"}</button>}
             </div>
           </article>;
         })}
