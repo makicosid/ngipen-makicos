@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 type DayInfo = { booked: number; available: number; capacity: number; isEnabled: boolean };
-type SlotData = { code: string; name: string; capacity: number; enabled: boolean; days: Record<string, DayInfo>; periods: Array<{ start: string; end: string }> };
+type SlotData = { code: string; name: string; capacity: number; enabled: boolean; days: Record<string, DayInfo>; brands: Array<{ periods: Array<{ start: string; end: string }> }> };
 type Availability = { timeZone: string; generatedAt: string; range: { start: string; endExclusive: string; today: string }; slots: SlotData[] };
 
 const SLOT_ORDER = ["banner", "floating", "popup"];
@@ -26,6 +26,7 @@ export default function AvailabilityPage() {
   const [selectedDate, setSelectedDate] = useState("");
   const [month, setMonth] = useState("");
   const [loading, setLoading] = useState(true);
+  const [timelineMonths, setTimelineMonths] = useState<1 | 3 | 6>(1);
 
   const load = useCallback(async () => {
     setLoading(true); setError("");
@@ -72,7 +73,7 @@ export default function AvailabilityPage() {
         <header className="mb-8">
           <p className="text-xs font-black uppercase tracking-[.24em] text-red-700 dark:text-red-400">NGIPEN Advertising</p>
           <h1 className="mt-2 text-3xl font-black sm:text-4xl">Booked Calendar</h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-gray-600 dark:text-gray-300">Periksa ketersediaan slot iklan berdasarkan campaign yang tercatat di sistem admin. Identitas brand dan campaign tidak ditampilkan.</p>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-gray-600 dark:text-gray-300">Periksa ketersediaaan slot iklan berdasarkan tanggal</p>
           <p className="mt-2 text-xs text-gray-500">Zona waktu Asia/Jakarta (WIB) · Rentang {rangeStart ? formatDate(rangeStart) : "—"} – {rangeLast ? formatDate(rangeLast) : "—"}</p>
         </header>
 
@@ -128,30 +129,45 @@ export default function AvailabilityPage() {
               </section>
               <section className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
                 <h2 className="font-black">Informasi booking</h2>
-                <p className="mt-2 text-xs leading-5 text-gray-500">Periode dihitung dari campaign berstatus Active dan Scheduled pada konfigurasi iklan Admin. Nama brand dan campaign dirahasiakan.</p>
-                <p className="mt-3 text-xs leading-5 text-gray-500">Kalender ini menampilkan ketersediaan indikatif. Konfirmasi akhir periode promosi dilakukan oleh tim MAKICOS melalui WhatsApp.</p>
+                <p className="mt-2 text-xs leading-5 text-gray-500">Periode dihitung dari campaign berstatus Active dan Scheduled Kalender ini menampilkan ketersediaan indikatif. Konfirmasi akhir periode promosi dilakukan oleh tim MAKICOS melalui WhatsApp.</p>
               </section>
             </aside>
           </div>
 
           <section className="mt-6 rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900 sm:p-5">
-            <div className="mb-4"><h2 className="font-black">Timeline periode booking</h2><p className="text-xs text-gray-500">Periode gabungan per brand, tanpa menampilkan identitas brand.</p></div>
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><div><h2 className="font-black">Timeline periode booking</h2><p className="text-xs text-gray-500">Setiap baris mewakili satu brand yang memasang iklan. Identitas brand dirahasiakan.</p></div><div className="flex rounded-xl border border-gray-200 p-1 dark:border-gray-700">{([1, 3, 6] as const).map(value => <button key={value} onClick={() => setTimelineMonths(value)} aria-pressed={timelineMonths === value} className={`rounded-lg px-3 py-2 text-xs font-bold transition ${timelineMonths === value ? "bg-red-600 text-white" : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"}`}>{value}M</button>)}</div></div>
             <div className="space-y-5">
-              {slots.map(slot => <div key={slot.code}>
-                <div className="mb-2 flex items-center justify-between"><strong className="text-sm">{slot.name}</strong><span className="text-xs text-gray-500">Kapasitas {slot.capacity}</span></div>
-                <div className="relative h-10 overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800">
-                  {slot.periods.map((period, index) => {
-                    const start = Math.max(Date.parse(period.start + "T00:00:00Z"), Date.parse(rangeStart + "T00:00:00Z"));
-                    const end = Math.min(Date.parse(period.end + "T00:00:00Z") + 86400000, Date.parse(data.range.endExclusive + "T00:00:00Z"));
-                    const total = Date.parse(data.range.endExclusive + "T00:00:00Z") - Date.parse(rangeStart + "T00:00:00Z");
-                    const left = ((start - Date.parse(rangeStart + "T00:00:00Z")) / total) * 100;
-                    const width = Math.max(.5, ((end - start) / total) * 100);
-                    return <div key={index} title={period.start + " – " + period.end} className="absolute top-1.5 h-7 rounded-md border border-red-500/30 bg-red-500/75" style={{ left: left + "%", width: width + "%" }} />;
-                  })}
-                </div>
-                <div className="mt-1 flex justify-between text-[10px] text-gray-400"><span>{formatDate(rangeStart)}</span><span>{formatDate(rangeLast)}</span></div>
-                {slot.periods.length === 0 && <p className="mt-1 text-[11px] text-gray-500">Belum ada periode booking pada rentang ini.</p>}
-              </div>)}
+              {slots.map(slot => {
+                const windowStart = rangeStart;
+                const startDate = parseKey(windowStart);
+                const windowEnd = monthKey(startDate.getUTCFullYear(), startDate.getUTCMonth() + timelineMonths);
+                const windowEndExclusive = windowEnd < data.range.endExclusive ? windowEnd : data.range.endExclusive;
+                const total = Date.parse(windowEndExclusive + "T00:00:00Z") - Date.parse(windowStart + "T00:00:00Z");
+                const visibleBrands = slot.brands.map((brand, brandIndex) => ({
+                  brandIndex,
+                  periods: brand.periods.filter(period => period.end >= windowStart && period.start < windowEndExclusive),
+                })).filter(brand => brand.periods.length > 0);
+                return <div key={slot.code}>
+                  <div className="mb-2 flex items-center justify-between"><strong className="text-sm">{slot.name}</strong><span className="text-xs text-gray-500">Kapasitas {slot.capacity} · {visibleBrands.length} brand</span></div>
+                  {visibleBrands.length ? <div className="space-y-2">
+                    {visibleBrands.map(brand => <div key={brand.brandIndex} className="grid grid-cols-[76px_minmax(0,1fr)] items-center gap-2">
+                      <span className="text-[11px] font-semibold text-gray-500">Brand {brand.brandIndex + 1}</span>
+                      <div className="relative h-8 overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800">
+                        {brand.periods.map((period, index) => {
+                          const clippedStart = period.start < windowStart ? windowStart : period.start;
+                          const clippedEnd = period.end >= windowEndExclusive ? addDays(windowEndExclusive, -1) : period.end;
+                          const start = Date.parse(clippedStart + "T00:00:00Z");
+                          const end = Date.parse(addDays(clippedEnd, 1) + "T00:00:00Z");
+                          const left = ((start - Date.parse(windowStart + "T00:00:00Z")) / total) * 100;
+                          const width = Math.max(.5, ((end - start) / total) * 100);
+                          return <div key={index} title={period.start + " – " + period.end} className="absolute top-1 h-6 rounded-md border border-red-500/30 bg-red-500/75" style={{ left: left + "%", width: width + "%" }} />;
+                        })}
+                      </div>
+                    </div>)}
+                  </div> : <p className="rounded-lg bg-gray-50 px-3 py-3 text-[11px] text-gray-500 dark:bg-gray-800">Belum ada brand yang memasang iklan pada periode ini.</p>}
+                  <div className="mt-2 flex justify-between text-[10px] text-gray-400"><span>{formatDate(windowStart)}</span><span>{formatDate(addDays(windowEndExclusive, -1))}</span></div>
+                </div>;
+              })}
             </div>
           </section>
         </>}
