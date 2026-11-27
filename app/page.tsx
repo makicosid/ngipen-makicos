@@ -4147,7 +4147,7 @@ const shareEvent = async (event: Event) => {
         </header>
 
         {/* Banner dipasang pada shell aplikasi agar tampil di seluruh tampilan User. */}
-        {currentRole === "user" && !showAdmin && (
+        {currentRole === "user" && !showAdmin && !showUserProfile && !eventFormOpen && (
           <AdvertisingSlot
             key={selectedEvent?.id || (showCostumeDirectory ? "costume" : showCalendar ? "calendar" : "home")}
             slot="banner"
@@ -4156,7 +4156,7 @@ const shareEvent = async (event: Event) => {
         )}
 
         {/* Iklan non-banner tetap berada pada root aplikasi. */}
-        {currentRole === "user" && !showAdmin && (
+        {currentRole === "user" && !showAdmin && !showUserProfile && !eventFormOpen && (
           <>
             <AdvertisingSlot slot="floating" />
             <AdvertisingSlot slot="popup" />
