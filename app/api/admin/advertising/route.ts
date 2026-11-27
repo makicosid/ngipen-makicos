@@ -251,14 +251,14 @@ export async function PATCH(request: NextRequest) {
 
       const primary = normalized[0];
       const { error: updateError } = await supabase.from("ad_campaigns").update({
-        campaign_name: campaignName, image_path: primary.image_path, target_url: primary.target_url,
+        campaign_name: campaignName, image_path: primary.image_path, target_url: primary.target_url as string,
         starts_at: startsAt.toISOString(), ends_at: endsAt.toISOString(),
         updated_at: new Date().toISOString(), updated_by: "admin",
       }).eq("id", id);
       if (updateError) return adminJson({ error: "Gagal memperbarui kampanye." }, 500);
 
       if (!oldError) {
-        const { error: insertError } = await supabase.from("ad_creatives").insert(normalized.map(item => ({ campaign_id: id, ...item })));
+        const { error: insertError } = await supabase.from("ad_creatives").insert(normalized.map(item => ({ campaign_id: id, image_path: item.image_path, target_url: item.target_url as string, sort_order: item.sort_order, is_active: item.is_active })));
         if (insertError) return adminJson({ error: "Gagal menyimpan poster baru; materi lama tetap dipertahankan." }, 500);
         const { error: deleteError } = await supabase.from("ad_creatives").delete().eq("campaign_id", id).neq("image_path", primary.image_path);
         if (deleteError) return adminJson({ error: "Materi baru tersimpan, tetapi pembersihan materi lama gagal." }, 500);
