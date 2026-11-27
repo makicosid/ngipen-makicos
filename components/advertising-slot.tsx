@@ -131,11 +131,25 @@ export default function AdvertisingSlot({ slot, className = "" }: Props) {
     );
   }
 
+  const bannerAd = ads[0];
+
   return (
     <section ref={rootRef} className={`mx-auto w-full max-w-[1400px] px-4 pb-5 ${className}`} aria-label="Iklan partner">
-      <div className="grid gap-3 sm:grid-cols-2">
-        {ads.map(ad => <button key={ad.id} type="button" onClick={() => openAd(ad)} className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-white text-left shadow-sm transition hover:shadow-md dark:border-gray-800 dark:bg-gray-900"><img src={ad.imageUrl} alt={ad.name} loading="lazy" className="max-h-48 w-full object-contain sm:max-h-56" /><span className="absolute left-2 top-2 rounded-full bg-black/65 px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-white">Iklan Partner</span></button>)}
-      </div>
+      {bannerAd && (
+        <button
+          type="button"
+          onClick={() => openAd(bannerAd)}
+          className="group relative block w-full overflow-hidden rounded-xl border border-gray-200 bg-white text-left shadow-sm transition hover:shadow-md dark:border-gray-800 dark:bg-gray-900"
+        >
+          <img
+            src={bannerAd.imageUrl}
+            alt={bannerAd.name}
+            loading="lazy"
+            className="mx-auto block h-auto max-h-36 w-full object-contain sm:max-h-48 md:max-h-56"
+          />
+          <span className="absolute left-2 top-2 rounded-full bg-black/65 px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-white">Iklan Partner</span>
+        </button>
+      )}
     </section>
   );
 }
