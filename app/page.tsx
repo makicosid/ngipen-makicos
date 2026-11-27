@@ -4140,6 +4140,14 @@ const shareEvent = async (event: Event) => {
           )}
         </header>
 
+        {/* Iklan non-banner dipasang pada root agar tersedia di beranda dan halaman detail. */}
+        {!showAdmin && (
+          <>
+            <AdvertisingSlot slot="floating" />
+            <AdvertisingSlot slot="popup" />
+          </>
+        )}
+
         {/* EXPANDABLE FLOATING ACTION MENU - MOBILE */}
         {!isFooterVisible && (
           <div className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-4 z-[65] flex flex-col items-end gap-3 md:hidden">
@@ -6521,9 +6529,7 @@ accept="image/jpeg,image/png,image/webp"
                 </p>
               )}
             </section>
-          <AdvertisingSlot slot="floating" />
-    <AdvertisingSlot slot="popup" />
-    </main>
+        </main>
         )}
 
         {/* MODAL LOGIN USER */}
