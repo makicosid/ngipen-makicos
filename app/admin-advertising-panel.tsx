@@ -39,6 +39,7 @@ export default function AdminAdvertisingPanel() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [deletingCampaignId, setDeletingCampaignId] = useState<string | null>(null);
+  const [deletingBrand, setDeletingBrand] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [brandName, setBrandName] = useState("");
@@ -234,6 +235,35 @@ export default function AdminAdvertisingPanel() {
     }
   }
 
+  async function deleteBrand(brand: Sponsor) {
+    const confirmed = window.confirm(
+      `HAPUS BRAND "${brand.brand_name}"? Semua campaign brand ini, termasuk yang sedang berjalan, seluruh poster, dan statistik campaign akan dihapus permanen dari Supabase. Tindakan ini tidak dapat dibatalkan. Catatan audit tetap disimpan.`
+    );
+    if (!confirmed) return;
+
+    setDeletingBrand(true);
+    setError(""); setNotice("");
+    try {
+      const response = await fetch("/api/admin/advertising", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "delete_brand", id: brand.id }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Gagal menghapus brand.");
+      setSelectedBrandId(null);
+      setSelectedCampaignId(null);
+      setShowCampaignForm(false);
+      setEditingCampaign(null);
+      setNotice(`Brand berhasil dihapus bersama ${result.deletedCampaigns ?? 0} campaign.`);
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Gagal menghapus brand.");
+    } finally {
+      setDeletingBrand(false);
+    }
+  }
+
   const statusLabel: Record<string, string> = { draft: "Draft", scheduled: "Terjadwal", active: "Aktif", paused: "Dijeda", completed: "Selesai" };
   const imageGuidance = {
     banner: { size: "1200 × 300 px", ratio: "4:1", note: "Banner horizontal untuk area konten halaman." },
@@ -301,7 +331,10 @@ export default function AdminAdvertisingPanel() {
         <div className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3"><button type="button" onClick={() => { setSelectedBrandId(null); setSelectedCampaignId(null); setShowCampaignForm(false); setEditingCampaign(null); }} className="rounded-xl border border-gray-200 px-3 py-2 text-sm font-bold dark:border-gray-700">← Brand</button><div><p className="text-xs text-gray-500">Detail brand</p><h3 className="text-xl font-black">{selectedBrand.brand_name}</h3></div></div>
-            <span className="rounded-full bg-green-50 px-3 py-1.5 text-xs font-bold text-green-700 dark:bg-green-950 dark:text-green-300">{selectedBrand.status === "active" ? "Brand Aktif" : selectedBrand.status}</span>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="rounded-full bg-green-50 px-3 py-1.5 text-xs font-bold text-green-700 dark:bg-green-950 dark:text-green-300">{selectedBrand.status === "active" ? "Brand Aktif" : selectedBrand.status}</span>
+              <button type="button" onClick={() => void deleteBrand(selectedBrand)} disabled={deletingBrand || saving} className="rounded-xl border border-red-300 px-3 py-2 text-xs font-bold text-red-700 hover:bg-red-50 disabled:opacity-50 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950">{deletingBrand ? "Menghapus brand..." : "Hapus Brand"}</button>
+            </div>
           </div>
           <div className="rounded-2xl border border-gray-200 p-4 dark:border-gray-800">
             <div className="flex flex-wrap items-start justify-between gap-3"><div><h4 className="font-bold">Informasi Brand</h4><p className="mt-1 text-sm text-gray-600 dark:text-gray-300">{selectedBrand.contact_name || "Nama kontak belum diisi"}{selectedBrand.contact_email ? " · " + selectedBrand.contact_email : ""}</p>{selectedBrand.notes && <p className="mt-2 text-xs text-gray-500">{selectedBrand.notes}</p>}</div><span className="text-xs text-gray-500">{brandCampaigns.length} campaign terdaftar</span></div>
