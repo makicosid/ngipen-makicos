@@ -2257,8 +2257,6 @@ const logout = async () => {
       return;
     }
 
-    // Pause iklan tepat saat pengguna menekan tombol kirim event.
-    pauseAdsForEventPosterUpload();
     try {
       const formData = new FormData();
       formData.append("title", title);
@@ -3985,6 +3983,7 @@ const shareEvent = async (event: Event) => {
                   setPosterFile(null);
                   setPosterPreview("");
                   setPosterError("");
+                  pauseAdsForEventPosterUpload();
                   setEventFormOpen(true);
                 }}
                 className="text-sm font-semibold text-red-600 hover:text-red-700"
@@ -4138,7 +4137,7 @@ const shareEvent = async (event: Event) => {
                 {currentRole !== "admin" && (
                 <div className="border-t border-gray-200 pt-3 dark:border-gray-800">
                   <p className="px-3 pb-1 text-[10px] font-bold uppercase tracking-[0.16em] text-gray-400">Publikasi</p>
-                  <button onClick={() => { setMobileOpen(false); if (currentRole !== "user") { setToast("Silakan login sebagai user terlebih dahulu."); setShowLoginUser(true); return; } setPosterFile(null); setPosterPreview(""); setPosterError(""); setEventFormOpen(true); }} className="w-full rounded-xl bg-red-600 px-3 py-3 text-left font-bold text-white shadow-sm transition hover:bg-red-700">＋ Upload Poster Event</button>
+                  <button onClick={() => { setMobileOpen(false); if (currentRole !== "user") { setToast("Silakan login sebagai user terlebih dahulu."); setShowLoginUser(true); return; } setPosterFile(null); setPosterPreview(""); setPosterError(""); pauseAdsForEventPosterUpload(); setEventFormOpen(true); }} className="w-full rounded-xl bg-red-600 px-3 py-3 text-left font-bold text-white shadow-sm transition hover:bg-red-700">＋ Upload Poster Event</button>
                 </div>
                 )}
                 {currentRole === "admin" && <div className="border-t border-gray-200 pt-3 dark:border-gray-800"><button onClick={() => { setMobileOpen(false); setShowAdmin(true); }} className="w-full rounded-xl px-3 py-3 text-left font-bold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30">Panel Admin</button></div>}
@@ -4181,6 +4180,7 @@ const shareEvent = async (event: Event) => {
                   <button key={item.id} type="button" onClick={() => {
                     setIsFabExpanded(false);
                     setEventFormOpen(false);
+                    resumeAdsAfterEventPosterUpload();
                     if (item.id === "saved") {
                       if (currentRole !== "user") { setShowLoginUser(true); return; }
                       setSelectedEvent(null); setShowCalendar(false); setShowCostumeDirectory(false);
@@ -4691,6 +4691,7 @@ const shareEvent = async (event: Event) => {
                                       setPosterFile(null);
                       setPosterPreview("");
                       setPosterError("");
+                      pauseAdsForEventPosterUpload();
                       setEventFormOpen(true);
                     }}
                     className="shrink-0 rounded-xl bg-red-600 px-5 py-3 text-sm font-bold text-white hover:bg-red-700"
@@ -8066,6 +8067,7 @@ accept="image/jpeg,image/png,image/webp"
                   type="button"
                   onClick={() => {
                     setEventFormOpen(false);
+                    resumeAdsAfterEventPosterUpload();
                                   setPosterFile(null);
                     setPosterPreview("");
                     setPosterError("");
@@ -8413,6 +8415,7 @@ accept="image/jpeg,image/png,image/webp"
                     type="button"
                     onClick={() => {
                       setEventFormOpen(false);
+                      resumeAdsAfterEventPosterUpload();
                                       setPosterFile(null);
                       setPosterPreview("");
                       setPosterError("");
@@ -9002,6 +9005,7 @@ accept="image/jpeg,image/png,image/webp"
                         setPosterError("");
                         setNewCategories([]);
                         setNewTicketType("Gratis");
+                        pauseAdsForEventPosterUpload();
                         setEventFormOpen(true);
                       }}
                       className="text-left transition-colors hover:text-red-600 dark:hover:text-red-400"
