@@ -82,7 +82,7 @@ export default function AdvertisingSlot({ slot, className = "" }: Props) {
   const closePopup = () => {
     setPopupOpen(false);
     if (popupRepeatTimer.current !== undefined) window.clearTimeout(popupRepeatTimer.current);
-    popupRepeatTimer.current = window.setTimeout(() => setPopupOpen(true), 15000);
+    popupRepeatTimer.current = window.setTimeout(() => setPopupOpen(true), 45000);
   };
 
   if (slot === "popup") {
@@ -111,7 +111,7 @@ export default function AdvertisingSlot({ slot, className = "" }: Props) {
     return (
       <div ref={rootRef} className={`fixed inset-0 z-[110] flex items-center justify-center bg-black/80 p-3 sm:p-6 ${className}`} role="dialog" aria-modal="true" aria-label="Iklan partner">
         <div className="relative flex max-h-[96dvh] w-full max-w-5xl items-center justify-center">
-          <button type="button" onClick={() => setAds([])} aria-label="Tutup iklan" className="absolute right-2 top-2 z-20 flex h-11 w-11 items-center justify-center rounded-full border border-white/30 bg-black/75 text-3xl leading-none text-white shadow-xl hover:bg-black">×</button>
+          <button type="button" onClick={() => setAds([])} aria-label="Tutup iklan" title="Tutup iklan" className="fixed right-4 top-4 z-[130] inline-flex min-h-12 items-center justify-center gap-2 rounded-full border-2 border-white bg-red-600 px-5 py-3 text-sm font-extrabold tracking-wide text-white shadow-[0_4px_24px_rgba(0,0,0,0.65)] ring-2 ring-red-900/70 transition hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-300"><span aria-hidden="true" className="text-2xl leading-none">×</span><span>TUTUP IKLAN</span></button>
           {ads.map(ad => (
             <button key={ad.id} type="button" onClick={() => openAd(ad)} className="flex max-h-[94dvh] w-full items-center justify-center">
               <img src={ad.imageUrl} alt={ad.name} loading="lazy" className="max-h-[94dvh] max-w-full rounded-xl object-contain shadow-2xl" />
