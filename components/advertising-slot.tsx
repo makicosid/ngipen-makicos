@@ -8,6 +8,7 @@ type Props = { slot: "banner" | "floating" | "popup"; className?: string };
 export default function AdvertisingSlot({ slot, className = "" }: Props) {
   const [ads, setAds] = useState<AdItem[]>([]);
   const [popupOpen, setPopupOpen] = useState(false);
+  const [floatingVisible, setFloatingVisible] = useState(false);
   const tracked = useRef(new Set<string>());
   const rootRef = useRef<HTMLDivElement>(null);
   const popupRepeatTimer = useRef<number | undefined>(undefined);
@@ -29,6 +30,7 @@ export default function AdvertisingSlot({ slot, className = "" }: Props) {
   useEffect(() => {
     let cancelled = false;
     let popupInitialTimer: number | undefined;
+    let floatingInitialTimer: number | undefined;
     fetch(`/api/advertising?slot=${slot}`, { cache: "no-store" })
       .then(response => response.ok ? response.json() : Promise.reject(new Error("Ad request failed")))
       .then(result => {
@@ -40,11 +42,17 @@ export default function AdvertisingSlot({ slot, className = "" }: Props) {
             if (!cancelled) setPopupOpen(true);
           }, 1000);
         }
+        if (slot === "floating" && next.length) {
+          floatingInitialTimer = window.setTimeout(() => {
+            if (!cancelled) setFloatingVisible(true);
+          }, 5000);
+        }
       })
       .catch(() => { if (!cancelled) setAds([]); });
     return () => {
       cancelled = true;
       if (popupInitialTimer !== undefined) window.clearTimeout(popupInitialTimer);
+      if (floatingInitialTimer !== undefined) window.clearTimeout(floatingInitialTimer);
       if (popupRepeatTimer.current !== undefined) {
         window.clearTimeout(popupRepeatTimer.current);
         popupRepeatTimer.current = undefined;
@@ -108,10 +116,11 @@ export default function AdvertisingSlot({ slot, className = "" }: Props) {
   }
 
   if (slot === "floating") {
+    if (!floatingVisible) return null;
     return (
       <div ref={rootRef} className={`fixed inset-0 z-[110] flex items-center justify-center bg-black/80 p-3 sm:p-6 ${className}`} role="dialog" aria-modal="true" aria-label="Iklan partner">
         <div className="relative flex max-h-[96dvh] w-full max-w-5xl flex-col items-end justify-center gap-2 pt-14">
-          <button type="button" onClick={() => setAds([])} aria-label="Tutup iklan" title="Tutup iklan" className="absolute right-0 top-0 z-[130] inline-flex min-h-11 items-center justify-center gap-2 rounded-full border-2 border-white bg-red-600 px-4 py-2.5 text-sm font-extrabold tracking-wide text-white shadow-[0_4px_24px_rgba(0,0,0,0.65)] ring-2 ring-red-900/70 transition hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-300"><span aria-hidden="true" className="text-2xl leading-none">×</span><span>TUTUP IKLAN</span></button>
+          <button type="button" onClick={() => setAds([])} aria-label="Tutup iklan" title="Tutup iklan" className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-white bg-red-600 text-3xl font-black leading-none text-white shadow-xl ring-2 ring-red-950/70 transition hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-300">×</button>
           {ads.map(ad => (
             <button key={ad.id} type="button" onClick={() => openAd(ad)} className="flex max-h-[calc(94dvh-4rem)] w-full items-center justify-center">
               <img src={ad.imageUrl} alt={ad.name} loading="lazy" className="max-h-[calc(94dvh-4rem)] max-w-full rounded-xl object-contain shadow-2xl" />
