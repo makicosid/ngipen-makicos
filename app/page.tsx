@@ -4141,7 +4141,7 @@ const shareEvent = async (event: Event) => {
         </header>
 
         {/* Iklan non-banner dipasang pada root agar tersedia di beranda dan halaman detail. */}
-        {!showAdmin && (
+        {currentRole === "user" && !showAdmin && (
           <>
             <AdvertisingSlot slot="floating" />
             <AdvertisingSlot slot="popup" />
@@ -4719,7 +4719,7 @@ const shareEvent = async (event: Event) => {
             )}
 
             {/* PAID ADVERTISEMENT BANNER — independent from existing sponsored events */}
-            {!showCostumeDirectory && <AdvertisingSlot slot="banner" />}
+            {currentRole === "user" && !showAdmin && !showCostumeDirectory && <AdvertisingSlot slot="banner" />}
 
             {/* CAROUSEL SPONSOR / PROMOTE */}
            {!showCostumeDirectory && sponsoredEvents.length > 0 && (
