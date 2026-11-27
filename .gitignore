@@ -23,6 +23,7 @@ pnpm-debug.log*
 
 # Test and coverage output
 /coverage/
+/migration-output/
 /playwright-report/
 /test-results/
 
