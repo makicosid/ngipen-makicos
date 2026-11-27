@@ -158,18 +158,18 @@ export default function AdvertisingSlot({ slot, className = "" }: Props) {
     return (
       <aside
         ref={rootRef}
-        className={`fixed bottom-3 right-3 z-[110] w-[min(112px,calc(100vw-24px))] overflow-visible sm:bottom-4 sm:right-4 sm:w-[150px] md:w-[180px] ${className}`}
+        className={`fixed bottom-2 right-2 z-[110] w-[min(80px,calc(100vw-16px))] overflow-visible sm:bottom-3 sm:right-3 sm:w-[108px] md:w-[130px] ${className}`}
         aria-label="Iklan partner"
       >
         <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl ring-1 ring-black/5 dark:border-gray-700 dark:bg-gray-900">
-          <div className="flex min-h-6 items-center justify-between gap-1 px-1.5 py-1">
-            <span className="text-[7px] font-bold uppercase tracking-wider text-gray-500">Iklan Partner</span>
+          <div className="flex min-h-5 items-center justify-between gap-1 px-1 py-0.5">
+            <span className="text-[6px] font-bold uppercase tracking-wider text-gray-500">Iklan Partner</span>
             <button
               type="button"
               onClick={closeFloating}
               aria-label="Tutup iklan"
               title="Tutup iklan"
-              className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gray-100 text-sm font-bold leading-none text-gray-700 transition hover:bg-red-100 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-400 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-red-950"
+              className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-gray-100 text-xs font-bold leading-none text-gray-700 transition hover:bg-red-100 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-400 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-red-950"
             >
               ×
             </button>
@@ -184,7 +184,7 @@ export default function AdvertisingSlot({ slot, className = "" }: Props) {
               src={currentAd.imageUrl}
               alt={currentAd.name}
               loading="lazy"
-              className="mx-auto block aspect-square max-h-[112px] w-full rounded-md object-contain sm:max-h-[150px] md:max-h-[180px]"
+              className="mx-auto block aspect-square max-h-[80px] w-full rounded-md object-contain sm:max-h-[108px] md:max-h-[130px]"
             />
           </button>
         </div>
