@@ -43,9 +43,6 @@ export default function AdvertisingSlot({ slot, className = "" }: Props) {
   const popupRepeatTimer = useRef<number | undefined>(undefined);
   const popupCloseTimer = useRef<number | undefined>(undefined);
   const floatingNextTimer = useRef<number | undefined>(undefined);
-  const rotationTimer = useRef<number | undefined>(undefined);
-  const rotationStartedAt = useRef<number | null>(null);
-  const rotationRemaining = useRef<number>(0);
 
   const track = useCallback(async (ad: AdItem, eventType: "impression" | "click") => {
     const key = crypto.randomUUID();
@@ -99,14 +96,6 @@ export default function AdvertisingSlot({ slot, className = "" }: Props) {
     setAdsPaused(isEventPosterAdPauseActive());
     return subscribeToEventPosterAdPause(setAdsPaused);
   }, []);
-
-  // Banner creative changes are driven by the close action of its scroll-floating presentation.
-  // This prevents automatic rotation from bypassing the requested 35-second post-close interval.
-  useEffect(() => {
-    if (slot !== "banner" || rotationTimer.current === undefined) return;
-    window.clearTimeout(rotationTimer.current);
-    rotationTimer.current = undefined;
-  }, [slot]);
 
   const currentAd = ads.length ? ads[currentIndex % ads.length] : undefined;
   const currentBannerKey = currentAd ? (currentAd.creativeId || currentAd.id) : null;
