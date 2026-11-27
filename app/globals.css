@@ -149,3 +149,70 @@ body {
   object-fit: fill;
   object-position: center;
 }
+
+
+/* NGIPEN Ads motion: banner carousel, floating entrance, and popup scale/fade. */
+@keyframes adBannerSlideIn {
+  from { opacity: 0; transform: translateX(28px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes adBannerProgress {
+  from { width: 0; }
+  to { width: 100%; }
+}
+@keyframes adFloatingEnter {
+  from { opacity: 0; transform: translateX(calc(100% + 2rem)); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes adPopupOverlayIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes adPopupOverlayOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+@keyframes adPopupScaleIn {
+  from { opacity: 0; transform: scale(0.82); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes adPopupScaleOut {
+  from { opacity: 1; transform: scale(1); }
+  to { opacity: 0; transform: scale(0.82); }
+}
+
+.ad-banner-slide-in {
+  animation: adBannerSlideIn 420ms cubic-bezier(.2,.75,.25,1) both;
+}
+.ad-banner-indicator-fill {
+  width: 100%;
+  animation: adBannerProgress 25s linear both;
+}
+.ad-floating-enter {
+  animation: adFloatingEnter 650ms cubic-bezier(.2,.75,.25,1) both;
+}
+.ad-popup-overlay {
+  animation: adPopupOverlayIn 240ms ease-out both;
+}
+.ad-popup-panel {
+  animation: adPopupScaleIn 280ms cubic-bezier(.2,.75,.25,1) both;
+}
+.ad-popup-overlay--closing {
+  animation: adPopupOverlayOut 240ms ease-in both;
+}
+.ad-popup-panel--closing {
+  animation: adPopupScaleOut 240ms ease-in both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ad-banner-slide-in,
+  .ad-banner-indicator-fill,
+  .ad-floating-enter,
+  .ad-popup-overlay,
+  .ad-popup-panel,
+  .ad-popup-overlay--closing,
+  .ad-popup-panel--closing {
+    animation: none !important;
+    transition: none !important;
+  }
+}
