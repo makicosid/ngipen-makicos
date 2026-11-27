@@ -15,6 +15,16 @@ type Dashboard = { sponsors: Sponsor[]; campaigns: Campaign[]; slots: Slot[] };
 const inputClass = "mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-red-500 dark:border-gray-700 dark:bg-gray-950";
 const buttonClass = "rounded-xl bg-red-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50";
 
+// Date input is interpreted in the admin's local timezone.
+// Campaign starts at 00:00 on the selected start date and ends at 23:59:59.999
+// on the selected end date, so admins never need to enter a time manually.
+function dateOnlyToIso(value: string, endOfDay = false) {
+  if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(value)) throw new Error("Pilih tanggal mulai dan berakhir.");
+  const date = new Date(`${value}T${endOfDay ? "23:59:59.999" : "00:00:00"}`);
+  if (!Number.isFinite(date.getTime())) throw new Error("Tanggal kampanye tidak valid.");
+  return date.toISOString();
+}
+
 export default function AdminAdvertisingPanel() {
   const [data, setData] = useState<Dashboard | null>(null);
   const [loading, setLoading] = useState(true);
@@ -95,9 +105,14 @@ export default function AdminAdvertisingPanel() {
         setUploading(false);
       }
       if (!uploadedPath) throw new Error("Pilih gambar iklan terlebih dahulu.");
+      const campaignStartsAt = dateOnlyToIso(startsAt);
+      const campaignEndsAt = dateOnlyToIso(endsAt, true);
+      if (new Date(campaignEndsAt).getTime() < new Date(campaignStartsAt).getTime()) {
+        throw new Error("Tanggal berakhir harus sama dengan atau setelah tanggal mulai.");
+      }
       const response = await fetch("/api/admin/advertising", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "create_campaign", sponsorId, campaignName, slotCode, imagePath: uploadedPath, targetUrl, startsAt: new Date(startsAt).toISOString(), endsAt: new Date(endsAt).toISOString() }),
+        body: JSON.stringify({ action: "create_campaign", sponsorId, campaignName, slotCode, imagePath: uploadedPath, targetUrl, startsAt: campaignStartsAt, endsAt: campaignEndsAt }),
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Gagal membuat kampanye.");
@@ -168,9 +183,10 @@ export default function AdminAdvertisingPanel() {
           {imagePreview && <img src={imagePreview} alt="Preview gambar iklan" className="max-h-36 w-full rounded-xl border border-gray-200 object-contain dark:border-gray-700" />}
           <label className="block text-sm font-semibold">URL tujuan<input className={inputClass} type="url" value={targetUrl} onChange={e => setTargetUrl(e.target.value)} required placeholder="https://contoh.com" /></label>
           <div className="grid grid-cols-2 gap-2">
-            <label className="block text-sm font-semibold">Mulai<input className={inputClass} type="datetime-local" value={startsAt} onChange={e => setStartsAt(e.target.value)} required /></label>
-            <label className="block text-sm font-semibold">Berakhir<input className={inputClass} type="datetime-local" value={endsAt} onChange={e => setEndsAt(e.target.value)} required /></label>
+            <label className="block text-sm font-semibold">Tanggal mulai<input className={inputClass} type="date" value={startsAt} onChange={e => setStartsAt(e.target.value)} required /></label>
+            <label className="block text-sm font-semibold">Tanggal berakhir<input className={inputClass} type="date" value={endsAt} onChange={e => setEndsAt(e.target.value)} min={startsAt || undefined} required /></label>
           </div>
+          <p className="text-xs text-gray-500">Jam diatur otomatis: mulai pukul 00.00 pada tanggal mulai dan berakhir pukul 23.59 pada tanggal berakhir (waktu lokal perangkat admin).</p>
           <button className={buttonClass} disabled={saving || uploading || loading || !data?.sponsors.some(s => s.status === "active")}>{uploading ? "Mengunggah gambar..." : saving ? "Menyimpan..." : "Buat Kampanye"}</button>
         </form>
       </div>
