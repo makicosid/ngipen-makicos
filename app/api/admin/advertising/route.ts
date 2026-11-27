@@ -238,7 +238,7 @@ export async function PATCH(request: NextRequest) {
       if (normalized.some(item => !item.image_path || item.image_path.length > 500 || item.image_path.startsWith("/") || item.image_path.includes("..") || !item.target_url)) return adminJson({ error: "Poster dan URL HTTPS wajib valid." }, 400);
       const { data: existing, error: existingError } = await supabase.from("ad_campaigns").select("id,sponsor_id,slot_code,image_path").eq("id", id).maybeSingle();
       if (existingError || !existing) return adminJson({ error: "Kampanye tidak ditemukan." }, 404);
-      const { data: oldCreatives, error: oldError } = await supabase.from("ad_creatives").select("image_path").eq("campaign_id", id);
+      const { data: oldCreatives, error: oldError } = await supabase.from("ad_creatives").select("id,image_path").eq("campaign_id", id);
       if (oldError && oldError.code !== "42P01" && oldError.code !== "PGRST205") return adminJson({ error: "Gagal membaca poster lama." }, 500);
       if (oldError && creatives.length > 1) return adminJson({ error: "Jalankan SQL migrasi materi iklan terlebih dahulu untuk menggunakan banyak poster." }, 409);
       const { data: overlapping, error: overlapError } = await supabase.from("ad_campaigns").select("sponsor_id")
