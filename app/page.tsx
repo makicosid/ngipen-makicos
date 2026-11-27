@@ -2326,7 +2326,6 @@ const logout = async () => {
       return;
     }
     setAdminEditSaving(true);
-    if (adminEditPoster) pauseAdsForEventPosterUpload();
     try {
       const formData = new FormData();
       const fields = ["title", "description", "province", "city", "venue_address", "start_date", "end_date", "start_time", "end_time", "ticket_type", "ticket_url", "registration_url", "social_link"] as const;
@@ -2344,7 +2343,6 @@ const logout = async () => {
       setEvents((prev) => prev.map((item) => item.id === editingApprovedEvent.id ? result.event as Event : item));
       setEditingApprovedEvent(null);
       setAdminEditPoster(null);
-      if (adminEditPoster) resumeAdsAfterEventPosterUpload();
       setToast("Informasi event berhasil diperbarui. Status persetujuan dan sponsor tetap.");
     } catch (error) {
       setToast(`Gagal mengedit event: ${error instanceof Error ? error.message : "Terjadi kesalahan."}`);
@@ -4189,7 +4187,7 @@ const shareEvent = async (event: Event) => {
                     }
                     setShowSavedCalendar(false);
                     if (item.id === "upload") {
-                      setPosterFile(null); setPosterPreview(""); setPosterError(""); setEventFormOpen(true); return;
+                      setPosterFile(null); setPosterPreview(""); setPosterError(""); pauseAdsForEventPosterUpload(); setEventFormOpen(true); return;
                     }
                     if (item.id === "home") {
                       setSelectedEvent(null); setShowCalendar(false); setShowCostumeDirectory(false); setActiveNav("home");
