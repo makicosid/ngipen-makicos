@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-const WHATSAPP_NUMBER = "6281381067774";
+const WHATSAPP_NUMBER = "628138106774";
 
 const packages = [
   {
@@ -101,10 +101,10 @@ export default function AdsPromotePage() {
           {packages.map((pkg, index) => (
             <article
               key={pkg.id}
-              className={`ads-promote-card ads-promote-card--${pkg.tone} relative flex h-full flex-col rounded-3xl border bg-white p-5 shadow-[0_14px_45px_rgba(30,20,20,0.06)] sm:p-7 dark:bg-[#191a1f] ${pkg.featured ? "border-amber-400 shadow-[0_18px_55px_rgba(180,130,35,0.15)] lg:-translate-y-2" : "border-gray-200 dark:border-gray-700"}`}
+              className={`ads-promote-card ads-promote-card--${pkg.tone} relative flex h-full flex-col rounded-3xl border bg-white p-5 shadow-[0_14px_45px_rgba(30,20,20,0.06)] sm:p-7 dark:bg-[#191a1f] ${pkg.id === "gold" ? "border-amber-400 shadow-[0_18px_55px_rgba(180,130,35,0.15)] lg:-translate-y-2" : "border-gray-200 dark:border-gray-700"}`}
               style={{ animationDelay: `${index * 100}ms` }}
             >
-              {pkg.featured && (
+              {pkg.id === "gold" && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-gradient-to-r from-amber-500 to-yellow-400 px-4 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-[#38270a] shadow-md">
                   Best Value · Recommended
                 </div>
@@ -119,7 +119,7 @@ export default function AdsPromotePage() {
                     {pkg.price}
                   </p>
                 </div>
-                <div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-3xl ${pkg.featured ? "bg-amber-100 dark:bg-amber-400/15" : "bg-gray-100 dark:bg-gray-800"}`}>
+                <div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-3xl ${pkg.id === "gold" ? "bg-amber-100 dark:bg-amber-400/15" : "bg-gray-100 dark:bg-gray-800"}`}>
                   {pkg.medal}
                 </div>
               </div>
@@ -165,7 +165,7 @@ export default function AdsPromotePage() {
 
               <a
                 href={whatsappLink(pkg.name)}
-                className={`mt-7 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-black transition duration-200 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 dark:focus:ring-offset-[#191a1f] ${pkg.featured ? "bg-[#bb212d] text-white shadow-lg shadow-red-900/15 hover:bg-red-800" : "border border-gray-200 bg-gray-950 text-white hover:bg-red-700 dark:border-gray-600 dark:bg-white dark:text-gray-950 dark:hover:bg-gray-200"}`}
+                className={`mt-7 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-black transition duration-200 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 dark:focus:ring-offset-[#191a1f] ${pkg.id === "gold" ? "bg-[#bb212d] text-white shadow-lg shadow-red-900/15 hover:bg-red-800" : "border border-gray-200 bg-gray-950 text-white hover:bg-red-700 dark:border-gray-600 dark:bg-white dark:text-gray-950 dark:hover:bg-gray-200"}`}
               >
                 <span aria-hidden="true">☏</span>
                 Pesan Sekarang
