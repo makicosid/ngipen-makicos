@@ -92,17 +92,15 @@ export async function GET() {
       const config = slotConfig.get(slotCode);
       const capacity = config?.is_enabled ? Math.max(0, Number(config.max_visible) || 0) : 0;
       const sponsorRows = bookingsBySlot.get(slotCode) ?? new Map<string, CampaignRow[]>();
-      const intervals: Array<{ start: string; end: string }> = [];
+      const brands: Array<{ periods: Array<{ start: string; end: string }> }> = [];
       for (const campaignsForSponsor of Array.from(sponsorRows.values())) {
-        const sorted = campaignsForSponsor.map(row => ({
-          start: row.starts_at < startIso ? rangeStart : jakartaDateParts(new Date(row.starts_at)).year + "-" +
-            String(jakartaDateParts(new Date(row.starts_at)).month).padStart(2, "0") + "-" +
-            String(jakartaDateParts(new Date(row.starts_at)).day).padStart(2, "0"),
-          end: row.ends_at >= endIso ? addDays(rangeEndExclusive, -1) : (() => {
-            const p = jakartaDateParts(new Date(row.ends_at));
-            return p.year + "-" + String(p.month).padStart(2, "0") + "-" + String(p.day).padStart(2, "0");
-          })(),
-        })).sort((a, b) => a.start.localeCompare(b.start));
+        const sorted = campaignsForSponsor.map(row => {
+          const startParts = jakartaDateParts(new Date(row.starts_at));
+          const endParts = jakartaDateParts(new Date(row.ends_at));
+          const startKey = row.starts_at < startIso ? rangeStart : `${startParts.year}-${String(startParts.month).padStart(2, "0")}-${String(startParts.day).padStart(2, "0")}`;
+          const endKey = row.ends_at >= endIso ? addDays(rangeEndExclusive, -1) : `${endParts.year}-${String(endParts.month).padStart(2, "0")}-${String(endParts.day).padStart(2, "0")}`;
+          return { start: startKey, end: endKey };
+        }).sort((a, b) => a.start.localeCompare(b.start));
         const merged: Array<{ start: string; end: string }> = [];
         for (const interval of sorted) {
           const last = merged[merged.length - 1];
@@ -110,8 +108,9 @@ export async function GET() {
             if (interval.end > last.end) last.end = interval.end;
           } else merged.push({ ...interval });
         }
-        intervals.push(...merged);
+        if (merged.length) brands.push({ periods: merged });
       }
+
 
       const days: Record<string, { booked: number; available: number; capacity: number; isEnabled: boolean }> = {};
       for (let day = rangeStart; day < rangeEndExclusive; day = addDays(day, 1)) {
@@ -126,7 +125,7 @@ export async function GET() {
         capacity,
         enabled: Boolean(config?.is_enabled),
         days,
-        periods: intervals,
+        brands,
       };
     });
 
