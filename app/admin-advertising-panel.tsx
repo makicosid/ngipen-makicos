@@ -27,7 +27,7 @@ function jakartaDateKey(date: Date) {
 }
 
 function dateOnlyToIso(value: string, endOfDay = false) {
-  if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(value)) throw new Error("Pilih tanggal mulai dan berakhir.");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) throw new Error("Pilih tanggal mulai dan berakhir.");
   const now = new Date();
   if (!endOfDay && value === jakartaDateKey(now)) return now.toISOString();
   const [year, month, day] = value.split("-").map(Number);
