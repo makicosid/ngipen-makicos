@@ -155,7 +155,7 @@ export async function DELETE(request: NextRequest) {
       .maybeSingle();
     if (campaignError || !campaign) return adminJson({ error: "Kampanye tidak ditemukan." }, 404);
 
-    const { data: campaignCreatives } = await supabase.from("ad_creatives").select("image_path").eq("campaign_id", id);
+    const { data: campaignCreatives } = await supabase.from("ad_creatives").select("id,image_path").eq("campaign_id", id);
     const hasEnded = new Date(campaign.ends_at).getTime() <= Date.now();
     if (campaign.status !== "completed" && !hasEnded) {
       return adminJson({ error: "Hanya kampanye yang sudah selesai yang dapat dihapus." }, 400);
@@ -260,7 +260,10 @@ export async function PATCH(request: NextRequest) {
       if (!oldError) {
         const { error: insertError } = await supabase.from("ad_creatives").insert(normalized.map(item => ({ campaign_id: id, image_path: item.image_path, target_url: item.target_url as string, sort_order: item.sort_order, is_active: item.is_active })));
         if (insertError) return adminJson({ error: "Gagal menyimpan poster baru; materi lama tetap dipertahankan." }, 500);
-        const { error: deleteError } = await supabase.from("ad_creatives").delete().eq("campaign_id", id).neq("image_path", primary.image_path);
+        const oldCreativeIds = (oldCreatives ?? []).map(item => item.id);
+        const { error: deleteError } = oldCreativeIds.length
+          ? await supabase.from("ad_creatives").delete().in("id", oldCreativeIds)
+          : { error: null };
         if (deleteError) return adminJson({ error: "Materi baru tersimpan, tetapi pembersihan materi lama gagal." }, 500);
       }
       await writeAudit(supabase, "campaign_edited", id, { campaign_name: campaignName, creative_count: normalized.length });
