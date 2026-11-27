@@ -93,6 +93,13 @@ export async function POST(request: NextRequest) {
     const { data: campaign, error: campaignError } = await supabase.from("ad_campaigns").select("id,status,starts_at,ends_at").eq("id", campaignId).maybeSingle();
     const now = Date.now();
     if (campaignError || !campaign || !["active", "scheduled"].includes(campaign.status) || new Date(campaign.starts_at).getTime() > now || new Date(campaign.ends_at).getTime() <= now) return NextResponse.json({ error: "Kampanye tidak aktif." }, { status: 404 });
+    if (creativeId) {
+      const { data: creative, error: creativeError } = await supabase.from("ad_creatives")
+        .select("id,campaign_id,is_active").eq("id", creativeId).maybeSingle();
+      if (creativeError || !creative || creative.campaign_id !== campaignId || !creative.is_active) {
+        return NextResponse.json({ error: "Materi iklan tidak valid." }, { status: 400 });
+      }
+    }
     let eventInsert = await supabase.from("ad_events").insert({ campaign_id: campaignId, creative_id: creativeId, event_type: eventType, session_hash: session.hash, event_key: eventKey, page_path: pagePath });
     if (eventInsert.error?.code === "42703") {
       eventInsert = await supabase.from("ad_events").insert({ campaign_id: campaignId, event_type: eventType, session_hash: session.hash, event_key: eventKey, page_path: pagePath });
