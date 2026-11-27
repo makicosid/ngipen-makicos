@@ -19,7 +19,7 @@ const buttonClass = "rounded-xl bg-red-600 px-4 py-2.5 text-sm font-bold text-wh
 // Campaign starts at 00:00 on the selected start date and ends at 23:59:59.999
 // on the selected end date, so admins never need to enter a time manually.
 function dateOnlyToIso(value: string, endOfDay = false) {
-  if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(value)) throw new Error("Pilih tanggal mulai dan berakhir.");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) throw new Error("Pilih tanggal mulai dan berakhir.");
   const date = new Date(`${value}T${endOfDay ? "23:59:59.999" : "00:00:00"}`);
   if (!Number.isFinite(date.getTime())) throw new Error("Tanggal kampanye tidak valid.");
   return date.toISOString();
