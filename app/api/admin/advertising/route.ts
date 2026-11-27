@@ -154,6 +154,7 @@ export async function DELETE(request: NextRequest) {
       .maybeSingle();
     if (campaignError || !campaign) return adminJson({ error: "Kampanye tidak ditemukan." }, 404);
 
+    const { data: campaignCreatives } = await supabase.from("ad_creatives").select("image_path").eq("campaign_id", id);
     const hasEnded = new Date(campaign.ends_at).getTime() <= Date.now();
     if (campaign.status !== "completed" && !hasEnded) {
       return adminJson({ error: "Hanya kampanye yang sudah selesai yang dapat dihapus." }, 400);
@@ -193,9 +194,12 @@ export async function DELETE(request: NextRequest) {
       clicks: clicks ?? 0,
     });
 
-    const imagePath = typeof campaign.image_path === "string" ? campaign.image_path : "";
-    if (imagePath && !imagePath.startsWith("/") && !imagePath.includes("..")) {
-      const { error: storageError } = await supabase.storage.from("ad-assets").remove([imagePath]);
+    const imagePaths = Array.from(new Set([
+      typeof campaign.image_path === "string" ? campaign.image_path : "",
+      ...(campaignCreatives ?? []).map(item => item.image_path),
+    ])).filter(path => path && !path.startsWith("/") && !path.includes(".."));
+    if (imagePaths.length) {
+      const { error: storageError } = await supabase.storage.from("ad-assets").remove(imagePaths);
       if (storageError) console.error("Advertising image cleanup failed:", storageError.message);
     }
 
