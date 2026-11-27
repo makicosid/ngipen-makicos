@@ -216,3 +216,43 @@ body {
     transition: none !important;
   }
 }
+
+
+/* NGIPEN fixed/floating banner: scroll state and vertical dismiss motion. */
+.ad-banner-floating-shell {
+  animation: adBannerFloatReveal 360ms cubic-bezier(.2,.75,.25,1) both;
+  transform-origin: top center;
+}
+.ad-banner-floating-card {
+  max-height: 180px;
+  opacity: 1;
+  transform: scaleY(1);
+  transform-origin: top center;
+  transition: max-height 320ms ease, opacity 260ms ease, transform 320ms ease;
+}
+.ad-banner-floating-card--closing {
+  max-height: 0;
+  opacity: 0;
+  transform: scaleY(0.02);
+  border-width: 0;
+}
+.ad-banner-floating-close {
+  animation: adBannerCloseReveal 180ms ease-out both;
+}
+@keyframes adBannerFloatReveal {
+  from { opacity: 0; transform: translateY(-12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes adBannerCloseReveal {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ad-banner-floating-shell,
+  .ad-banner-floating-close {
+    animation: none !important;
+  }
+  .ad-banner-floating-card {
+    transition: none !important;
+  }
+}
