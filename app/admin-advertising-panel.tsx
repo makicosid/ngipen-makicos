@@ -7,6 +7,7 @@ type Campaign = {
   id: string; sponsor_id: string; slot_code: "banner" | "floating" | "popup"; campaign_name: string;
   image_path: string; target_url: string; status: string; starts_at: string; ends_at: string;
   ad_sponsors?: { brand_name: string } | Array<{ brand_name: string }>;
+  creatives?: { id: string; image_path: string; target_url: string; sort_order: number; is_active: boolean }[];
   metrics: { impressions: number; clicks: number };
 };
 type Slot = { slot_code: string; display_name: string; max_visible: number; is_enabled: boolean };
@@ -14,6 +15,7 @@ type Dashboard = { sponsors: Sponsor[]; campaigns: Campaign[]; slots: Slot[] };
 
 const inputClass = "mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-red-500 dark:border-gray-700 dark:bg-gray-950";
 const buttonClass = "rounded-xl bg-red-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50";
+type EditCreative = { imagePath: string; targetUrl: string; file: File | null };
 
 // Date input is interpreted in the admin's local timezone.
 // Campaign starts at 00:00 on the selected start date and ends at 23:59:59.999
@@ -52,6 +54,11 @@ export default function AdminAdvertisingPanel() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePath, setImagePath] = useState("");
   const [imagePreview, setImagePreview] = useState("");
+  const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null);
+  const [editCampaignName, setEditCampaignName] = useState("");
+  const [editStartsAt, setEditStartsAt] = useState("");
+  const [editEndsAt, setEditEndsAt] = useState("");
+  const [editCreatives, setEditCreatives] = useState<EditCreative[]>([]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -128,6 +135,58 @@ export default function AdminAdvertisingPanel() {
       await load();
     } catch (e) { setError(e instanceof Error ? e.message : "Gagal membuat kampanye."); }
     finally { setSaving(false); setUploading(false); }
+  }
+
+  function beginEdit(campaign: Campaign) {
+    const dateValue = (value: string) => {
+      const date = new Date(value);
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    };
+    setEditingCampaign(campaign);
+    setEditCampaignName(campaign.campaign_name);
+    setEditStartsAt(dateValue(campaign.starts_at));
+    setEditEndsAt(dateValue(campaign.ends_at));
+    const creatives = campaign.creatives?.length ? campaign.creatives : [{ image_path: campaign.image_path, target_url: campaign.target_url, id: "", sort_order: 0, is_active: true }];
+    setEditCreatives(creatives.map(item => ({ imagePath: item.image_path, targetUrl: item.target_url, file: null })));
+    setError(""); setNotice("");
+  }
+
+  function updateEditCreative(index: number, patch: Partial<EditCreative>) {
+    setEditCreatives(items => items.map((item, itemIndex) => itemIndex === index ? { ...item, ...patch } : item));
+  }
+
+  async function saveCampaignEdit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!editingCampaign) return;
+    setSaving(true); setError(""); setNotice("");
+    try {
+      if (editCreatives.length < 1 || editCreatives.length > 20) throw new Error("Jumlah poster harus 1–20.");
+      const creatives = [];
+      for (const creative of editCreatives) {
+        let imagePath = creative.imagePath;
+        if (creative.file) {
+          const form = new FormData(); form.append("file", creative.file);
+          const uploadResponse = await fetch("/api/admin/advertising/upload", { method: "POST", body: form });
+          const uploadResult = await uploadResponse.json();
+          if (!uploadResponse.ok) throw new Error(uploadResult.error || "Gagal mengunggah poster.");
+          imagePath = uploadResult.path;
+        }
+        creatives.push({ imagePath, targetUrl: creative.targetUrl, isActive: true });
+      }
+      const response = await fetch("/api/admin/advertising", {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "edit_campaign", id: editingCampaign.id, campaignName: editCampaignName,
+          startsAt: dateOnlyToIso(editStartsAt), endsAt: dateOnlyToIso(editEndsAt, true), creatives,
+        }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Gagal memperbarui kampanye.");
+      setEditingCampaign(null); setEditCreatives([]);
+      setNotice("Kampanye dan materi poster berhasil diperbarui.");
+      await load();
+    } catch (e) { setError(e instanceof Error ? e.message : "Gagal memperbarui kampanye."); }
+    finally { setSaving(false); }
   }
 
   async function updateStatus(id: string, status: string) {
@@ -226,6 +285,33 @@ export default function AdminAdvertisingPanel() {
       {error && <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">{error}</p>}
       {notice && <p role="status" className="rounded-xl bg-green-50 p-3 text-sm text-green-700 dark:bg-green-950 dark:text-green-300">{notice}</p>}
 
+      {editingCampaign && (
+        <form onSubmit={saveCampaignEdit} className="space-y-4 rounded-2xl border-2 border-red-200 p-4 dark:border-red-900">
+          <div className="flex items-center justify-between gap-2">
+            <div><h3 className="font-bold">Edit Kampanye</h3><p className="text-xs text-gray-500">Perubahan poster dan link akan diterapkan setelah disimpan.</p></div>
+            <button type="button" onClick={() => setEditingCampaign(null)} className="rounded-lg border px-3 py-2 text-xs font-bold">Batal</button>
+          </div>
+          <label className="block text-sm font-semibold">Nama kampanye<input className={inputClass} value={editCampaignName} onChange={e => setEditCampaignName(e.target.value)} maxLength={150} required /></label>
+          <div className="grid grid-cols-2 gap-2">
+            <label className="block text-sm font-semibold">Tanggal mulai<input className={inputClass} type="date" value={editStartsAt} onChange={e => setEditStartsAt(e.target.value)} required /></label>
+            <label className="block text-sm font-semibold">Tanggal berakhir<input className={inputClass} type="date" value={editEndsAt} onChange={e => setEditEndsAt(e.target.value)} min={editStartsAt || undefined} required /></label>
+          </div>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between"><h4 className="text-sm font-bold">Poster dan link tujuan</h4><button type="button" disabled={editCreatives.length >= 20} onClick={() => setEditCreatives(items => [...items, { imagePath: "", targetUrl: "", file: null }])} className="rounded-lg border px-3 py-2 text-xs font-bold">+ Tambah Poster</button></div>
+            {editCreatives.map((creative, index) => (
+              <div key={index} className="space-y-2 rounded-xl bg-gray-50 p-3 dark:bg-gray-950">
+                <div className="flex items-center justify-between"><p className="text-xs font-bold">Materi {index + 1}</p><button type="button" disabled={editCreatives.length <= 1} onClick={() => setEditCreatives(items => items.filter((_, i) => i !== index))} className="text-xs font-bold text-red-600">Hapus</button></div>
+                {creative.imagePath && !creative.file && <img src={`${process.env.NEXT_PUBLIC_SUPABASE_URL || ""}/storage/v1/object/public/ad-assets/${creative.imagePath}`} alt={`Poster ${index + 1}`} className="max-h-32 rounded-lg object-contain" />}
+                <label className="block text-xs font-semibold">Ganti / unggah poster<input className={inputClass} type="file" accept="image/jpeg,image/png,image/webp,image/avif" onChange={e => updateEditCreative(index, { file: e.target.files?.[0] ?? null })} /></label>
+                <label className="block text-xs font-semibold">Path poster lama<input className={inputClass} value={creative.imagePath} onChange={e => updateEditCreative(index, { imagePath: e.target.value })} required={!creative.file} /></label>
+                <label className="block text-xs font-semibold">URL tujuan<input className={inputClass} type="url" value={creative.targetUrl} onChange={e => updateEditCreative(index, { targetUrl: e.target.value })} required placeholder="https://contoh.com" /></label>
+              </div>
+            ))}
+          </div>
+          <button className={buttonClass} disabled={saving || uploading}>{saving ? "Menyimpan perubahan..." : "Simpan Perubahan"}</button>
+        </form>
+      )}
+
       <div className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2"><div><h3 className="font-bold">Daftar Kampanye</h3><p className="text-xs text-gray-500">Statistik impression dan click dalam 30 hari terakhir.</p></div><button type="button" onClick={() => void load()} disabled={loading} className="rounded-lg border border-gray-300 px-3 py-2 text-xs font-bold dark:border-gray-700">Muat Ulang</button></div>
         {loading ? <p className="py-6 text-center text-sm text-gray-500">Memuat data...</p> : !data?.campaigns.length ? <p className="rounded-xl border border-dashed border-gray-300 py-8 text-center text-sm text-gray-500 dark:border-gray-700">Belum ada kampanye iklan.</p> : data.campaigns.map(c => {
@@ -237,6 +323,7 @@ export default function AdminAdvertisingPanel() {
               <div className="flex gap-3 text-xs"><span>👁 {c.metrics.impressions.toLocaleString("id-ID")}</span><span>↗ {c.metrics.clicks.toLocaleString("id-ID")}</span></div>
             </div>
             <div className="mt-3 flex flex-wrap gap-2">
+              <button type="button" onClick={() => beginEdit(c)} className="rounded-lg border border-blue-200 px-3 py-2 text-xs font-bold text-blue-700 dark:border-blue-900 dark:text-blue-300">Edit Kampanye</button>
               {c.status !== "paused" && c.status !== "completed" ? <button type="button" onClick={() => void updateStatus(c.id, "paused")} className="rounded-lg border border-gray-300 px-3 py-2 text-xs font-bold dark:border-gray-700">Jeda</button> : null}
               {(c.status === "paused" || c.status === "completed") && new Date(c.ends_at).getTime() > Date.now() ? <button type="button" onClick={() => void updateStatus(c.id, new Date(c.starts_at).getTime() > Date.now() ? "scheduled" : "active")} className="rounded-lg bg-green-600 px-3 py-2 text-xs font-bold text-white">{new Date(c.starts_at).getTime() > Date.now() ? "Jadwalkan Ulang" : "Aktifkan Kembali"}</button> : null}
               {c.status !== "completed" && <button type="button" onClick={() => void updateStatus(c.id, "completed")} className="rounded-lg border border-red-200 px-3 py-2 text-xs font-bold text-red-600 dark:border-red-900">Akhiri</button>}
