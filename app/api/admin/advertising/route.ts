@@ -29,6 +29,17 @@ export async function GET(request: NextRequest) {
       return adminJson({ error: "Gagal memuat data Advertising Partner." }, 500);
     }
 
+    const campaignIds = (campaigns ?? []).map(campaign => campaign.id);
+    const { data: creativeRows, error: creativeError } = campaignIds.length
+      ? await supabase.from("ad_creatives").select("id,campaign_id,image_path,target_url,sort_order,is_active,created_at,updated_at").in("campaign_id", campaignIds).order("sort_order", { ascending: true })
+      : { data: [], error: null };
+    const creativesByCampaign = new Map<string, NonNullable<typeof creativeRows>>();
+    if (!creativeError) for (const creative of creativeRows ?? []) {
+      const current = creativesByCampaign.get(creative.campaign_id) ?? [];
+      current.push(creative);
+      creativesByCampaign.set(creative.campaign_id, current);
+    }
+
     const metrics = new Map<string, { impressions: number; clicks: number }>();
     for (const event of events ?? []) {
       const current = metrics.get(event.campaign_id) ?? { impressions: 0, clicks: 0 };
@@ -41,6 +52,7 @@ export async function GET(request: NextRequest) {
       slots: slots ?? [],
       campaigns: (campaigns ?? []).map((campaign) => ({
         ...campaign,
+        creatives: creativesByCampaign.get(campaign.id) ?? [],
         metrics: metrics.get(campaign.id) ?? { impressions: 0, clicks: 0 },
       })),
     });
@@ -93,12 +105,26 @@ export async function POST(request: NextRequest) {
       ]);
       if (sponsorError || !sponsor) return adminJson({ error: "Sponsor tidak ditemukan atau tidak aktif." }, 400);
       if (slotError || !slot?.is_enabled) return adminJson({ error: "Slot iklan tidak ditemukan atau sedang dinonaktifkan." }, 400);
+      const { data: overlapping, error: overlapError } = await supabase.from("ad_campaigns")
+        .select("sponsor_id").eq("slot_code", slotCode).in("status", ["active", "scheduled"])
+        .lt("starts_at", endsAt.toISOString()).gt("ends_at", startsAt.toISOString());
+      if (overlapError) return adminJson({ error: "Gagal memeriksa kapasitas slot." }, 500);
+      const activeBrands = new Set((overlapping ?? []).map(row => row.sponsor_id));
+      if (!activeBrands.has(sponsorId) && activeBrands.size >= 3) return adminJson({ error: "Slot ini sudah mencapai batas 3 brand pada periode tersebut." }, 409);
+
       const { data, error } = await supabase.from("ad_campaigns").insert({
         sponsor_id: sponsorId, slot_code: slotCode, campaign_name: campaignName, image_path: imagePath,
         target_url: targetUrl, status: "scheduled", starts_at: startsAt.toISOString(), ends_at: endsAt.toISOString(),
         created_by: "admin", updated_by: "admin",
       }).select("id,sponsor_id,slot_code,campaign_name,image_path,target_url,status,starts_at,ends_at,created_at").single();
       if (error || !data) return adminJson({ error: "Gagal menyimpan kampanye. Periksa kembali data dan slot." }, 500);
+      const { error: creativeInsertError } = await supabase.from("ad_creatives").insert({
+        campaign_id: data.id, image_path: imagePath, target_url: targetUrl, sort_order: 0, is_active: true,
+      });
+      if (creativeInsertError && creativeInsertError.code !== "42P01" && creativeInsertError.code !== "PGRST205") {
+        await supabase.from("ad_campaigns").delete().eq("id", data.id);
+        return adminJson({ error: "Materi poster gagal disimpan." }, 500);
+      }
       await writeAudit(supabase, "campaign_created", data.id, { slot_code: slotCode, campaign_name: campaignName });
       return adminJson({ success: true, campaign: data }, 201);
     }
@@ -189,6 +215,57 @@ export async function PATCH(request: NextRequest) {
     if (!body || typeof body !== "object" || Array.isArray(body)) return adminJson({ error: "Format data tidak valid." }, 400);
     const input = body as Record<string, unknown>;
     const id = typeof input.id === "string" ? input.id : "";
+
+    if (input.action === "edit_campaign") {
+      const campaignName = typeof input.campaignName === "string" ? input.campaignName.trim() : "";
+      const startsAt = typeof input.startsAt === "string" ? new Date(input.startsAt) : null;
+      const endsAt = typeof input.endsAt === "string" ? new Date(input.endsAt) : null;
+      const creatives = Array.isArray(input.creatives) ? input.creatives as Array<Record<string, unknown>> : [];
+      if (!id || campaignName.length < 2 || campaignName.length > 150) return adminJson({ error: "Nama kampanye tidak valid." }, 400);
+      if (!startsAt || !endsAt || !Number.isFinite(startsAt.getTime()) || !Number.isFinite(endsAt.getTime()) || endsAt <= startsAt) return adminJson({ error: "Periode kampanye tidak valid." }, 400);
+      if (creatives.length < 1 || creatives.length > 20) return adminJson({ error: "Kampanye harus memiliki 1–20 poster." }, 400);
+      const normalized = creatives.map((creative, index) => ({
+        image_path: typeof creative.imagePath === "string" ? creative.imagePath.trim() : "",
+        target_url: safeHttpsUrl(creative.targetUrl),
+        sort_order: index,
+        is_active: creative.isActive !== false,
+      }));
+      if (normalized.some(item => !item.image_path || item.image_path.length > 500 || item.image_path.startsWith("/") || item.image_path.includes("..") || !item.target_url)) return adminJson({ error: "Poster dan URL HTTPS wajib valid." }, 400);
+      const { data: existing, error: existingError } = await supabase.from("ad_campaigns").select("id,sponsor_id,slot_code,image_path").eq("id", id).maybeSingle();
+      if (existingError || !existing) return adminJson({ error: "Kampanye tidak ditemukan." }, 404);
+      const { data: overlapping, error: overlapError } = await supabase.from("ad_campaigns").select("sponsor_id")
+        .eq("slot_code", existing.slot_code).neq("id", id).in("status", ["active", "scheduled"])
+        .lt("starts_at", endsAt.toISOString()).gt("ends_at", startsAt.toISOString());
+      if (overlapError) return adminJson({ error: "Gagal memeriksa kapasitas slot." }, 500);
+      const brands = new Set((overlapping ?? []).map(row => row.sponsor_id));
+      brands.add(existing.sponsor_id);
+      if (brands.size > 3) return adminJson({ error: "Periode ini akan melebihi batas 3 brand." }, 409);
+
+      const primary = normalized[0];
+      const { error: updateError } = await supabase.from("ad_campaigns").update({
+        campaign_name: campaignName, image_path: primary.image_path, target_url: primary.target_url,
+        starts_at: startsAt.toISOString(), ends_at: endsAt.toISOString(),
+        updated_at: new Date().toISOString(), updated_by: "admin",
+      }).eq("id", id);
+      if (updateError) return adminJson({ error: "Gagal memperbarui kampanye." }, 500);
+
+      const { data: oldCreatives, error: oldError } = await supabase.from("ad_creatives").select("image_path").eq("campaign_id", id);
+      if (oldError && oldError.code !== "42P01" && oldError.code !== "PGRST205") return adminJson({ error: "Gagal membaca poster lama." }, 500);
+      if (!oldError) {
+        const { error: deleteError } = await supabase.from("ad_creatives").delete().eq("campaign_id", id);
+        if (deleteError) return adminJson({ error: "Gagal mengganti daftar poster." }, 500);
+        const { error: insertError } = await supabase.from("ad_creatives").insert(normalized.map(item => ({ campaign_id: id, ...item })));
+        if (insertError) return adminJson({ error: "Gagal menyimpan poster baru." }, 500);
+      }
+      await writeAudit(supabase, "campaign_edited", id, { campaign_name: campaignName, creative_count: normalized.length });
+      const oldPaths = (oldCreatives ?? []).map(item => item.image_path).filter(path => !normalized.some(item => item.image_path === path));
+      if (oldPaths.length) {
+        const { error: cleanupError } = await supabase.storage.from("ad-assets").remove(oldPaths);
+        if (cleanupError) console.error("Advertising old poster cleanup failed:", cleanupError.message);
+      }
+      return adminJson({ success: true });
+    }
+
     const status = input.status;
     if (!id || !["draft", "scheduled", "active", "paused", "completed"].includes(String(status))) return adminJson({ error: "Kampanye atau status tidak valid." }, 400);
     const { data, error } = await supabase.from("ad_campaigns").update({ status, updated_at: new Date().toISOString(), updated_by: "admin" }).eq("id", id).select("id,status").maybeSingle();
