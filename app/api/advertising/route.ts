@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     if (!slotData?.is_enabled) return NextResponse.json({ ads: [] }, { headers: { "Cache-Control": "no-store" } });
 
     // The configured capacity is a limit on distinct brands, not individual posters.
-    const campaignBySponsor = new Map<string, (typeof campaigns)[number]>();
+    const campaignBySponsor = new Map<string, NonNullable<typeof campaigns>[number]>();
     for (const campaign of campaigns ?? []) {
       if (!campaignBySponsor.has(campaign.sponsor_id)) campaignBySponsor.set(campaign.sponsor_id, campaign);
     }
