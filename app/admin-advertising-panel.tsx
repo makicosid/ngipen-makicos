@@ -20,7 +20,13 @@ const buttonClass = "rounded-xl bg-red-600 px-4 py-2.5 text-sm font-bold text-wh
 // on the selected end date, so admins never need to enter a time manually.
 function dateOnlyToIso(value: string, endOfDay = false) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) throw new Error("Pilih tanggal mulai dan berakhir.");
-  const date = new Date(`${value}T${endOfDay ? "23:59:59.999" : "00:00:00"}`);
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  // If the campaign starts today, start at the actual posting time.
+  // A future start date begins automatically at local midnight.
+  const date = !endOfDay && value === today
+    ? now
+    : new Date(`${value}T${endOfDay ? "23:59:59.999" : "00:00:00"}`);
   if (!Number.isFinite(date.getTime())) throw new Error("Tanggal kampanye tidak valid.");
   return date.toISOString();
 }
@@ -186,7 +192,7 @@ export default function AdminAdvertisingPanel() {
             <label className="block text-sm font-semibold">Tanggal mulai<input className={inputClass} type="date" value={startsAt} onChange={e => setStartsAt(e.target.value)} required /></label>
             <label className="block text-sm font-semibold">Tanggal berakhir<input className={inputClass} type="date" value={endsAt} onChange={e => setEndsAt(e.target.value)} min={startsAt || undefined} required /></label>
           </div>
-          <p className="text-xs text-gray-500">Jam diatur otomatis: mulai pukul 00.00 pada tanggal mulai dan berakhir pukul 23.59 pada tanggal berakhir (waktu lokal perangkat admin).</p>
+          <p className="text-xs text-gray-500">Jam diatur otomatis: jika mulai hari ini, iklan langsung mulai saat kampanye dibuat; jika tanggal mulai mendatang, iklan mulai pukul 00.00. Iklan berakhir pukul 23.59 pada tanggal berakhir (waktu lokal perangkat admin).</p>
           <button className={buttonClass} disabled={saving || uploading || loading || !data?.sponsors.some(s => s.status === "active")}>{uploading ? "Mengunggah gambar..." : saving ? "Menyimpan..." : "Buat Kampanye"}</button>
         </form>
       </div>
