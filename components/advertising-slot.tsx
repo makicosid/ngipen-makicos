@@ -17,9 +17,10 @@ type AdItem = {
 };
 type Props = { slot: "banner" | "floating" | "popup"; className?: string };
 
-const ROTATION_MS = 60_000;
-const BANNER_ROTATION_MS = 25_000;
-const FLOATING_CLOSE_DELAY_MS = 60_000;
+const BANNER_CLOSE_DELAY_MS = 35_000;
+const POPUP_REPEAT_DELAY_MS = 100_000;
+const FLOATING_INITIAL_DELAY_MS = 8_000;
+const FLOATING_REPEAT_DELAY_MS = 60_000;
 
 export default function AdvertisingSlot({ slot, className = "" }: Props) {
   const [ads, setAds] = useState<AdItem[]>([]);
@@ -38,12 +39,13 @@ export default function AdvertisingSlot({ slot, className = "" }: Props) {
   const rootRef = useRef<HTMLElement>(null);
   const bannerCloseTimer = useRef<number | undefined>(undefined);
   const bannerCloseAnimationTimer = useRef<number | undefined>(undefined);
+  const bannerNextTimer = useRef<number | undefined>(undefined);
   const popupRepeatTimer = useRef<number | undefined>(undefined);
   const popupCloseTimer = useRef<number | undefined>(undefined);
   const floatingNextTimer = useRef<number | undefined>(undefined);
   const rotationTimer = useRef<number | undefined>(undefined);
   const rotationStartedAt = useRef<number | null>(null);
-  const rotationRemaining = useRef<number>(slot === "banner" ? BANNER_ROTATION_MS : ROTATION_MS);
+  const rotationRemaining = useRef<number>(0);
 
   const track = useCallback(async (ad: AdItem, eventType: "impression" | "click") => {
     const key = crypto.randomUUID();
@@ -77,7 +79,7 @@ export default function AdvertisingSlot({ slot, className = "" }: Props) {
           initialTimer = window.setTimeout(() => { if (!cancelled) setPopupOpen(true); }, 1000);
         }
         if (slot === "floating" && result.ads.length) {
-          initialTimer = window.setTimeout(() => { if (!cancelled) setFloatingVisible(true); }, 5000);
+          initialTimer = window.setTimeout(() => { if (!cancelled) setFloatingVisible(true); }, FLOATING_INITIAL_DELAY_MS);
         }
       })
       .catch(() => { if (!cancelled) setAds([]); });
@@ -89,6 +91,7 @@ export default function AdvertisingSlot({ slot, className = "" }: Props) {
       if (floatingNextTimer.current !== undefined) window.clearTimeout(floatingNextTimer.current);
       if (bannerCloseTimer.current !== undefined) window.clearTimeout(bannerCloseTimer.current);
       if (bannerCloseAnimationTimer.current !== undefined) window.clearTimeout(bannerCloseAnimationTimer.current);
+      if (bannerNextTimer.current !== undefined) window.clearTimeout(bannerNextTimer.current);
     };
   }, [slot]);
 
@@ -97,23 +100,13 @@ export default function AdvertisingSlot({ slot, className = "" }: Props) {
     return subscribeToEventPosterAdPause(setAdsPaused);
   }, []);
 
+  // Banner creative changes are driven by the close action of its scroll-floating presentation.
+  // This prevents automatic rotation from bypassing the requested 35-second post-close interval.
   useEffect(() => {
-    if (ads.length < 2 || slot === "floating" || adsPaused) return;
-    if (rotationRemaining.current <= 0) rotationRemaining.current = slot === "banner" ? BANNER_ROTATION_MS : ROTATION_MS;
-    rotationStartedAt.current = Date.now();
-    rotationTimer.current = window.setTimeout(() => {
-      setCurrentIndex(index => (index + 1) % ads.length);
-      rotationRemaining.current = slot === "banner" ? BANNER_ROTATION_MS : ROTATION_MS;
-      rotationStartedAt.current = null;
-    }, rotationRemaining.current);
-    return () => {
-      if (rotationTimer.current !== undefined) window.clearTimeout(rotationTimer.current);
-      if (rotationStartedAt.current !== null) {
-        rotationRemaining.current = Math.max(0, rotationRemaining.current - (Date.now() - rotationStartedAt.current));
-      }
-      rotationStartedAt.current = null;
-    };
-  }, [ads.length, slot, adsPaused, currentIndex]);
+    if (slot !== "banner" || rotationTimer.current === undefined) return;
+    window.clearTimeout(rotationTimer.current);
+    rotationTimer.current = undefined;
+  }, [slot]);
 
   const currentAd = ads.length ? ads[currentIndex % ads.length] : undefined;
   const currentBannerKey = currentAd ? (currentAd.creativeId || currentAd.id) : null;
@@ -175,6 +168,11 @@ export default function AdvertisingSlot({ slot, className = "" }: Props) {
     bannerCloseAnimationTimer.current = window.setTimeout(() => {
       setDismissedBannerCreative(currentBannerKey);
       setBannerClosing(false);
+      if (bannerNextTimer.current !== undefined) window.clearTimeout(bannerNextTimer.current);
+      bannerNextTimer.current = window.setTimeout(() => {
+        setCurrentIndex(index => (index + 1) % Math.max(1, ads.length));
+        setDismissedBannerCreative(null);
+      }, BANNER_CLOSE_DELAY_MS);
     }, 320);
   };
 
@@ -213,23 +211,20 @@ export default function AdvertisingSlot({ slot, className = "" }: Props) {
     }, 260);
     if (popupRepeatTimer.current !== undefined) window.clearTimeout(popupRepeatTimer.current);
     popupRepeatTimer.current = window.setTimeout(() => {
+      setCurrentIndex(index => (index + 1) % Math.max(1, ads.length));
       setPopupClosing(false);
       setPopupOpen(true);
-    }, 45_000);
+    }, POPUP_REPEAT_DELAY_MS);
   };
 
   const closeFloating = () => {
     setFloatingVisible(false);
     if (floatingNextTimer.current !== undefined) window.clearTimeout(floatingNextTimer.current);
     floatingNextTimer.current = window.setTimeout(() => {
-      const next = currentIndex + 1;
-      if (next >= ads.length) {
-        setFloatingFinished(true);
-        return;
-      }
-      setCurrentIndex(next);
+      setCurrentIndex(index => (index + 1) % Math.max(1, ads.length));
+      setFloatingFinished(false);
       setFloatingVisible(true);
-    }, FLOATING_CLOSE_DELAY_MS);
+    }, FLOATING_REPEAT_DELAY_MS);
   };
 
   if (!ads.length || adsPaused) return null;
