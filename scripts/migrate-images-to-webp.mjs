@@ -168,10 +168,24 @@ async function main() {
       });
 
       if (uploadError) {
-        const message = uploadError.message;
-        manifest.results.push({ bucket: item.bucket, oldPath: item.oldPath, newPath, status: "upload-failed", error: message });
-        console.error(`[FAIL upload] ${item.bucket}/${newPath}: ${message}`);
-        continue;
+        // Make reruns safe: a prior run may have uploaded WebP but stopped before DB update.
+        const { data: existingFile, error: existingError } = await storage.download(newPath);
+        let existingIsWebp = false;
+        if (!existingError && existingFile) {
+          try {
+            const metadata = await sharp(Buffer.from(await existingFile.arrayBuffer())).metadata();
+            existingIsWebp = metadata.format === "webp";
+          } catch {
+            existingIsWebp = false;
+          }
+        }
+        if (!existingIsWebp) {
+          const message = uploadError.message;
+          manifest.results.push({ bucket: item.bucket, oldPath: item.oldPath, newPath, status: "upload-failed", error: message });
+          console.error(`[FAIL upload] ${item.bucket}/${newPath}: ${message}`);
+          continue;
+        }
+        console.log(`[REUSE] Existing WebP found at ${item.bucket}/${newPath}`);
       }
 
       const { data: publicData } = storage.getPublicUrl(newPath);
@@ -182,18 +196,23 @@ async function main() {
     for (const ref of item.references) {
       const patch = { [ref.source.column]: newUrl };
       if (ref.source.pathColumn) patch[ref.source.pathColumn] = newPath;
-      const { error: updateError } = await supabase
+      let updateQuery = supabase
         .from(ref.source.table)
         .update(patch)
-        .eq("id", ref.row.id);
+        .eq("id", ref.row.id)
+        .eq(ref.source.column, ref.oldUrl);
+      if (ref.source.pathColumn) {
+        updateQuery = updateQuery.eq(ref.source.pathColumn, ref.row[ref.source.pathColumn]);
+      }
+      const { data: updatedRows, error: updateError } = await updateQuery.select("id");
 
-      if (updateError) {
+      if (updateError || !updatedRows || updatedRows.length !== 1) {
         manifest.results.push({
           table: ref.source.table, id: ref.row.id, bucket: item.bucket,
           oldPath: item.oldPath, newPath, oldUrl: ref.oldUrl, newUrl,
-          status: "database-update-failed", error: updateError.message,
+          status: "database-update-failed", error: updateError?.message || "Record berubah sejak proses migrasi dimulai; URL lama tidak ditimpa.",
         });
-        console.error(`[FAIL database] ${ref.source.table} id=${ref.row.id}: ${updateError.message}`);
+        console.error(`[FAIL database] ${ref.source.table} id=${ref.row.id}: ${updateError?.message || "record changed concurrently"}`);
         continue;
       }
 
