@@ -8,6 +8,7 @@ import EventAttendance from "./event-attendance";
 import AdminPushPanel from "./admin-push-panel";
 import AdminAdvertisingPanel from "./admin-advertising-panel";
 import AdvertisingSlot from "../components/advertising-slot";
+import { pauseAdsForEventPosterUpload, resumeAdsAfterEventPosterUpload } from "../lib/ad-pause";
 import EventDateRangePicker from "../components/event-date-range-picker";
 import ProfileAvatar from "../components/profile-avatar";
 import ProfileTitleBadges, { type ProfileTitle } from "../components/profile-title-badges";
@@ -2256,6 +2257,8 @@ const logout = async () => {
       return;
     }
 
+    // Pause iklan tepat saat pengguna menekan tombol kirim event.
+    pauseAdsForEventPosterUpload();
     try {
       const formData = new FormData();
       formData.append("title", title);
@@ -2293,7 +2296,9 @@ const logout = async () => {
       setPosterFile(null);
       setPosterPreview("");
       setPosterError("");
+      resumeAdsAfterEventPosterUpload();
     } catch (error: any) {
+      // Upload gagal: iklan tetap dijeda sampai pengguna mencoba lagi.
       setToast(`Gagal menyimpan event: ${error.message}`);
     }
 
@@ -2323,6 +2328,7 @@ const logout = async () => {
       return;
     }
     setAdminEditSaving(true);
+    if (adminEditPoster) pauseAdsForEventPosterUpload();
     try {
       const formData = new FormData();
       const fields = ["title", "description", "province", "city", "venue_address", "start_date", "end_date", "start_time", "end_time", "ticket_type", "ticket_url", "registration_url", "social_link"] as const;
@@ -2340,6 +2346,7 @@ const logout = async () => {
       setEvents((prev) => prev.map((item) => item.id === editingApprovedEvent.id ? result.event as Event : item));
       setEditingApprovedEvent(null);
       setAdminEditPoster(null);
+      if (adminEditPoster) resumeAdsAfterEventPosterUpload();
       setToast("Informasi event berhasil diperbarui. Status persetujuan dan sponsor tetap.");
     } catch (error) {
       setToast(`Gagal mengedit event: ${error instanceof Error ? error.message : "Terjadi kesalahan."}`);
