@@ -78,9 +78,6 @@ export default function AdsPromotePage() {
             <span aria-hidden="true">←</span>
             Kembali ke NGIPEN
           </Link>
-          <span className="rounded-full border border-red-100 bg-red-50 px-3 py-1.5 text-[10px] font-black tracking-[0.18em] text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300">
-            NGIPEN × MAKICOS
-          </span>
         </div>
 
         <header className="ads-promote-enter mx-auto mb-9 max-w-3xl text-center sm:mb-12">
@@ -104,12 +101,6 @@ export default function AdsPromotePage() {
               className={`ads-promote-card ads-promote-card--${pkg.tone} relative flex h-full flex-col rounded-3xl border bg-white p-5 shadow-[0_14px_45px_rgba(30,20,20,0.06)] sm:p-7 dark:bg-[#191a1f] ${pkg.id === "gold" ? "border-amber-400 shadow-[0_18px_55px_rgba(180,130,35,0.15)] lg:-translate-y-2" : "border-gray-200 dark:border-gray-700"}`}
               style={{ animationDelay: `${index * 100}ms` }}
             >
-              {pkg.id === "gold" && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-gradient-to-r from-amber-500 to-yellow-400 px-4 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-[#38270a] shadow-md">
-                  Best Value · Recommended
-                </div>
-              )}
-
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-[0.2em] text-gray-500 dark:text-gray-400">
@@ -128,9 +119,16 @@ export default function AdsPromotePage() {
                 <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-gray-500 dark:text-gray-400">
                   Durasi Promosi
                 </p>
-                <p className="mt-1 text-lg font-extrabold text-gray-900 dark:text-white">
-                  {pkg.duration}
-                </p>
+                <div className="mt-1 flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-lg font-extrabold text-gray-900 dark:text-white">
+                    {pkg.duration}
+                  </p>
+                  {pkg.id === "gold" && (
+                    <span className="inline-flex rounded-full bg-gradient-to-r from-amber-500 to-yellow-400 px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.12em] text-[#38270a] shadow-sm">
+                      Best Value · Recommended
+                    </span>
+                  )}
+                </div>
               </div>
 
               <div className="mt-6 flex-1 space-y-6">
