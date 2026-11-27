@@ -8,9 +8,9 @@ type Props = { slot: "banner" | "floating" | "popup"; className?: string };
 export default function AdvertisingSlot({ slot, className = "" }: Props) {
   const [ads, setAds] = useState<AdItem[]>([]);
   const [popupOpen, setPopupOpen] = useState(false);
-  const [dismissed, setDismissed] = useState(false);
   const tracked = useRef(new Set<string>());
   const rootRef = useRef<HTMLDivElement>(null);
+  const popupRepeatTimer = useRef<number | undefined>(undefined);
 
   const track = useCallback(async (ad: AdItem, eventType: "impression" | "click") => {
     const key = crypto.randomUUID();
@@ -28,7 +28,7 @@ export default function AdvertisingSlot({ slot, className = "" }: Props) {
 
   useEffect(() => {
     let cancelled = false;
-    let popupTimer: number | undefined;
+    let popupInitialTimer: number | undefined;
     fetch(`/api/advertising?slot=${slot}`, { cache: "no-store" })
       .then(response => response.ok ? response.json() : Promise.reject(new Error("Ad request failed")))
       .then(result => {
@@ -36,29 +36,19 @@ export default function AdvertisingSlot({ slot, className = "" }: Props) {
         const next = result.ads as AdItem[];
         setAds(next);
         if (slot === "popup" && next.length) {
-          let alreadySeen = false;
-          try {
-            alreadySeen = sessionStorage.getItem("ngipen_popup_seen") === "1";
-          } catch {
-            // If storage is unavailable, keep the popup usable for this page view.
-          }
-          if (!alreadySeen) {
-            popupTimer = window.setTimeout(() => {
-              if (cancelled) return;
-              try {
-                sessionStorage.setItem("ngipen_popup_seen", "1");
-              } catch {
-                // The popup can still be displayed when session storage is blocked.
-              }
-              setPopupOpen(true);
-            }, 5000);
-          }
+          popupInitialTimer = window.setTimeout(() => {
+            if (!cancelled) setPopupOpen(true);
+          }, 1000);
         }
       })
       .catch(() => { if (!cancelled) setAds([]); });
     return () => {
       cancelled = true;
-      if (popupTimer !== undefined) window.clearTimeout(popupTimer);
+      if (popupInitialTimer !== undefined) window.clearTimeout(popupInitialTimer);
+      if (popupRepeatTimer.current !== undefined) {
+        window.clearTimeout(popupRepeatTimer.current);
+        popupRepeatTimer.current = undefined;
+      }
     };
   }, [slot]);
 
@@ -89,20 +79,26 @@ export default function AdvertisingSlot({ slot, className = "" }: Props) {
     window.open(ad.targetUrl, "_blank", "noopener,noreferrer");
   };
 
+  const closePopup = () => {
+    setPopupOpen(false);
+    if (popupRepeatTimer.current !== undefined) window.clearTimeout(popupRepeatTimer.current);
+    popupRepeatTimer.current = window.setTimeout(() => setPopupOpen(true), 15000);
+  };
+
   if (slot === "popup") {
-    if (!popupOpen || dismissed) return null;
+    if (!popupOpen) return null;
     const ad = ads[0];
     return (
-      <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-black/65 p-4" role="dialog" aria-modal="true" aria-label="Iklan partner">
+      <div className="fixed inset-0 z-[120] flex items-center justify-center overflow-y-auto bg-black/70 p-4" role="dialog" aria-modal="true" aria-label="Iklan partner">
         <div className="relative my-auto max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-900">
-          <button type="button" onClick={() => { setDismissed(true); setPopupOpen(false); }} aria-label="Tutup iklan" className="absolute right-2 top-2 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/65 text-xl text-white">×</button>
+          <button type="button" onClick={closePopup} aria-label="Tutup iklan" className="absolute right-2 top-2 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/65 text-xl text-white">×</button>
           <button type="button" onClick={() => openAd(ad)} className="block w-full text-left">
             <img src={ad.imageUrl} alt={ad.name} className="max-h-[65dvh] w-full object-contain" />
           </button>
           <div className="flex items-center justify-between gap-2 px-4 py-3">
             <div className="min-w-0"><p className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Iklan Partner</p><p className="truncate text-sm font-bold">{ad.sponsorName || ad.name}</p></div>
             <div className="flex shrink-0 items-center gap-2">
-              <button type="button" onClick={() => { setDismissed(true); setPopupOpen(false); }} className="rounded-lg border border-gray-300 px-3 py-2 text-xs font-bold text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800">Tutup</button>
+              <button type="button" onClick={closePopup} className="rounded-lg border border-gray-300 px-3 py-2 text-xs font-bold text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800">Tutup</button>
               <button type="button" onClick={() => openAd(ad)} className="rounded-lg bg-red-600 px-4 py-2 text-xs font-bold text-white">Lihat</button>
             </div>
           </div>
@@ -112,13 +108,25 @@ export default function AdvertisingSlot({ slot, className = "" }: Props) {
   }
 
   if (slot === "floating") {
-    return <div ref={rootRef} className={`fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-3 z-[60] w-36 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl sm:bottom-5 sm:right-5 sm:w-44 dark:border-gray-700 dark:bg-gray-900 ${className}`}>
-      <div className="flex items-center justify-between px-2 py-1"><span className="text-[9px] font-bold uppercase tracking-wider text-gray-500">Partner</span><button type="button" onClick={() => setAds([])} aria-label="Tutup iklan" className="text-sm text-gray-500">×</button></div>
-      {ads.map(ad => <button key={ad.id} type="button" onClick={() => openAd(ad)} className="block w-full"><img src={ad.imageUrl} alt={ad.name} loading="lazy" className="max-h-32 w-full object-contain" /></button>)}
-    </div>;
+    return (
+      <div ref={rootRef} className={`fixed inset-0 z-[110] flex items-center justify-center bg-black/80 p-3 sm:p-6 ${className}`} role="dialog" aria-modal="true" aria-label="Iklan partner">
+        <div className="relative flex max-h-[96dvh] w-full max-w-5xl items-center justify-center">
+          <button type="button" onClick={() => setAds([])} aria-label="Tutup iklan" className="absolute right-2 top-2 z-20 flex h-11 w-11 items-center justify-center rounded-full border border-white/30 bg-black/75 text-3xl leading-none text-white shadow-xl hover:bg-black">×</button>
+          {ads.map(ad => (
+            <button key={ad.id} type="button" onClick={() => openAd(ad)} className="flex max-h-[94dvh] w-full items-center justify-center">
+              <img src={ad.imageUrl} alt={ad.name} loading="lazy" className="max-h-[94dvh] max-w-full rounded-xl object-contain shadow-2xl" />
+            </button>
+          ))}
+        </div>
+      </div>
+    );
   }
 
-  return <section ref={rootRef} className={`mx-auto w-full max-w-[1400px] px-4 pb-5 ${className}`} aria-label="Iklan partner">
-    <div className="grid gap-3 sm:grid-cols-2">{ads.map(ad => <button key={ad.id} type="button" onClick={() => openAd(ad)} className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-white text-left shadow-sm transition hover:shadow-md dark:border-gray-800 dark:bg-gray-900"><img src={ad.imageUrl} alt={ad.name} loading="lazy" className="max-h-48 w-full object-contain sm:max-h-56" /><span className="absolute left-2 top-2 rounded-full bg-black/65 px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-white">Iklan Partner</span></button>)}</div>
-  </section>;
+  return (
+    <section ref={rootRef} className={`mx-auto w-full max-w-[1400px] px-4 pb-5 ${className}`} aria-label="Iklan partner">
+      <div className="grid gap-3 sm:grid-cols-2">
+        {ads.map(ad => <button key={ad.id} type="button" onClick={() => openAd(ad)} className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-white text-left shadow-sm transition hover:shadow-md dark:border-gray-800 dark:bg-gray-900"><img src={ad.imageUrl} alt={ad.name} loading="lazy" className="max-h-48 w-full object-contain sm:max-h-56" /><span className="absolute left-2 top-2 rounded-full bg-black/65 px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-white">Iklan Partner</span></button>)}
+      </div>
+    </section>
+  );
 }
