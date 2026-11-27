@@ -15,6 +15,22 @@ type Dashboard = { sponsors: Sponsor[]; campaigns: Campaign[]; slots: Slot[] };
 const inputClass = "mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-red-500 dark:border-gray-700 dark:bg-gray-950";
 const buttonClass = "rounded-xl bg-red-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50";
 
+// Date input is interpreted in the admin's local timezone.
+// Campaign starts at 00:00 on the selected start date and ends at 23:59:59.999
+// on the selected end date, so admins never need to enter a time manually.
+function dateOnlyToIso(value: string, endOfDay = false) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) throw new Error("Pilih tanggal mulai dan berakhir.");
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  // If the campaign starts today, start at the actual posting time.
+  // A future start date begins automatically at local midnight.
+  const date = !endOfDay && value === today
+    ? now
+    : new Date(`${value}T${endOfDay ? "23:59:59.999" : "00:00:00"}`);
+  if (!Number.isFinite(date.getTime())) throw new Error("Tanggal kampanye tidak valid.");
+  return date.toISOString();
+}
+
 export default function AdminAdvertisingPanel() {
   const [data, setData] = useState<Dashboard | null>(null);
   const [loading, setLoading] = useState(true);
@@ -95,9 +111,14 @@ export default function AdminAdvertisingPanel() {
         setUploading(false);
       }
       if (!uploadedPath) throw new Error("Pilih gambar iklan terlebih dahulu.");
+      const campaignStartsAt = dateOnlyToIso(startsAt);
+      const campaignEndsAt = dateOnlyToIso(endsAt, true);
+      if (new Date(campaignEndsAt).getTime() < new Date(campaignStartsAt).getTime()) {
+        throw new Error("Tanggal berakhir harus sama dengan atau setelah tanggal mulai.");
+      }
       const response = await fetch("/api/admin/advertising", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "create_campaign", sponsorId, campaignName, slotCode, imagePath: uploadedPath, targetUrl, startsAt: new Date(startsAt).toISOString(), endsAt: new Date(endsAt).toISOString() }),
+        body: JSON.stringify({ action: "create_campaign", sponsorId, campaignName, slotCode, imagePath: uploadedPath, targetUrl, startsAt: campaignStartsAt, endsAt: campaignEndsAt }),
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Gagal membuat kampanye.");
@@ -122,6 +143,11 @@ export default function AdminAdvertisingPanel() {
   }
 
   const statusLabel: Record<string, string> = { draft: "Draft", scheduled: "Terjadwal", active: "Aktif", paused: "Dijeda", completed: "Selesai" };
+  const imageGuidance = {
+    banner: { size: "1200 × 300 px", ratio: "4:1", note: "Banner horizontal untuk area konten halaman." },
+    floating: { size: "600 × 600 px", ratio: "1:1", note: "Gambar persegi agar tetap jelas di kartu kecil ponsel." },
+    popup: { size: "1080 × 1350 px", ratio: "4:5", note: "Format portrait; bagian gambar menyesuaikan tinggi layar ponsel." },
+  }[slotCode];
 
   return (
     <section className="mt-5 space-y-5">
@@ -155,13 +181,18 @@ export default function AdminAdvertisingPanel() {
           <label className="block text-sm font-semibold">Sponsor<select className={inputClass} value={sponsorId} onChange={e => setSponsorId(e.target.value)} required><option value="">Pilih sponsor</option>{(data?.sponsors ?? []).filter(s => s.status === "active").map(s => <option key={s.id} value={s.id}>{s.brand_name}</option>)}</select></label>
           <label className="block text-sm font-semibold">Nama kampanye<input className={inputClass} value={campaignName} onChange={e => setCampaignName(e.target.value)} maxLength={150} required placeholder="Nama kampanye" /></label>
           <label className="block text-sm font-semibold">Penempatan<select className={inputClass} value={slotCode} onChange={e => setSlotCode(e.target.value as typeof slotCode)}><option value="banner">Banner</option><option value="floating">Floating Banner</option><option value="popup">Popup Advertisement</option></select></label>
+          <div className="rounded-xl border border-red-100 bg-red-50/70 p-3 text-xs dark:border-red-900/50 dark:bg-red-950/20">
+            <p className="font-bold text-red-700 dark:text-red-300">Rekomendasi gambar: {imageGuidance.size} · Rasio {imageGuidance.ratio}</p>
+            <p className="mt-1 text-gray-600 dark:text-gray-300">{imageGuidance.note} Gunakan JPG, PNG, WEBP, atau AVIF; ukuran file maksimal 5 MB.</p>
+          </div>
           <label className="block text-sm font-semibold">Gambar iklan<input className={inputClass} type="file" accept="image/jpeg,image/png,image/webp,image/avif" onChange={e => { setImageFile(e.target.files?.[0] ?? null); setImagePath(""); }} required={!imagePath} /></label>
           {imagePreview && <img src={imagePreview} alt="Preview gambar iklan" className="max-h-36 w-full rounded-xl border border-gray-200 object-contain dark:border-gray-700" />}
           <label className="block text-sm font-semibold">URL tujuan<input className={inputClass} type="url" value={targetUrl} onChange={e => setTargetUrl(e.target.value)} required placeholder="https://contoh.com" /></label>
           <div className="grid grid-cols-2 gap-2">
-            <label className="block text-sm font-semibold">Mulai<input className={inputClass} type="datetime-local" value={startsAt} onChange={e => setStartsAt(e.target.value)} required /></label>
-            <label className="block text-sm font-semibold">Berakhir<input className={inputClass} type="datetime-local" value={endsAt} onChange={e => setEndsAt(e.target.value)} required /></label>
+            <label className="block text-sm font-semibold">Tanggal mulai<input className={inputClass} type="date" value={startsAt} onChange={e => setStartsAt(e.target.value)} required /></label>
+            <label className="block text-sm font-semibold">Tanggal berakhir<input className={inputClass} type="date" value={endsAt} onChange={e => setEndsAt(e.target.value)} min={startsAt || undefined} required /></label>
           </div>
+          <p className="text-xs text-gray-500">Jam diatur otomatis: jika mulai hari ini, iklan langsung mulai saat kampanye dibuat; jika tanggal mulai mendatang, iklan mulai pukul 00.00. Iklan berakhir pukul 23.59 pada tanggal berakhir (waktu lokal perangkat admin).</p>
           <button className={buttonClass} disabled={saving || uploading || loading || !data?.sponsors.some(s => s.status === "active")}>{uploading ? "Mengunggah gambar..." : saving ? "Menyimpan..." : "Buat Kampanye"}</button>
         </form>
       </div>
@@ -178,7 +209,11 @@ export default function AdminAdvertisingPanel() {
               <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><h4 className="font-bold">{c.campaign_name}</h4><span className="rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-bold dark:bg-gray-800">{statusLabel[c.status] || c.status}</span></div><p className="mt-1 text-xs text-gray-500">{sponsor || "Sponsor"} · {c.slot_code}</p><p className="mt-1 break-all text-xs text-gray-500">{c.target_url}</p><p className="mt-2 text-xs text-gray-500">{new Date(c.starts_at).toLocaleString("id-ID")} – {new Date(c.ends_at).toLocaleString("id-ID")}</p></div>
               <div className="flex gap-3 text-xs"><span>👁 {c.metrics.impressions.toLocaleString("id-ID")}</span><span>↗ {c.metrics.clicks.toLocaleString("id-ID")}</span></div>
             </div>
-            <div className="mt-3 flex flex-wrap gap-2">{c.status !== "paused" && c.status !== "completed" ? <button type="button" onClick={() => void updateStatus(c.id, "paused")} className="rounded-lg border border-gray-300 px-3 py-2 text-xs font-bold dark:border-gray-700">Jeda</button> : c.status === "paused" ? <button type="button" onClick={() => void updateStatus(c.id, "active")} className="rounded-lg bg-green-600 px-3 py-2 text-xs font-bold text-white">Aktifkan</button> : null}{c.status !== "completed" && <button type="button" onClick={() => void updateStatus(c.id, "completed")} className="rounded-lg border border-red-200 px-3 py-2 text-xs font-bold text-red-600 dark:border-red-900">Akhiri</button>}</div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {c.status !== "paused" && c.status !== "completed" ? <button type="button" onClick={() => void updateStatus(c.id, "paused")} className="rounded-lg border border-gray-300 px-3 py-2 text-xs font-bold dark:border-gray-700">Jeda</button> : null}
+              {(c.status === "paused" || c.status === "completed") && new Date(c.ends_at).getTime() > Date.now() ? <button type="button" onClick={() => void updateStatus(c.id, new Date(c.starts_at).getTime() > Date.now() ? "scheduled" : "active")} className="rounded-lg bg-green-600 px-3 py-2 text-xs font-bold text-white">{new Date(c.starts_at).getTime() > Date.now() ? "Jadwalkan Ulang" : "Aktifkan Kembali"}</button> : null}
+              {c.status !== "completed" && <button type="button" onClick={() => void updateStatus(c.id, "completed")} className="rounded-lg border border-red-200 px-3 py-2 text-xs font-bold text-red-600 dark:border-red-900">Akhiri</button>}
+            </div>
           </article>;
         })}
       </div>
