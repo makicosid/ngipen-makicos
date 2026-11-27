@@ -165,8 +165,6 @@ export default function AdsPromotePage() {
 
               <a
                 href={whatsappLink(pkg.name)}
-                target="_blank"
-                rel="noopener noreferrer"
                 className={`mt-7 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-black transition duration-200 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 dark:focus:ring-offset-[#191a1f] ${pkg.featured ? "bg-[#bb212d] text-white shadow-lg shadow-red-900/15 hover:bg-red-800" : "border border-gray-200 bg-gray-950 text-white hover:bg-red-700 dark:border-gray-600 dark:bg-white dark:text-gray-950 dark:hover:bg-gray-200"}`}
               >
                 <span aria-hidden="true">☏</span>
@@ -188,8 +186,6 @@ export default function AdsPromotePage() {
           </p>
           <a
             href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent("hai kak makicos, aku mau tanya tentang paket ads promote")}`}
-            target="_blank"
-            rel="noopener noreferrer"
             className="mt-4 inline-flex items-center justify-center gap-2 rounded-full bg-green-600 px-5 py-3 text-sm font-bold text-white transition hover:-translate-y-0.5 hover:bg-green-700"
           >
             <span aria-hidden="true">☏</span>
