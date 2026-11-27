@@ -67,7 +67,7 @@ export default function EventDateRangePicker({ startId, endId, initialStart = ""
         </button>
       </div>
       {open && (
-        <div className="absolute left-0 right-0 z-[130] mt-2 rounded-2xl border border-gray-200 bg-white p-4 shadow-2xl dark:border-gray-700 dark:bg-gray-900 sm:left-auto sm:w-[min(100%,360px)]">
+        <div className="mt-3 w-full max-w-md rounded-2xl border border-gray-200 bg-white p-4 shadow-lg dark:border-gray-700 dark:bg-gray-900">
           <div className="mb-3 flex items-center justify-between gap-2">
             <button type="button" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))} aria-label="Bulan sebelumnya" className="rounded-lg border px-3 py-2 text-sm hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800">‹</button>
             <div className="text-center">
