@@ -2,16 +2,34 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-type AdItem = { id: string; slot: "banner" | "floating" | "popup"; name: string; imageUrl: string; targetUrl: string; sponsorName?: string };
+type AdItem = {
+  id: string;
+  campaignId: string;
+  creativeId?: string | null;
+  sponsorId: string;
+  slot: "banner" | "floating" | "popup";
+  name: string;
+  imageUrl: string;
+  targetUrl: string;
+  sponsorName?: string;
+  sortOrder?: number;
+};
 type Props = { slot: "banner" | "floating" | "popup"; className?: string };
+
+const ROTATION_MS = 60_000;
+const BANNER_ROTATION_MS = 25_000;
+const FLOATING_CLOSE_DELAY_MS = 60_000;
 
 export default function AdvertisingSlot({ slot, className = "" }: Props) {
   const [ads, setAds] = useState<AdItem[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [popupOpen, setPopupOpen] = useState(false);
   const [floatingVisible, setFloatingVisible] = useState(false);
+  const [floatingFinished, setFloatingFinished] = useState(false);
   const tracked = useRef(new Set<string>());
   const rootRef = useRef<HTMLDivElement>(null);
   const popupRepeatTimer = useRef<number | undefined>(undefined);
+  const floatingNextTimer = useRef<number | undefined>(undefined);
 
   const track = useCallback(async (ad: AdItem, eventType: "impression" | "click") => {
     const key = crypto.randomUUID();
@@ -20,67 +38,72 @@ export default function AdvertisingSlot({ slot, className = "" }: Props) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         keepalive: true,
-        body: JSON.stringify({ campaignId: ad.id, eventType, eventKey: key, pagePath: window.location.pathname }),
+        body: JSON.stringify({
+          campaignId: ad.campaignId || ad.id,
+          creativeId: ad.creativeId || null,
+          eventType,
+          eventKey: key,
+          pagePath: window.location.pathname,
+        }),
       });
     } catch {
-      // Ad display must remain available even when analytics is temporarily unavailable.
+      // Keep the ad experience available if analytics is temporarily unavailable.
     }
   }, []);
 
   useEffect(() => {
     let cancelled = false;
-    let popupInitialTimer: number | undefined;
-    let floatingInitialTimer: number | undefined;
+    let initialTimer: number | undefined;
     fetch(`/api/advertising?slot=${slot}`, { cache: "no-store" })
       .then(response => response.ok ? response.json() : Promise.reject(new Error("Ad request failed")))
       .then(result => {
         if (cancelled || !Array.isArray(result.ads)) return;
-        const next = result.ads as AdItem[];
-        setAds(next);
-        if (slot === "popup" && next.length) {
-          popupInitialTimer = window.setTimeout(() => {
-            if (!cancelled) setPopupOpen(true);
-          }, 1000);
+        setAds(result.ads as AdItem[]);
+        if (slot === "popup" && result.ads.length) {
+          initialTimer = window.setTimeout(() => { if (!cancelled) setPopupOpen(true); }, 1000);
         }
-        if (slot === "floating" && next.length) {
-          floatingInitialTimer = window.setTimeout(() => {
-            if (!cancelled) setFloatingVisible(true);
-          }, 5000);
+        if (slot === "floating" && result.ads.length) {
+          initialTimer = window.setTimeout(() => { if (!cancelled) setFloatingVisible(true); }, 5000);
         }
       })
       .catch(() => { if (!cancelled) setAds([]); });
     return () => {
       cancelled = true;
-      if (popupInitialTimer !== undefined) window.clearTimeout(popupInitialTimer);
-      if (floatingInitialTimer !== undefined) window.clearTimeout(floatingInitialTimer);
-      if (popupRepeatTimer.current !== undefined) {
-        window.clearTimeout(popupRepeatTimer.current);
-        popupRepeatTimer.current = undefined;
-      }
+      if (initialTimer !== undefined) window.clearTimeout(initialTimer);
+      if (popupRepeatTimer.current !== undefined) window.clearTimeout(popupRepeatTimer.current);
+      if (floatingNextTimer.current !== undefined) window.clearTimeout(floatingNextTimer.current);
     };
   }, [slot]);
 
   useEffect(() => {
-    if (!ads.length || slot === "popup" || !rootRef.current) return;
+    if (ads.length < 2 || slot === "floating") return;
+    const interval = slot === "banner" ? BANNER_ROTATION_MS : ROTATION_MS;
+    const timer = window.setInterval(() => setCurrentIndex(index => (index + 1) % ads.length), interval);
+    return () => window.clearInterval(timer);
+  }, [ads.length, slot]);
+
+  const currentAd = ads.length ? ads[currentIndex % ads.length] : undefined;
+
+  useEffect(() => {
+    if (!currentAd || slot === "popup" || !rootRef.current) return;
     const observer = new IntersectionObserver(entries => {
       if (!entries.some(entry => entry.isIntersecting)) return;
-      for (const ad of ads) {
-        if (tracked.current.has(ad.id)) continue;
-        tracked.current.add(ad.id);
-        void track(ad, "impression");
-      }
+      const key = currentAd.creativeId || currentAd.id;
+      if (tracked.current.has(key)) return;
+      tracked.current.add(key);
+      void track(currentAd, "impression");
     }, { threshold: 0.5 });
     observer.observe(rootRef.current);
     return () => observer.disconnect();
-  }, [ads, slot, track]);
+  }, [currentAd, slot, track]);
 
   useEffect(() => {
-    if (slot !== "popup" || !popupOpen || !ads[0] || tracked.current.has(ads[0].id)) return;
-    tracked.current.add(ads[0].id);
-    void track(ads[0], "impression");
-  }, [ads, popupOpen, slot, track]);
-
-  if (!ads.length) return null;
+    if (slot !== "popup" || !popupOpen || !currentAd) return;
+    const key = currentAd.creativeId || currentAd.id;
+    if (tracked.current.has(key)) return;
+    tracked.current.add(key);
+    void track(currentAd, "impression");
+  }, [currentAd, popupOpen, slot, track]);
 
   const openAd = (ad: AdItem) => {
     void track(ad, "click");
@@ -90,24 +113,41 @@ export default function AdvertisingSlot({ slot, className = "" }: Props) {
   const closePopup = () => {
     setPopupOpen(false);
     if (popupRepeatTimer.current !== undefined) window.clearTimeout(popupRepeatTimer.current);
-    popupRepeatTimer.current = window.setTimeout(() => setPopupOpen(true), 45000);
+    popupRepeatTimer.current = window.setTimeout(() => setPopupOpen(true), 45_000);
   };
 
+  const closeFloating = () => {
+    setFloatingVisible(false);
+    if (floatingNextTimer.current !== undefined) window.clearTimeout(floatingNextTimer.current);
+    floatingNextTimer.current = window.setTimeout(() => {
+      setCurrentIndex(index => {
+        const next = index + 1;
+        if (next >= ads.length) {
+          setFloatingFinished(true);
+          return index;
+        }
+        setFloatingVisible(true);
+        return next;
+      });
+    }, FLOATING_CLOSE_DELAY_MS);
+  };
+
+  if (!ads.length) return null;
+
   if (slot === "popup") {
-    if (!popupOpen) return null;
-    const ad = ads[0];
+    if (!popupOpen || !currentAd) return null;
     return (
       <div className="fixed inset-0 z-[120] flex items-center justify-center overflow-y-auto bg-black/70 p-4" role="dialog" aria-modal="true" aria-label="Iklan partner">
         <div className="relative my-auto max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-900">
           <button type="button" onClick={closePopup} aria-label="Tutup iklan" className="absolute right-2 top-2 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/65 text-xl text-white">×</button>
-          <button type="button" onClick={() => openAd(ad)} className="block w-full text-left">
-            <img src={ad.imageUrl} alt={ad.name} className="max-h-[65dvh] w-full object-contain" />
+          <button type="button" onClick={() => openAd(currentAd)} className="block w-full text-left">
+            <img src={currentAd.imageUrl} alt={currentAd.name} className="max-h-[65dvh] w-full object-contain" />
           </button>
           <div className="flex items-center justify-between gap-2 px-4 py-3">
-            <div className="min-w-0"><p className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Iklan Partner</p><p className="truncate text-sm font-bold">{ad.sponsorName || ad.name}</p></div>
+            <div className="min-w-0"><p className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Iklan Partner</p><p className="truncate text-sm font-bold">{currentAd.sponsorName || currentAd.name}</p></div>
             <div className="flex shrink-0 items-center gap-2">
               <button type="button" onClick={closePopup} className="rounded-lg border border-gray-300 px-3 py-2 text-xs font-bold text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800">Tutup</button>
-              <button type="button" onClick={() => openAd(ad)} className="rounded-lg bg-red-600 px-4 py-2 text-xs font-bold text-white">Lihat</button>
+              <button type="button" onClick={() => openAd(currentAd)} className="rounded-lg bg-red-600 px-4 py-2 text-xs font-bold text-white">Lihat</button>
             </div>
           </div>
         </div>
@@ -116,37 +156,24 @@ export default function AdvertisingSlot({ slot, className = "" }: Props) {
   }
 
   if (slot === "floating") {
-    if (!floatingVisible) return null;
+    if (!floatingVisible || floatingFinished || !currentAd) return null;
     return (
       <div ref={rootRef} className={`fixed inset-0 z-[110] flex items-center justify-center bg-black/80 p-3 sm:p-6 ${className}`} role="dialog" aria-modal="true" aria-label="Iklan partner">
         <div className="relative flex max-h-[96dvh] w-full max-w-5xl flex-col items-end justify-center gap-2 pt-14">
-          <button type="button" onClick={() => setAds([])} aria-label="Tutup iklan" title="Tutup iklan" className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-white bg-red-600 text-3xl font-black leading-none text-white shadow-xl ring-2 ring-red-950/70 transition hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-300">×</button>
-          {ads.map(ad => (
-            <button key={ad.id} type="button" onClick={() => openAd(ad)} className="flex max-h-[calc(94dvh-4rem)] w-full items-center justify-center">
-              <img src={ad.imageUrl} alt={ad.name} loading="lazy" className="max-h-[calc(94dvh-4rem)] max-w-full rounded-xl object-contain shadow-2xl" />
-            </button>
-          ))}
+          <button type="button" onClick={closeFloating} aria-label="Tutup iklan" title="Tutup iklan" className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-white bg-red-600 text-3xl font-black leading-none text-white shadow-xl ring-2 ring-red-950/70 transition hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-300">×</button>
+          <button type="button" onClick={() => openAd(currentAd)} className="flex max-h-[calc(94dvh-4rem)] w-full items-center justify-center">
+            <img src={currentAd.imageUrl} alt={currentAd.name} loading="lazy" className="max-h-[calc(94dvh-4rem)] max-w-full rounded-xl object-contain shadow-2xl" />
+          </button>
         </div>
       </div>
     );
   }
 
-  const bannerAd = ads[0];
-
   return (
     <section ref={rootRef} className={`mx-auto w-full max-w-[1400px] px-4 pb-5 ${className}`} aria-label="Iklan partner">
-      {bannerAd && (
-        <button
-          type="button"
-          onClick={() => openAd(bannerAd)}
-          className="group relative block w-full overflow-hidden rounded-xl border border-gray-200 bg-white text-left shadow-sm transition hover:shadow-md dark:border-gray-800 dark:bg-gray-900"
-        >
-          <img
-            src={bannerAd.imageUrl}
-            alt={bannerAd.name}
-            loading="lazy"
-            className="mx-auto block h-auto max-h-36 w-full object-contain sm:max-h-48 md:max-h-56"
-          />
+      {currentAd && (
+        <button type="button" onClick={() => openAd(currentAd)} className="group relative block w-full overflow-hidden rounded-xl border border-gray-200 bg-white text-left shadow-sm transition hover:shadow-md dark:border-gray-800 dark:bg-gray-900">
+          <img src={currentAd.imageUrl} alt={currentAd.name} loading="lazy" className="mx-auto block h-auto max-h-36 w-full object-contain sm:max-h-48 md:max-h-56" />
           <span className="absolute left-2 top-2 rounded-full bg-black/65 px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-white">Iklan Partner</span>
         </button>
       )}
