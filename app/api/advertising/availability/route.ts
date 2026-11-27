@@ -93,7 +93,7 @@ export async function GET() {
       const capacity = config?.is_enabled ? Math.max(0, Number(config.max_visible) || 0) : 0;
       const sponsorRows = bookingsBySlot.get(slotCode) ?? new Map<string, CampaignRow[]>();
       const intervals: Array<{ start: string; end: string }> = [];
-      for (const campaignsForSponsor of sponsorRows.values()) {
+      for (const campaignsForSponsor of Array.from(sponsorRows.values())) {
         const sorted = campaignsForSponsor.map(row => ({
           start: row.starts_at < startIso ? rangeStart : jakartaDateParts(new Date(row.starts_at)).year + "-" +
             String(jakartaDateParts(new Date(row.starts_at)).month).padStart(2, "0") + "-" +
