@@ -256,3 +256,31 @@ body {
     transition: none !important;
   }
 }
+
+
+/* NGIPEN ADS PROMOTE page entrance and staggered package cards. */
+@keyframes adsPromoteFadeSlide {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.ads-promote-enter {
+  animation: adsPromoteFadeSlide 520ms cubic-bezier(.2,.75,.25,1) both;
+}
+.ads-promote-card {
+  animation: adsPromoteFadeSlide 620ms cubic-bezier(.2,.75,.25,1) both;
+  transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
+}
+@media (hover: hover) and (min-width: 1024px) {
+  .ads-promote-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 22px 60px rgba(30,20,20,.12);
+  }
+  .ads-promote-card--gold:hover { transform: translateY(-10px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ads-promote-enter,
+  .ads-promote-card {
+    animation: none !important;
+    transition: none !important;
+  }
+}

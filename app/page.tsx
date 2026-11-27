@@ -4107,6 +4107,7 @@ const shareEvent = async (event: Event) => {
                   <button onClick={() => { setMobileOpen(false); setSelectedEvent(null); setShowCostumeDirectory(true); setShowCalendar(false); setActiveNav("costume"); window.scrollTo({ top: 0, behavior: "smooth" }); }} aria-current={activeNavKey === "costume" ? "page" : undefined} className={`rounded-xl px-3 py-3 text-left font-semibold transition-colors ${activeNavKey === "costume" ? "bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-300" : "hover:bg-gray-100 dark:hover:bg-gray-900"}`}>Cari Costume</button>
                   )}
                   <button onClick={() => { setMobileOpen(false); openCalendarFromNavigation(); }} aria-current={activeNavKey === "calendar" ? "page" : undefined} className={`rounded-xl px-3 py-3 text-left font-semibold transition-colors ${activeNavKey === "calendar" ? "bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-300" : "hover:bg-gray-100 dark:hover:bg-gray-900"}`}>Kalender</button>
+                  <a href="/ads-promote" onClick={() => setMobileOpen(false)} className="rounded-xl border border-red-100 bg-red-50/70 px-3 py-3 text-left font-black tracking-wide text-red-700 transition-colors hover:bg-red-100 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300 dark:hover:bg-red-950/50">ADS PROMOTE ↗</a>
                 </div>
                 {currentRole === "user" && (
                   <div className="border-t border-gray-200 pt-3 dark:border-gray-800">
@@ -4172,6 +4173,7 @@ const shareEvent = async (event: Event) => {
                   ...(currentRole === "user" ? [{ id: "saved", label: "Kalender Saya", icon: "calendar" }] : []),
                   ...(currentRole === "user" ? [{ id: "upload", label: "Upload Event", icon: "upload" }] : []),
                   { id: "costume", label: "Cari Costume", icon: "costume" },
+                  { id: "ads-promote", label: "ADS PROMOTE", icon: "ads" },
                   { id: "explore", label: "Jelajahi Event", icon: "search" },
                   { id: "home", label: "Beranda", icon: "home" },
                 ] as { id: string; label: string; icon: string }[]).map((item) => (
@@ -4179,6 +4181,10 @@ const shareEvent = async (event: Event) => {
                     setIsFabExpanded(false);
                     setEventFormOpen(false);
                     resumeAdsAfterEventPosterUpload();
+                    if (item.id === "ads-promote") {
+                      window.location.href = "/ads-promote";
+                      return;
+                    }
                     if (item.id === "saved") {
                       if (currentRole !== "user") { setShowLoginUser(true); return; }
                       setSelectedEvent(null); setShowCalendar(false); setShowCostumeDirectory(false);
@@ -4206,9 +4212,9 @@ const shareEvent = async (event: Event) => {
                     else setShowUserProfile(true);
                   }} className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold text-gray-700 transition hover:bg-red-50 hover:text-red-700 dark:text-gray-100 dark:hover:bg-red-950/40">
                     <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-50 text-lg text-red-700 dark:bg-red-950/50 dark:text-red-300">
-                      {item.icon === "home" ? "⌂" : item.icon === "search" ? "⌕" : item.icon === "costume" ? "衣" : item.icon === "upload" ? "＋" : item.icon === "calendar" ? "▦" : "♙"}
+                      {item.icon === "home" ? "⌂" : item.icon === "search" ? "⌕" : item.icon === "costume" ? "衣" : item.icon === "ads" ? "↗" : item.icon === "upload" ? "＋" : item.icon === "calendar" ? "▦" : "♙"}
                     </span>
-                    {item.label}
+                    <span className={item.id === "ads-promote" ? "font-black tracking-wide text-red-700 dark:text-red-300" : ""}>{item.label}</span>
                   </button>
                 ))}
               </nav>
@@ -4220,6 +4226,17 @@ const shareEvent = async (event: Event) => {
             </button>
           </div>
         )}
+
+        {/* FLOATING ADS PROMOTE - DESKTOP */}
+        <a
+          href="/ads-promote"
+          aria-label="Buka ADS PROMOTE"
+          title="ADS PROMOTE"
+          className="fixed bottom-6 right-20 z-[70] hidden h-12 items-center justify-center gap-2 rounded-full border border-red-200 bg-white px-4 text-xs font-black tracking-wide text-red-700 shadow-lg transition-all duration-200 hover:-translate-y-1 hover:border-red-400 hover:bg-red-50 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 md:flex dark:border-red-900/60 dark:bg-gray-900 dark:text-red-300 dark:hover:bg-red-950/30 dark:focus:ring-offset-gray-950"
+        >
+          <span aria-hidden="true" className="text-base">↗</span>
+          ADS PROMOTE
+        </a>
 
         {/* FLOATING BUKU PANDUAN - DESKTOP */}
         <button
@@ -9101,7 +9118,7 @@ accept="image/jpeg,image/png,image/webp"
                 <div className="col-span-2 border-t border-gray-200 pt-4 text-xs leading-relaxed sm:col-span-3 lg:col-span-1 lg:border-t-0 lg:pt-0 lg:text-right">
                   <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 lg:flex-col lg:items-end lg:gap-0">
                     <span>© 2026 NGIPEN</span>
-                    <span className="text-[11px] font-medium text-gray-400 dark:text-gray-500">v 1.3.4A</span>
+                    <span className="text-[11px] font-medium text-gray-400 dark:text-gray-500">v 1.3.6</span>
                   </div>
                 </div>
               </div>
