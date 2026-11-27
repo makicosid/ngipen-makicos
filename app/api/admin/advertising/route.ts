@@ -237,6 +237,9 @@ export async function PATCH(request: NextRequest) {
       if (normalized.some(item => !item.image_path || item.image_path.length > 500 || item.image_path.startsWith("/") || item.image_path.includes("..") || !item.target_url)) return adminJson({ error: "Poster dan URL HTTPS wajib valid." }, 400);
       const { data: existing, error: existingError } = await supabase.from("ad_campaigns").select("id,sponsor_id,slot_code,image_path").eq("id", id).maybeSingle();
       if (existingError || !existing) return adminJson({ error: "Kampanye tidak ditemukan." }, 404);
+      const { data: oldCreatives, error: oldError } = await supabase.from("ad_creatives").select("image_path").eq("campaign_id", id);
+      if (oldError && oldError.code !== "42P01" && oldError.code !== "PGRST205") return adminJson({ error: "Gagal membaca poster lama." }, 500);
+      if (oldError && creatives.length > 1) return adminJson({ error: "Jalankan SQL migrasi materi iklan terlebih dahulu untuk menggunakan banyak poster." }, 409);
       const { data: overlapping, error: overlapError } = await supabase.from("ad_campaigns").select("sponsor_id")
         .eq("slot_code", existing.slot_code).neq("id", id).in("status", ["active", "scheduled"])
         .lt("starts_at", endsAt.toISOString()).gt("ends_at", startsAt.toISOString());
@@ -253,13 +256,11 @@ export async function PATCH(request: NextRequest) {
       }).eq("id", id);
       if (updateError) return adminJson({ error: "Gagal memperbarui kampanye." }, 500);
 
-      const { data: oldCreatives, error: oldError } = await supabase.from("ad_creatives").select("image_path").eq("campaign_id", id);
-      if (oldError && oldError.code !== "42P01" && oldError.code !== "PGRST205") return adminJson({ error: "Gagal membaca poster lama." }, 500);
       if (!oldError) {
-        const { error: deleteError } = await supabase.from("ad_creatives").delete().eq("campaign_id", id);
-        if (deleteError) return adminJson({ error: "Gagal mengganti daftar poster." }, 500);
         const { error: insertError } = await supabase.from("ad_creatives").insert(normalized.map(item => ({ campaign_id: id, ...item })));
-        if (insertError) return adminJson({ error: "Gagal menyimpan poster baru." }, 500);
+        if (insertError) return adminJson({ error: "Gagal menyimpan poster baru; materi lama tetap dipertahankan." }, 500);
+        const { error: deleteError } = await supabase.from("ad_creatives").delete().eq("campaign_id", id).neq("image_path", primary.image_path);
+        if (deleteError) return adminJson({ error: "Materi baru tersimpan, tetapi pembersihan materi lama gagal." }, 500);
       }
       await writeAudit(supabase, "campaign_edited", id, { campaign_name: campaignName, creative_count: normalized.length });
       const oldPaths = (oldCreatives ?? []).map(item => item.image_path).filter(path => !normalized.some(item => item.image_path === path));
