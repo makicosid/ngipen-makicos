@@ -122,6 +122,11 @@ export default function AdminAdvertisingPanel() {
   }
 
   const statusLabel: Record<string, string> = { draft: "Draft", scheduled: "Terjadwal", active: "Aktif", paused: "Dijeda", completed: "Selesai" };
+  const imageGuidance = {
+    banner: { size: "1200 × 300 px", ratio: "4:1", note: "Banner horizontal untuk area konten halaman." },
+    floating: { size: "600 × 600 px", ratio: "1:1", note: "Gambar persegi agar tetap jelas di kartu kecil ponsel." },
+    popup: { size: "1080 × 1350 px", ratio: "4:5", note: "Format portrait; bagian gambar menyesuaikan tinggi layar ponsel." },
+  }[slotCode];
 
   return (
     <section className="mt-5 space-y-5">
@@ -155,6 +160,10 @@ export default function AdminAdvertisingPanel() {
           <label className="block text-sm font-semibold">Sponsor<select className={inputClass} value={sponsorId} onChange={e => setSponsorId(e.target.value)} required><option value="">Pilih sponsor</option>{(data?.sponsors ?? []).filter(s => s.status === "active").map(s => <option key={s.id} value={s.id}>{s.brand_name}</option>)}</select></label>
           <label className="block text-sm font-semibold">Nama kampanye<input className={inputClass} value={campaignName} onChange={e => setCampaignName(e.target.value)} maxLength={150} required placeholder="Nama kampanye" /></label>
           <label className="block text-sm font-semibold">Penempatan<select className={inputClass} value={slotCode} onChange={e => setSlotCode(e.target.value as typeof slotCode)}><option value="banner">Banner</option><option value="floating">Floating Banner</option><option value="popup">Popup Advertisement</option></select></label>
+          <div className="rounded-xl border border-red-100 bg-red-50/70 p-3 text-xs dark:border-red-900/50 dark:bg-red-950/20">
+            <p className="font-bold text-red-700 dark:text-red-300">Rekomendasi gambar: {imageGuidance.size} · Rasio {imageGuidance.ratio}</p>
+            <p className="mt-1 text-gray-600 dark:text-gray-300">{imageGuidance.note} Gunakan JPG, PNG, WEBP, atau AVIF; ukuran file maksimal 5 MB.</p>
+          </div>
           <label className="block text-sm font-semibold">Gambar iklan<input className={inputClass} type="file" accept="image/jpeg,image/png,image/webp,image/avif" onChange={e => { setImageFile(e.target.files?.[0] ?? null); setImagePath(""); }} required={!imagePath} /></label>
           {imagePreview && <img src={imagePreview} alt="Preview gambar iklan" className="max-h-36 w-full rounded-xl border border-gray-200 object-contain dark:border-gray-700" />}
           <label className="block text-sm font-semibold">URL tujuan<input className={inputClass} type="url" value={targetUrl} onChange={e => setTargetUrl(e.target.value)} required placeholder="https://contoh.com" /></label>
@@ -178,7 +187,11 @@ export default function AdminAdvertisingPanel() {
               <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><h4 className="font-bold">{c.campaign_name}</h4><span className="rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-bold dark:bg-gray-800">{statusLabel[c.status] || c.status}</span></div><p className="mt-1 text-xs text-gray-500">{sponsor || "Sponsor"} · {c.slot_code}</p><p className="mt-1 break-all text-xs text-gray-500">{c.target_url}</p><p className="mt-2 text-xs text-gray-500">{new Date(c.starts_at).toLocaleString("id-ID")} – {new Date(c.ends_at).toLocaleString("id-ID")}</p></div>
               <div className="flex gap-3 text-xs"><span>👁 {c.metrics.impressions.toLocaleString("id-ID")}</span><span>↗ {c.metrics.clicks.toLocaleString("id-ID")}</span></div>
             </div>
-            <div className="mt-3 flex flex-wrap gap-2">{c.status !== "paused" && c.status !== "completed" ? <button type="button" onClick={() => void updateStatus(c.id, "paused")} className="rounded-lg border border-gray-300 px-3 py-2 text-xs font-bold dark:border-gray-700">Jeda</button> : c.status === "paused" ? <button type="button" onClick={() => void updateStatus(c.id, "active")} className="rounded-lg bg-green-600 px-3 py-2 text-xs font-bold text-white">Aktifkan</button> : null}{c.status !== "completed" && <button type="button" onClick={() => void updateStatus(c.id, "completed")} className="rounded-lg border border-red-200 px-3 py-2 text-xs font-bold text-red-600 dark:border-red-900">Akhiri</button>}</div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {c.status !== "paused" && c.status !== "completed" ? <button type="button" onClick={() => void updateStatus(c.id, "paused")} className="rounded-lg border border-gray-300 px-3 py-2 text-xs font-bold dark:border-gray-700">Jeda</button> : null}
+              {(c.status === "paused" || c.status === "completed") && new Date(c.ends_at).getTime() > Date.now() ? <button type="button" onClick={() => void updateStatus(c.id, new Date(c.starts_at).getTime() > Date.now() ? "scheduled" : "active")} className="rounded-lg bg-green-600 px-3 py-2 text-xs font-bold text-white">{new Date(c.starts_at).getTime() > Date.now() ? "Jadwalkan Ulang" : "Aktifkan Kembali"}</button> : null}
+              {c.status !== "completed" && <button type="button" onClick={() => void updateStatus(c.id, "completed")} className="rounded-lg border border-red-200 px-3 py-2 text-xs font-bold text-red-600 dark:border-red-900">Akhiri</button>}
+            </div>
           </article>;
         })}
       </div>
