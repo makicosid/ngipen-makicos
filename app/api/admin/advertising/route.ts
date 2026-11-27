@@ -110,7 +110,8 @@ export async function POST(request: NextRequest) {
         .lt("starts_at", endsAt.toISOString()).gt("ends_at", startsAt.toISOString());
       if (overlapError) return adminJson({ error: "Gagal memeriksa kapasitas slot." }, 500);
       const activeBrands = new Set((overlapping ?? []).map(row => row.sponsor_id));
-      if (!activeBrands.has(sponsorId) && activeBrands.size >= 3) return adminJson({ error: "Slot ini sudah mencapai batas 3 brand pada periode tersebut." }, 409);
+      if (activeBrands.has(sponsorId)) return adminJson({ error: "Brand ini sudah memiliki kampanye pada slot dan periode yang bertabrakan." }, 409);
+      if (activeBrands.size >= 3) return adminJson({ error: "Slot ini sudah mencapai batas 3 brand pada periode tersebut." }, 409);
 
       const { data, error } = await supabase.from("ad_campaigns").insert({
         sponsor_id: sponsorId, slot_code: slotCode, campaign_name: campaignName, image_path: imagePath,
