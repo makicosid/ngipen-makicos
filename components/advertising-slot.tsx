@@ -27,8 +27,15 @@ export default function AdvertisingSlot({ slot, className = "" }: Props) {
   const [popupClosing, setPopupClosing] = useState(false);
   const [floatingVisible, setFloatingVisible] = useState(false);
   const [floatingFinished, setFloatingFinished] = useState(false);
+  const [bannerOutOfView, setBannerOutOfView] = useState(false);
+  const [bannerCloseVisible, setBannerCloseVisible] = useState(false);
+  const [bannerClosing, setBannerClosing] = useState(false);
+  const [dismissedBannerCreative, setDismissedBannerCreative] = useState<string | null>(null);
+  const [navbarOffset, setNavbarOffset] = useState(0);
   const tracked = useRef(new Set<string>());
-  const rootRef = useRef<HTMLDivElement>(null);
+  const rootRef = useRef<HTMLElement>(null);
+  const bannerCloseTimer = useRef<number | undefined>(undefined);
+  const bannerCloseAnimationTimer = useRef<number | undefined>(undefined);
   const popupRepeatTimer = useRef<number | undefined>(undefined);
   const popupCloseTimer = useRef<number | undefined>(undefined);
   const floatingNextTimer = useRef<number | undefined>(undefined);
@@ -75,6 +82,8 @@ export default function AdvertisingSlot({ slot, className = "" }: Props) {
       if (popupRepeatTimer.current !== undefined) window.clearTimeout(popupRepeatTimer.current);
       if (popupCloseTimer.current !== undefined) window.clearTimeout(popupCloseTimer.current);
       if (floatingNextTimer.current !== undefined) window.clearTimeout(floatingNextTimer.current);
+      if (bannerCloseTimer.current !== undefined) window.clearTimeout(bannerCloseTimer.current);
+      if (bannerCloseAnimationTimer.current !== undefined) window.clearTimeout(bannerCloseAnimationTimer.current);
     };
   }, [slot]);
 
@@ -86,6 +95,67 @@ export default function AdvertisingSlot({ slot, className = "" }: Props) {
   }, [ads.length, slot]);
 
   const currentAd = ads.length ? ads[currentIndex % ads.length] : undefined;
+  const currentBannerKey = currentAd ? (currentAd.creativeId || currentAd.id) : null;
+  const bannerFloatingActive = slot === "banner" && !!currentAd && bannerOutOfView &&
+    dismissedBannerCreative !== currentBannerKey && !bannerClosing;
+
+  useEffect(() => {
+    if (slot !== "banner" || !rootRef.current) return;
+    const observer = new IntersectionObserver(entries => {
+      const entry = entries[0];
+      if (!entry) return;
+      setBannerOutOfView(!entry.isIntersecting);
+    }, { threshold: 0 });
+    observer.observe(rootRef.current);
+    return () => observer.disconnect();
+  }, [slot, ads.length]);
+
+  useEffect(() => {
+    if (slot !== "banner" || !bannerFloatingActive) {
+      setBannerCloseVisible(false);
+      if (bannerCloseTimer.current !== undefined) window.clearTimeout(bannerCloseTimer.current);
+      return;
+    }
+    setBannerCloseVisible(false);
+    if (bannerCloseTimer.current !== undefined) window.clearTimeout(bannerCloseTimer.current);
+    bannerCloseTimer.current = window.setTimeout(() => setBannerCloseVisible(true), 5000);
+    return () => {
+      if (bannerCloseTimer.current !== undefined) window.clearTimeout(bannerCloseTimer.current);
+    };
+  }, [slot, bannerFloatingActive, currentBannerKey]);
+
+  useEffect(() => {
+    if (slot !== "banner") return;
+    const updateNavbarOffset = () => {
+      let bottom = 0;
+      const candidates = document.querySelectorAll<HTMLElement>("header, nav, [role='navigation'], [data-navbar]");
+      candidates.forEach(element => {
+        const style = window.getComputedStyle(element);
+        if (style.position !== "fixed" && style.position !== "sticky") return;
+        const rect = element.getBoundingClientRect();
+        if (rect.top <= 8 && rect.bottom > bottom && rect.bottom > 0) bottom = rect.bottom;
+      });
+      setNavbarOffset(Math.max(0, Math.round(bottom)));
+    };
+    updateNavbarOffset();
+    window.addEventListener("scroll", updateNavbarOffset, { passive: true });
+    window.addEventListener("resize", updateNavbarOffset);
+    return () => {
+      window.removeEventListener("scroll", updateNavbarOffset);
+      window.removeEventListener("resize", updateNavbarOffset);
+    };
+  }, [slot]);
+
+  const closeBannerFloating = () => {
+    if (!currentBannerKey || bannerClosing) return;
+    setBannerCloseVisible(false);
+    setBannerClosing(true);
+    if (bannerCloseAnimationTimer.current !== undefined) window.clearTimeout(bannerCloseAnimationTimer.current);
+    bannerCloseAnimationTimer.current = window.setTimeout(() => {
+      setDismissedBannerCreative(currentBannerKey);
+      setBannerClosing(false);
+    }, 320);
+  };
 
   useEffect(() => {
     if (!currentAd || slot === "popup" || !rootRef.current) return;
@@ -204,31 +274,66 @@ export default function AdvertisingSlot({ slot, className = "" }: Props) {
   }
 
   return (
-    <section ref={rootRef} className={`mx-auto w-full max-w-[1400px] px-4 pb-5 ${className}`} aria-label="Iklan partner">
-      {currentAd && (
-        <>
-          <button key={currentAd.creativeId || currentAd.id} type="button" onClick={() => openAd(currentAd)} className="ad-banner-slide-in group relative block w-full overflow-hidden rounded-xl border border-gray-200 bg-white text-left shadow-sm transition hover:shadow-md dark:border-gray-800 dark:bg-gray-900">
-            <img src={currentAd.imageUrl} alt={currentAd.name} loading="lazy" className="mx-auto block h-auto max-h-36 w-full object-contain sm:max-h-48 md:max-h-56" />
-            <span className="absolute left-2 top-2 rounded-full bg-black/65 px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-white">Iklan Partner</span>
-          </button>
-          {ads.length > 1 && (
-            <div className="mt-2 flex items-center justify-center gap-2" aria-label="Pilih banner iklan">
-              {ads.map((ad, index) => (
-                <button
-                  key={ad.creativeId || ad.id}
-                  type="button"
-                  onClick={() => setCurrentIndex(index)}
-                  aria-label={`Tampilkan banner ${index + 1}`}
-                  aria-current={index === currentIndex ? "true" : undefined}
-                  className="h-2 flex-1 max-w-20 overflow-hidden rounded-full bg-gray-200 transition-colors hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:bg-gray-700 dark:hover:bg-gray-600"
-                >
-                  <span className={`block h-full rounded-full ${index === currentIndex ? "ad-banner-indicator-fill bg-red-600" : "w-0"}`} />
-                </button>
-              ))}
-            </div>
+    <>
+      <section ref={rootRef} className={`mx-auto w-full max-w-[1400px] px-4 pb-5 ${className}`} aria-label="Banner iklan">
+        {currentAd && (
+          <>
+            <button key={currentAd.creativeId || currentAd.id} type="button" onClick={() => openAd(currentAd)} className="ad-banner-slide-in group relative block w-full overflow-hidden rounded-xl border border-gray-200 bg-white text-left shadow-sm transition hover:shadow-md dark:border-gray-800 dark:bg-gray-900">
+              <img src={currentAd.imageUrl} alt={currentAd.name} loading="lazy" className="mx-auto block h-auto max-h-36 w-full object-contain sm:max-h-48 md:max-h-56" />
+            </button>
+            {ads.length > 1 && (
+              <div className="mt-2 flex items-center justify-center gap-2" aria-label="Pilih banner iklan">
+                {ads.map((ad, index) => (
+                  <button
+                    key={ad.creativeId || ad.id}
+                    type="button"
+                    onClick={() => setCurrentIndex(index)}
+                    aria-label={`Tampilkan banner ${index + 1}`}
+                    aria-current={index === currentIndex ? "true" : undefined}
+                    className="h-2 flex-1 max-w-20 overflow-hidden rounded-full bg-gray-200 transition-colors hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:bg-gray-700 dark:hover:bg-gray-600"
+                  >
+                    <span className={`block h-full rounded-full ${index === currentIndex ? "ad-banner-indicator-fill bg-red-600" : "w-0"}`} />
+                  </button>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+      </section>
+
+      {bannerFloatingActive && currentAd && (
+        <div
+          className="ad-banner-floating-shell fixed left-0 right-0 z-[105] mx-auto w-full max-w-[1400px] px-4"
+          style={{ top: navbarOffset }}
+          aria-label="Banner iklan"
+        >
+          <div className={`ad-banner-floating-card overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl dark:border-gray-800 dark:bg-gray-900 ${bannerClosing ? "ad-banner-floating-card--closing" : ""}`}>
+            <button
+              type="button"
+              onClick={() => openAd(currentAd)}
+              className="block w-full text-left"
+              aria-label={`Buka iklan ${currentAd.name}`}
+            >
+              <img
+                src={currentAd.imageUrl}
+                alt={currentAd.name}
+                className="mx-auto block h-auto max-h-24 w-full object-contain sm:max-h-32 md:max-h-40"
+              />
+            </button>
+          </div>
+          {bannerCloseVisible && !bannerClosing && (
+            <button
+              type="button"
+              onClick={closeBannerFloating}
+              aria-label="Tutup banner iklan"
+              title="Tutup banner"
+              className="ad-banner-floating-close mx-auto flex h-7 w-10 items-center justify-center rounded-b-lg border border-t-0 border-gray-300 bg-white text-lg font-bold leading-none text-gray-700 shadow-md hover:bg-red-50 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-red-950"
+            >
+              ×
+            </button>
           )}
-        </>
+        </div>
       )}
-    </section>
+    </>
   );
 }
