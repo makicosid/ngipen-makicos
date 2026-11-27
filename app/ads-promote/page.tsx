@@ -9,6 +9,7 @@ const packages = [
     medal: "🥉",
     price: "Rp500.000",
     duration: "7 Hari",
+    promoBonus: "First Promote bonus durasi 3 hari menjadi 10 hari promote",
     tone: "bronze",
     website: [
       "1 slot iklan pilihan (Banner / Popup / Floating).",
@@ -25,6 +26,7 @@ const packages = [
     medal: "🥈",
     price: "Rp750.000",
     duration: "14 Hari",
+    promoBonus: "First Promote bonus durasi 6 hari menjadi 20 hari promote",
     tone: "silver",
     website: [
       "1 slot iklan pilihan (Banner / Popup / Floating).",
@@ -43,6 +45,7 @@ const packages = [
     medal: "🥇",
     price: "Rp1.500.000",
     duration: "30 Hari",
+    promoBonus: "First Promote bonus durasi 15 hari menjadi 45 hari promote",
     tone: "gold",
     featured: true,
     website: [
@@ -129,6 +132,9 @@ export default function AdsPromotePage() {
                     </span>
                   )}
                 </div>
+                <p className="mt-2 text-xs font-semibold italic leading-5 text-red-600 dark:text-red-400">
+                  {pkg.promoBonus}
+                </p>
               </div>
 
               <div className="mt-6 flex-1 space-y-6">
