@@ -152,7 +152,7 @@ export async function POST(request: NextRequest) {
       .from(BUCKET_NAME)
       .upload(path, buffer, {
         upsert: false,
-        cacheControl: "3600",
+        cacheControl: "31536000",
         contentType: file.type,
       });
 
