@@ -156,14 +156,39 @@ export default function AdvertisingSlot({ slot, className = "" }: Props) {
   if (slot === "floating") {
     if (!floatingVisible || floatingFinished || !currentAd) return null;
     return (
-      <div ref={rootRef} className={`fixed inset-0 z-[110] flex items-center justify-center bg-black/80 p-3 sm:p-6 ${className}`} role="dialog" aria-modal="true" aria-label="Iklan partner">
-        <div className="relative flex max-h-[96dvh] w-full max-w-5xl flex-col items-end justify-center gap-2 pt-14">
-          <button type="button" onClick={closeFloating} aria-label="Tutup iklan" title="Tutup iklan" className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-white bg-red-600 text-3xl font-black leading-none text-white shadow-xl ring-2 ring-red-950/70 transition hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-300">×</button>
-          <button type="button" onClick={() => openAd(currentAd)} className="flex max-h-[calc(94dvh-4rem)] w-full items-center justify-center">
-            <img src={currentAd.imageUrl} alt={currentAd.name} loading="lazy" className="max-h-[calc(94dvh-4rem)] max-w-full rounded-xl object-contain shadow-2xl" />
+      <aside
+        ref={rootRef}
+        className={`fixed bottom-4 right-3 z-[110] w-[min(176px,calc(100vw-24px))] overflow-visible sm:bottom-5 sm:right-5 sm:w-[220px] md:w-[260px] ${className}`}
+        aria-label="Iklan partner"
+      >
+        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl ring-1 ring-black/5 dark:border-gray-700 dark:bg-gray-900">
+          <div className="flex min-h-8 items-center justify-between gap-2 px-2 py-1.5">
+            <span className="text-[9px] font-bold uppercase tracking-wider text-gray-500">Iklan Partner</span>
+            <button
+              type="button"
+              onClick={closeFloating}
+              aria-label="Tutup iklan"
+              title="Tutup iklan"
+              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-100 text-base font-bold leading-none text-gray-700 transition hover:bg-red-100 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-400 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-red-950"
+            >
+              ×
+            </button>
+          </div>
+          <button
+            type="button"
+            onClick={() => openAd(currentAd)}
+            className="block w-full bg-white p-1 text-left dark:bg-gray-900"
+            aria-label={`Buka iklan ${currentAd.name}`}
+          >
+            <img
+              src={currentAd.imageUrl}
+              alt={currentAd.name}
+              loading="lazy"
+              className="mx-auto block aspect-square max-h-[176px] w-full rounded-md object-contain sm:max-h-[220px] md:max-h-[260px]"
+            />
           </button>
         </div>
-      </div>
+      </aside>
     );
   }
 
