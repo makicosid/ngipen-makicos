@@ -33,8 +33,18 @@ export async function GET(request: NextRequest) {
     const { data: creativeRows, error: creativeError } = campaignIds.length
       ? await supabase.from("ad_creatives").select("id,campaign_id,image_path,target_url,sort_order,is_active,created_at,updated_at").in("campaign_id", campaignIds).order("sort_order", { ascending: true })
       : { data: [], error: null };
-    const creativesByCampaign = new Map<string, NonNullable<typeof creativeRows>>();
-    if (!creativeError) for (const creative of creativeRows ?? []) {
+    type AdCreativeRow = {
+      id: string;
+      campaign_id: string;
+      image_path: string;
+      target_url: string;
+      sort_order: number;
+      is_active: boolean;
+      created_at: string;
+      updated_at: string;
+    };
+    const creativesByCampaign = new Map<string, AdCreativeRow[]>();
+    if (!creativeError) for (const creative of (creativeRows ?? []) as AdCreativeRow[]) {
       const current = creativesByCampaign.get(creative.campaign_id) ?? [];
       current.push(creative);
       creativesByCampaign.set(creative.campaign_id, current);
