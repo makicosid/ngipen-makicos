@@ -36,6 +36,7 @@ export default function AdminAdvertisingPanel() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [deletingCampaignId, setDeletingCampaignId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [brandName, setBrandName] = useState("");
@@ -142,6 +143,31 @@ export default function AdminAdvertisingPanel() {
     } catch (e) { setError(e instanceof Error ? e.message : "Gagal memperbarui status."); }
   }
 
+  async function deleteCampaign(campaign: Campaign) {
+    const confirmed = window.confirm(
+      `Hapus kampanye "${campaign.campaign_name}" secara permanen? Statistik kampanye akan dihapus, sedangkan catatan audit tetap disimpan.`
+    );
+    if (!confirmed) return;
+
+    setDeletingCampaignId(campaign.id);
+    setError(""); setNotice("");
+    try {
+      const response = await fetch("/api/admin/advertising", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: campaign.id }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Gagal menghapus kampanye.");
+      setNotice("Kampanye selesai berhasil dihapus.");
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Gagal menghapus kampanye.");
+    } finally {
+      setDeletingCampaignId(null);
+    }
+  }
+
   const statusLabel: Record<string, string> = { draft: "Draft", scheduled: "Terjadwal", active: "Aktif", paused: "Dijeda", completed: "Selesai" };
   const imageGuidance = {
     banner: { size: "1200 × 300 px", ratio: "4:1", note: "Banner horizontal untuk area konten halaman." },
@@ -213,6 +239,7 @@ export default function AdminAdvertisingPanel() {
               {c.status !== "paused" && c.status !== "completed" ? <button type="button" onClick={() => void updateStatus(c.id, "paused")} className="rounded-lg border border-gray-300 px-3 py-2 text-xs font-bold dark:border-gray-700">Jeda</button> : null}
               {(c.status === "paused" || c.status === "completed") && new Date(c.ends_at).getTime() > Date.now() ? <button type="button" onClick={() => void updateStatus(c.id, new Date(c.starts_at).getTime() > Date.now() ? "scheduled" : "active")} className="rounded-lg bg-green-600 px-3 py-2 text-xs font-bold text-white">{new Date(c.starts_at).getTime() > Date.now() ? "Jadwalkan Ulang" : "Aktifkan Kembali"}</button> : null}
               {c.status !== "completed" && <button type="button" onClick={() => void updateStatus(c.id, "completed")} className="rounded-lg border border-red-200 px-3 py-2 text-xs font-bold text-red-600 dark:border-red-900">Akhiri</button>}
+              {c.status === "completed" && <button type="button" onClick={() => void deleteCampaign(c)} disabled={deletingCampaignId === c.id} className="rounded-lg border border-red-300 px-3 py-2 text-xs font-bold text-red-700 hover:bg-red-50 disabled:opacity-50 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950">{deletingCampaignId === c.id ? "Menghapus..." : "Hapus Kampanye"}</button>}
             </div>
           </article>;
         })}
