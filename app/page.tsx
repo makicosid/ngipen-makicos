@@ -4144,7 +4144,7 @@ const shareEvent = async (event: Event) => {
         {/* Banner dipasang pada shell aplikasi agar tampil di seluruh tampilan User. */}
         {currentRole === "user" && !showAdmin && (
           <AdvertisingSlot
-            key={selectedEvent?.id || (showCostumeDirectory ? "costume" : showCalendar ? "calendar" : showSaved ? "saved" : "home")}
+            key={selectedEvent?.id || (showCostumeDirectory ? "costume" : showCalendar ? "calendar" : "home")}
             slot="banner"
             className="pt-4"
           />
