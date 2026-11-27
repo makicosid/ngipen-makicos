@@ -23,6 +23,7 @@ const SOURCES = [
   { table: "costume_rentals", column: "image_url", pathColumn: "image_path", bucket: "costume-rentals", label: "rental", maxWidth: 1200, maxHeight: 1200 },
   { table: "event_documentations", column: "image_url", bucket: "documentations", label: "documentation", maxWidth: 1400, maxHeight: 1400 },
   { table: "documentations", column: "image_url", bucket: "documentations", label: "legacy-documentation", maxWidth: 1400, maxHeight: 1400 },
+  { table: "ad_campaigns", column: "image_path", bucket: "ad-assets", label: "ad-asset", pathOnly: true, maxWidth: 1600, maxHeight: 900 },
 ];
 
 function parseStoragePath(url, expectedBucket) {
@@ -77,8 +78,8 @@ async function main() {
     const rows = await readRows(source);
     for (const row of rows) {
       const oldUrl = row[source.column];
-      const oldPath = parseStoragePath(oldUrl, source.bucket);
-      if (!oldPath) continue;
+      const oldPath = source.pathOnly ? oldUrl : parseStoragePath(oldUrl, source.bucket);
+      if (typeof oldPath !== "string" || !oldPath) continue;
       plans.push({ source, row, oldUrl, oldPath });
     }
   }
@@ -188,8 +189,12 @@ async function main() {
         console.log(`[REUSE] Existing WebP found at ${item.bucket}/${newPath}`);
       }
 
-      const { data: publicData } = storage.getPublicUrl(newPath);
-      newUrl = publicData.publicUrl;
+      if (item.references[0].source.pathOnly) {
+        newUrl = newPath;
+      } else {
+        const { data: publicData } = storage.getPublicUrl(newPath);
+        newUrl = publicData.publicUrl;
+      }
       uploaded.set(key, newUrl);
     }
 
