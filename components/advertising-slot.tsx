@@ -24,11 +24,13 @@ export default function AdvertisingSlot({ slot, className = "" }: Props) {
   const [ads, setAds] = useState<AdItem[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [popupOpen, setPopupOpen] = useState(false);
+  const [popupClosing, setPopupClosing] = useState(false);
   const [floatingVisible, setFloatingVisible] = useState(false);
   const [floatingFinished, setFloatingFinished] = useState(false);
   const tracked = useRef(new Set<string>());
   const rootRef = useRef<HTMLDivElement>(null);
   const popupRepeatTimer = useRef<number | undefined>(undefined);
+  const popupCloseTimer = useRef<number | undefined>(undefined);
   const floatingNextTimer = useRef<number | undefined>(undefined);
 
   const track = useCallback(async (ad: AdItem, eventType: "impression" | "click") => {
@@ -71,6 +73,7 @@ export default function AdvertisingSlot({ slot, className = "" }: Props) {
       cancelled = true;
       if (initialTimer !== undefined) window.clearTimeout(initialTimer);
       if (popupRepeatTimer.current !== undefined) window.clearTimeout(popupRepeatTimer.current);
+      if (popupCloseTimer.current !== undefined) window.clearTimeout(popupCloseTimer.current);
       if (floatingNextTimer.current !== undefined) window.clearTimeout(floatingNextTimer.current);
     };
   }, [slot]);
@@ -111,9 +114,17 @@ export default function AdvertisingSlot({ slot, className = "" }: Props) {
   };
 
   const closePopup = () => {
-    setPopupOpen(false);
+    setPopupClosing(true);
+    if (popupCloseTimer.current !== undefined) window.clearTimeout(popupCloseTimer.current);
+    popupCloseTimer.current = window.setTimeout(() => {
+      setPopupOpen(false);
+      setPopupClosing(false);
+    }, 260);
     if (popupRepeatTimer.current !== undefined) window.clearTimeout(popupRepeatTimer.current);
-    popupRepeatTimer.current = window.setTimeout(() => setPopupOpen(true), 45_000);
+    popupRepeatTimer.current = window.setTimeout(() => {
+      setPopupClosing(false);
+      setPopupOpen(true);
+    }, 45_000);
   };
 
   const closeFloating = () => {
@@ -133,10 +144,10 @@ export default function AdvertisingSlot({ slot, className = "" }: Props) {
   if (!ads.length) return null;
 
   if (slot === "popup") {
-    if (!popupOpen || !currentAd) return null;
+    if ((!popupOpen && !popupClosing) || !currentAd) return null;
     return (
-      <div className="fixed inset-0 z-[120] flex items-center justify-center overflow-y-auto bg-black/70 p-4" role="dialog" aria-modal="true" aria-label="Iklan partner">
-        <div className="relative my-auto max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-900">
+      <div className={`ad-popup-overlay fixed inset-0 z-[120] flex items-center justify-center overflow-y-auto bg-black/70 p-4 ${popupClosing ? "ad-popup-overlay--closing" : ""}`} role="dialog" aria-modal="true" aria-label="Iklan partner">
+        <div className={`ad-popup-panel relative my-auto max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-900 ${popupClosing ? "ad-popup-panel--closing" : ""}`}>
           <button type="button" onClick={closePopup} aria-label="Tutup iklan" className="absolute right-2 top-2 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/65 text-xl text-white">×</button>
           <button type="button" onClick={() => openAd(currentAd)} className="block w-full text-left">
             <img src={currentAd.imageUrl} alt={currentAd.name} className="max-h-[65dvh] w-full object-contain" />
@@ -158,7 +169,7 @@ export default function AdvertisingSlot({ slot, className = "" }: Props) {
     return (
       <aside
         ref={rootRef}
-        className={`fixed right-3 top-[30%] z-[110] w-[min(160px,calc(100vw-24px))] overflow-visible sm:right-5 md:w-[240px] ${className}`}
+        className={`ad-floating-enter fixed right-3 top-[30%] z-[110] w-[min(160px,calc(100vw-24px))] overflow-visible sm:right-5 md:w-[240px] ${className}`}
         aria-label="Iklan partner"
       >
         <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl ring-1 ring-black/5 dark:border-gray-700 dark:bg-gray-900">
@@ -195,10 +206,28 @@ export default function AdvertisingSlot({ slot, className = "" }: Props) {
   return (
     <section ref={rootRef} className={`mx-auto w-full max-w-[1400px] px-4 pb-5 ${className}`} aria-label="Iklan partner">
       {currentAd && (
-        <button type="button" onClick={() => openAd(currentAd)} className="group relative block w-full overflow-hidden rounded-xl border border-gray-200 bg-white text-left shadow-sm transition hover:shadow-md dark:border-gray-800 dark:bg-gray-900">
-          <img src={currentAd.imageUrl} alt={currentAd.name} loading="lazy" className="mx-auto block h-auto max-h-36 w-full object-contain sm:max-h-48 md:max-h-56" />
-          <span className="absolute left-2 top-2 rounded-full bg-black/65 px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-white">Iklan Partner</span>
-        </button>
+        <>
+          <button key={currentAd.creativeId || currentAd.id} type="button" onClick={() => openAd(currentAd)} className="ad-banner-slide-in group relative block w-full overflow-hidden rounded-xl border border-gray-200 bg-white text-left shadow-sm transition hover:shadow-md dark:border-gray-800 dark:bg-gray-900">
+            <img src={currentAd.imageUrl} alt={currentAd.name} loading="lazy" className="mx-auto block h-auto max-h-36 w-full object-contain sm:max-h-48 md:max-h-56" />
+            <span className="absolute left-2 top-2 rounded-full bg-black/65 px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-white">Iklan Partner</span>
+          </button>
+          {ads.length > 1 && (
+            <div className="mt-2 flex items-center justify-center gap-2" aria-label="Pilih banner iklan">
+              {ads.map((ad, index) => (
+                <button
+                  key={ad.creativeId || ad.id}
+                  type="button"
+                  onClick={() => setCurrentIndex(index)}
+                  aria-label={`Tampilkan banner ${index + 1}`}
+                  aria-current={index === currentIndex ? "true" : undefined}
+                  className="h-2 flex-1 max-w-20 overflow-hidden rounded-full bg-gray-200 transition-colors hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:bg-gray-700 dark:hover:bg-gray-600"
+                >
+                  <span className={`block h-full rounded-full ${index === currentIndex ? "ad-banner-indicator-fill bg-red-600" : "w-0"}`} />
+                </button>
+              ))}
+            </div>
+          )}
+        </>
       )}
     </section>
   );
