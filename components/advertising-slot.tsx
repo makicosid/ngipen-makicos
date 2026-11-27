@@ -110,11 +110,11 @@ export default function AdvertisingSlot({ slot, className = "" }: Props) {
   if (slot === "floating") {
     return (
       <div ref={rootRef} className={`fixed inset-0 z-[110] flex items-center justify-center bg-black/80 p-3 sm:p-6 ${className}`} role="dialog" aria-modal="true" aria-label="Iklan partner">
-        <div className="relative flex max-h-[96dvh] w-full max-w-5xl items-center justify-center">
-          <button type="button" onClick={() => setAds([])} aria-label="Tutup iklan" title="Tutup iklan" className="fixed right-4 top-4 z-[130] inline-flex min-h-12 items-center justify-center gap-2 rounded-full border-2 border-white bg-red-600 px-5 py-3 text-sm font-extrabold tracking-wide text-white shadow-[0_4px_24px_rgba(0,0,0,0.65)] ring-2 ring-red-900/70 transition hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-300"><span aria-hidden="true" className="text-2xl leading-none">×</span><span>TUTUP IKLAN</span></button>
+        <div className="relative flex max-h-[96dvh] w-full max-w-5xl flex-col items-end justify-center gap-2 pt-14">
+          <button type="button" onClick={() => setAds([])} aria-label="Tutup iklan" title="Tutup iklan" className="absolute right-0 top-0 z-[130] inline-flex min-h-11 items-center justify-center gap-2 rounded-full border-2 border-white bg-red-600 px-4 py-2.5 text-sm font-extrabold tracking-wide text-white shadow-[0_4px_24px_rgba(0,0,0,0.65)] ring-2 ring-red-900/70 transition hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-300"><span aria-hidden="true" className="text-2xl leading-none">×</span><span>TUTUP IKLAN</span></button>
           {ads.map(ad => (
-            <button key={ad.id} type="button" onClick={() => openAd(ad)} className="flex max-h-[94dvh] w-full items-center justify-center">
-              <img src={ad.imageUrl} alt={ad.name} loading="lazy" className="max-h-[94dvh] max-w-full rounded-xl object-contain shadow-2xl" />
+            <button key={ad.id} type="button" onClick={() => openAd(ad)} className="flex max-h-[calc(94dvh-4rem)] w-full items-center justify-center">
+              <img src={ad.imageUrl} alt={ad.name} loading="lazy" className="max-h-[calc(94dvh-4rem)] max-w-full rounded-xl object-contain shadow-2xl" />
             </button>
           ))}
         </div>
