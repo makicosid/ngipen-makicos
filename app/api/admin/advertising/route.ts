@@ -155,7 +155,66 @@ export async function DELETE(request: NextRequest) {
 
     const body: unknown = await request.json().catch(() => null);
     if (!body || typeof body !== "object" || Array.isArray(body)) return adminJson({ error: "Format data tidak valid." }, 400);
-    const id = typeof (body as Record<string, unknown>).id === "string" ? String((body as Record<string, unknown>).id) : "";
+    const deleteInput = body as Record<string, unknown>;
+    if (deleteInput.action === "delete_brand") {
+      const sponsorId = typeof deleteInput.id === "string" ? deleteInput.id : "";
+      if (!sponsorId) return adminJson({ error: "Brand tidak valid." }, 400);
+
+      const { data: sponsor, error: sponsorError } = await supabase
+        .from("ad_sponsors")
+        .select("id,brand_name")
+        .eq("id", sponsorId)
+        .maybeSingle();
+      if (sponsorError || !sponsor) return adminJson({ error: "Brand tidak ditemukan." }, 404);
+
+      const { data: brandCampaigns, error: campaignsError } = await supabase
+        .from("ad_campaigns")
+        .select("id,campaign_name,image_path")
+        .eq("sponsor_id", sponsorId);
+      if (campaignsError) return adminJson({ error: "Gagal membaca campaign milik brand." }, 500);
+
+      const campaignIds = (brandCampaigns ?? []).map(item => item.id);
+      const { data: creativeRows, error: creativesError } = campaignIds.length
+        ? await supabase.from("ad_creatives").select("image_path").in("campaign_id", campaignIds)
+        : { data: [], error: null };
+      if (creativesError && creativesError.code !== "42P01" && creativesError.code !== "PGRST205") {
+        return adminJson({ error: "Gagal membaca poster milik brand." }, 500);
+      }
+
+      const imagePaths = Array.from(new Set([
+        ...(brandCampaigns ?? []).map(item => item.image_path),
+        ...((creativeRows ?? []) as Array<{ image_path: string }>).map(item => item.image_path),
+      ])).filter(path => typeof path === "string" && path.length > 0 && !path.startsWith("/") && !path.includes(".."));
+
+      // SQL migration changes sponsor/campaign and campaign/event foreign keys to CASCADE.
+      // Audit rows remain available because ad_audit_logs.campaign_id uses ON DELETE SET NULL.
+      const { data: deletedSponsor, error: deleteBrandError } = await supabase
+        .from("ad_sponsors")
+        .delete()
+        .eq("id", sponsorId)
+        .select("id")
+        .maybeSingle();
+      if (deleteBrandError || !deletedSponsor) {
+        console.error("Advertising brand delete failed:", deleteBrandError?.code);
+        return adminJson({ error: "Brand belum dapat dihapus. Pastikan SQL penghapusan brand sudah dijalankan." }, 500);
+      }
+
+      await writeAudit(supabase, "brand_deleted", null, {
+        sponsor_id: sponsor.id,
+        brand_name: sponsor.brand_name,
+        deleted_campaign_count: campaignIds.length,
+        deleted_campaigns: (brandCampaigns ?? []).map(item => ({ id: item.id, name: item.campaign_name })),
+      });
+
+      if (imagePaths.length) {
+        const { error: storageError } = await supabase.storage.from("ad-assets").remove(imagePaths);
+        if (storageError) console.error("Advertising brand asset cleanup failed:", storageError.message);
+      }
+
+      return adminJson({ success: true, deletedCampaigns: campaignIds.length });
+    }
+
+    const id = typeof deleteInput.id === "string" ? deleteInput.id : "";
     if (!id) return adminJson({ error: "Kampanye tidak valid." }, 400);
 
     const { data: campaign, error: campaignError } = await supabase
