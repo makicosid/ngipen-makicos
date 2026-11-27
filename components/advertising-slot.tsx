@@ -28,6 +28,7 @@ export default function AdvertisingSlot({ slot, className = "" }: Props) {
 
   useEffect(() => {
     let cancelled = false;
+    let popupTimer: number | undefined;
     fetch(`/api/advertising?slot=${slot}`, { cache: "no-store" })
       .then(response => response.ok ? response.json() : Promise.reject(new Error("Ad request failed")))
       .then(result => {
@@ -42,7 +43,7 @@ export default function AdvertisingSlot({ slot, className = "" }: Props) {
             // If storage is unavailable, keep the popup usable for this page view.
           }
           if (!alreadySeen) {
-            const popupTimer = window.setTimeout(() => {
+            popupTimer = window.setTimeout(() => {
               if (cancelled) return;
               try {
                 sessionStorage.setItem("ngipen_popup_seen", "1");
@@ -51,15 +52,14 @@ export default function AdvertisingSlot({ slot, className = "" }: Props) {
               }
               setPopupOpen(true);
             }, 5000);
-            return () => {
-              cancelled = true;
-              window.clearTimeout(popupTimer);
-            };
           }
         }
       })
       .catch(() => { if (!cancelled) setAds([]); });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      if (popupTimer !== undefined) window.clearTimeout(popupTimer);
+    };
   }, [slot]);
 
   useEffect(() => {
