@@ -521,7 +521,7 @@ export async function POST(request: NextRequest) {
       .from(POSTER_BUCKET)
       .upload(uploadedPath, posterBuffer, {
         upsert: false,
-        cacheControl: "3600",
+        cacheControl: "31536000",
         contentType: poster.type,
       });
 
@@ -538,8 +538,7 @@ export async function POST(request: NextRequest) {
       .from(POSTER_BUCKET)
       .getPublicUrl(uploadedPath);
 
-    const posterUrl =
-      `${publicUrlData.publicUrl}?v=${Date.now()}`;
+    const posterUrl = publicUrlData.publicUrl;
 
     const payload = {
       organizer_id: user.id,

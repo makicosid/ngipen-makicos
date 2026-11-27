@@ -165,6 +165,7 @@ async function uploadImage(file: File) {
     .from(BUCKET)
     .upload(path, buffer, {
       contentType: file.type,
+      cacheControl: "31536000",
       upsert: false,
     });
 
