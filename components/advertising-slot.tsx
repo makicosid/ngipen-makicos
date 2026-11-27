@@ -301,7 +301,7 @@ export default function AdvertisingSlot({ slot, className = "" }: Props) {
         )}
       </section>
 
-      {bannerFloatingActive && currentAd && (
+      {slot === "banner" && bannerOutOfView && currentAd && dismissedBannerCreative !== currentBannerKey && (
         <div
           className="ad-banner-floating-shell fixed left-0 right-0 z-[105] mx-auto w-full max-w-[1400px] px-4"
           style={{ top: navbarOffset }}
