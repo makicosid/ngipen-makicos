@@ -129,7 +129,7 @@ export default function AvailabilityPage() {
               </section>
               <section className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
                 <h2 className="font-black">Informasi booking</h2>
-                <p className="mt-2 text-xs leading-5 text-gray-500">Periode dihitung dari campaign berstatus Active dan Scheduled Kalender ini menampilkan ketersediaan indikatif. Konfirmasi akhir periode promosi dilakukan oleh tim MAKICOS melalui WhatsApp.</p>
+                <p className="mt-2 text-xs leading-5 text-gray-500">Periode dihitung dari campaign berstatus Active dan Scheduled. Kalender ini menampilkan ketersediaan indikatif. Konfirmasi akhir periode promosi dilakukan oleh tim MAKICOS melalui WhatsApp.</p>
               </section>
             </aside>
           </div>
@@ -143,15 +143,14 @@ export default function AvailabilityPage() {
                 const windowEnd = monthKey(startDate.getUTCFullYear(), startDate.getUTCMonth() + timelineMonths);
                 const windowEndExclusive = windowEnd < data.range.endExclusive ? windowEnd : data.range.endExclusive;
                 const total = Date.parse(windowEndExclusive + "T00:00:00Z") - Date.parse(windowStart + "T00:00:00Z");
-                const visibleBrands = slot.brands.map((brand, brandIndex) => ({
-                  brandIndex,
+                const visibleBrands = slot.brands.map(brand => ({
                   periods: brand.periods.filter(period => period.end >= windowStart && period.start < windowEndExclusive),
                 })).filter(brand => brand.periods.length > 0);
                 return <div key={slot.code}>
                   <div className="mb-2 flex items-center justify-between"><strong className="text-sm">{slot.name}</strong><span className="text-xs text-gray-500">Kapasitas {slot.capacity} · {visibleBrands.length} brand</span></div>
                   {visibleBrands.length ? <div className="space-y-2">
-                    {visibleBrands.map(brand => <div key={brand.brandIndex} className="grid grid-cols-[76px_minmax(0,1fr)] items-center gap-2">
-                      <span className="text-[11px] font-semibold text-gray-500">Brand {brand.brandIndex + 1}</span>
+                    {visibleBrands.map((brand, brandIndex) => <div key={brandIndex} className="grid grid-cols-[76px_minmax(0,1fr)] items-center gap-2">
+                      <span className="text-[11px] font-semibold text-gray-500">Brand {brandIndex + 1}</span>
                       <div className="relative h-8 overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800">
                         {brand.periods.map((period, index) => {
                           const clippedStart = period.start < windowStart ? windowStart : period.start;
